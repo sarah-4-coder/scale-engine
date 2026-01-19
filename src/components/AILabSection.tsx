@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Zap, Globe } from "lucide-react";
+import { GoogleGenAI } from "@google/genai";
 
 const AILabSection = () => {
   const [niche, setNiche] = useState("");
@@ -27,39 +28,19 @@ const AILabSection = () => {
     return () => observer.disconnect();
   }, []);
 
-  const callGemini = async (prompt: string, systemInstruction: string = "") => {
+  const callGemini = async (prompt: string) => {
     const apiKey = import.meta.env.VITE_GOOGLE_AI_API_KEY;
     if (!apiKey) {
       throw new Error("API key not configured");
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    const payload: any = {
-      contents: [{ parts: [{ text: prompt }] }],
-    };
-
-    if (systemInstruction) {
-      payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-    }
-
-    for (let i = 0; i < 5; i++) {
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!response.ok) throw new Error("API failed");
-        const result = await response.json();
-        return (
-          result.candidates?.[0]?.content?.parts?.[0]?.text ||
-          "No response generated."
-        );
-      } catch (error) {
-        if (i === 4) throw error;
-        await new Promise((r) => setTimeout(r, Math.pow(2, i) * 1000));
-      }
-    }
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+    
+    return response.text || "No response generated.";
   };
 
   const generateStrategy = async () => {
