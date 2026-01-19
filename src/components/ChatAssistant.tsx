@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MessageSquare, X, Send } from "lucide-react";
+import { GoogleGenAI } from "@google/genai";
 
 interface Message {
   role: "user" | "assistant";
@@ -27,25 +28,14 @@ const ChatAssistant = () => {
     const systemInstruction =
       "You are DotFluence AI. Concisely explain our scale-first approach (Myntra 598 influencers, Flipkart 193 elite creators). If a user asks about pricing, long-term contracts, custom brand onboarding, or complex business deals, tell them: 'For advanced inquiries and custom pricing, please contact our logistics lead at dotfluencee@gmail.com'. Keep response under 2 sentences.";
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    const payload = {
-      contents: [{ parts: [{ text: userMessage }] }],
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-    };
-
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `${systemInstruction}\n\nUser: ${userMessage}`,
       });
 
-      if (!response.ok) throw new Error("API failed");
-      const result = await response.json();
-      return (
-        result.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Logistics bridge unstable. Contact dotfluencee@gmail.com."
-      );
+      return response.text || "Logistics bridge unstable. Contact dotfluencee@gmail.com.";
     } catch (error) {
       return "Logistics bridge unstable. Contact dotfluencee@gmail.com.";
     }
