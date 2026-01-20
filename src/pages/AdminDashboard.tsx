@@ -1,48 +1,196 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { LogOut, User, Users, BarChart3, Settings, Shield, TrendingUp, DollarSign, Activity } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  LogOut,
+  User,
+  Users,
+  BarChart3,
+  Settings,
+  Shield,
+  TrendingUp,
+  DollarSign,
+  Activity,
+} from "lucide-react";
+import { toast } from "sonner";
+
+type ActivityItem = {
+  action: string;
+  user?: string;
+  details?: string;
+  time: string;
+  timestamp?: number;
+};
 
 const AdminDashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+
   const [influencerCount, setInfluencerCount] = useState(0);
+  const [campaignCount, setCampaignCount] = useState(0);
+  const [pendingNegotiations, setPendingNegotiations] = useState(0);
+  const [acceptedDeals, setAcceptedDeals] = useState(0);
+
+  const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
-    const fetchInfluencerCount = async () => {
-      const { count } = await supabase
-        .from('user_roles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'influencer');
-      
-      setInfluencerCount(count || 0);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+
+        /* =======================
+           STATS
+        ======================= */
+
+        const { count: influencers } = await supabase
+          .from("user_roles")
+          .select("*", { count: "exact", head: true })
+          .eq("role", "influencer");
+
+        const { count: campaigns } = await supabase
+          .from("campaigns")
+          .select("*", { count: "exact", head: true });
+
+        const { count: negotiations } = await supabase
+          .from("campaign_influencers")
+          .select("*", { count: "exact", head: true })
+          .in("status", ["influencer_negotiated", "applied"]);
+
+        const { count: accepted } = await supabase
+          .from("campaign_influencers")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "accepted");
+
+        setInfluencerCount(influencers || 0);
+        setCampaignCount(campaigns || 0);
+        setPendingNegotiations(negotiations || 0);
+        setAcceptedDeals(accepted || 0);
+
+        /* =======================
+           RECENT ACTIVITIES
+        ======================= */
+
+        const activities: ActivityItem[] = [];
+
+        // Influencer registrations
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("full_name, created_at")
+          .order("created_at", { ascending: false })
+          .limit(2);
+
+        profiles?.forEach((p) => {
+          activities.push({
+            action: "New influencer registered",
+            user: p.full_name || "Unknown",
+            time: timeAgo(p.created_at),
+            timestamp: new Date(p.created_at).getTime(),
+          });
+        });
+
+        // Campaigns created
+        const { data: campaignsData } = await supabase
+          .from("campaigns")
+          .select("name, created_at")
+          .order("created_at", { ascending: false })
+          .limit(2);
+
+        campaignsData?.forEach((c) => {
+          activities.push({
+            action: "Campaign created",
+            details: c.name,
+            time: timeAgo(c.created_at),
+            timestamp: new Date(c.created_at).getTime(),
+          });
+        });
+
+        // Negotiations / applications
+        const { data: negotiationsData } = await supabase
+          .from("campaign_influencers")
+          .select("status, created_at")
+          .order("created_at", { ascending: false })
+          .limit(2);
+
+        negotiationsData?.forEach((n) => {
+          activities.push({
+            action:
+              n.status === "influencer_negotiated"
+                ? "Negotiation requested"
+                : n.status === "admin_negotiated"
+                  ? "Admin countered offer"
+                  : n.status === "accepted"
+                    ? "Negotiation accepted"
+                    : "Campaign interaction",
+            time: timeAgo(n.created_at),
+            timestamp: new Date(n.created_at).getTime(),
+          });
+        });
+
+        activities.sort((a, b) => b.timestamp - a.timestamp);
+
+        setRecentActivities(activities.slice(0, 6));
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load admin dashboard");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchInfluencerCount();
+    fetchDashboardData();
   }, []);
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate("/");
   };
 
   const stats = [
-    { title: 'Total Influencers', value: influencerCount.toString(), icon: Users, change: 'Registered users' },
-    { title: 'Active Campaigns', value: '12', icon: Activity, change: '+3 this week' },
-    { title: 'Total Revenue', value: '₹2.5L', icon: DollarSign, change: '+18% from last month' },
-    { title: 'Engagement Rate', value: '5.2%', icon: TrendingUp, change: 'Avg across campaigns' },
+    {
+      title: "Total Influencers",
+      value: influencerCount.toString(),
+      icon: Users,
+      change: "Registered users",
+    },
+    {
+      title: "Active Campaigns",
+      value: campaignCount.toString(),
+      icon: Activity,
+      change: "Live campaigns",
+    },
+    {
+      title: "Pending Negotiations",
+      value: pendingNegotiations.toString(),
+      icon: TrendingUp,
+      change: "Needs admin action",
+    },
+    {
+      title: "Accepted Deals",
+      value: acceptedDeals.toString(),
+      icon: DollarSign,
+      change: "Finalized payouts",
+    },
   ];
 
-  const recentActivities = [
-    { action: 'New influencer registered', user: 'priya@example.com', time: '2 hours ago' },
-    { action: 'Campaign created', details: 'Myntra Summer Sale', time: '5 hours ago' },
-    { action: 'Payment processed', details: '₹25,000 to @fashionista', time: '1 day ago' },
-    { action: 'New influencer registered', user: 'rahul@example.com', time: '2 days ago' },
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,13 +223,17 @@ const AdminDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Welcome Section */}
+          {/* Welcome */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-foreground">Admin Dashboard 🛡️</h2>
-            <p className="text-muted-foreground mt-2">Manage your influencer marketing platform</p>
+            <h2 className="text-3xl font-bold text-foreground">
+              Admin Dashboard 🛡️
+            </h2>
+            <p className="text-muted-foreground mt-2">
+              Manage your influencer marketing platform
+            </p>
           </div>
 
-          {/* Stats Grid */}
+          {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
               <motion.div
@@ -98,44 +250,52 @@ const AdminDashboard = () => {
                     <stat.icon className="h-4 w-4 text-primary" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                    <div className="text-2xl font-bold text-foreground">
+                      {stat.value}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stat.change}
+                    </p>
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
           </div>
 
-          {/* Admin Panels */}
+          {/* Panels */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Activities */}
             <Card className="bg-card/50 backdrop-blur-xl border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5 text-primary" />
                   Recent Activities
                 </CardTitle>
-                <CardDescription>Latest platform activities</CardDescription>
+                <CardDescription>Latest platform activity</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivities.map((activity, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 bg-background/50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium text-foreground">{activity.action}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {activity.user || activity.details}
-                        </p>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{activity.time}</span>
+              <CardContent className="space-y-4">
+                {recentActivities.map((activity, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 bg-background/50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {activity.action}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {activity.user || activity.details}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                    <span className="text-xs text-muted-foreground">
+                      {activity.time}
+                    </span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
+            {/* Admin Actions */}
             <Card className="bg-card/50 backdrop-blur-xl border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -145,19 +305,37 @@ const AdminDashboard = () => {
                 <CardDescription>Platform management tools</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button className="w-full justify-start" variant="outline">
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/admin/influencers")}
+                >
                   <Users className="mr-2 h-4 w-4" />
                   Manage Influencers
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/admin/campaigns")}
+                >
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Campaign Analytics
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  disabled
+                >
                   <DollarSign className="mr-2 h-4 w-4" />
                   Payment Management
                 </Button>
-                <Button className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90">
+
+                <Button
+                  className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => navigate("/admin/campaigns/new")}
+                >
                   <Activity className="mr-2 h-4 w-4" />
                   Create New Campaign
                 </Button>
@@ -171,3 +349,15 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+/* =======================
+   Helper
+======================= */
+const timeAgo = (date: string) => {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+
+  if (seconds < 60) return "Just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+  return `${Math.floor(seconds / 86400)} days ago`;
+};
