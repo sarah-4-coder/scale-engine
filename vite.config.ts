@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
+// Environment variables are loaded from .env automatically
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
