@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { sendNotification } from "@/lib/notifications";
 
 interface NegotiationRow {
   id: string;
@@ -19,6 +20,7 @@ interface NegotiationRow {
   };
   influencer: {
     instagram_handle: string;
+    user_id: string;
   };
 }
 
@@ -31,7 +33,8 @@ const AdminNegotiations = () => {
     const fetchNegotiations = async () => {
       const { data, error } = await supabase
         .from("campaign_influencers")
-        .select(`
+        .select(
+          `
           id,
           status,
           requested_payout,
@@ -44,8 +47,9 @@ const AdminNegotiations = () => {
           influencer_profiles (
             instagram_handle
           )
-        `)
-        .in("status", ["admin_negotiated", "applied","influencer_negotiated"]);
+        `,
+        )
+        .in("status", ["admin_negotiated", "applied", "influencer_negotiated"]);
 
       if (error) {
         console.error(error);
@@ -83,11 +87,24 @@ const AdminNegotiations = () => {
     }
 
     toast.success("Negotiation accepted");
+    // 🔔 Notify influencer about acceptance
+    sendNotification({
+      user_id: row.influencer.user_id,
+      role: "influencer",
+      type: "negotiation_accepted",
+      title: "Offer accepted",
+      message: `Your payout of ₹${payout} was accepted`,
+      metadata: {
+        campaign_id: row.id,
+      },
+    }).catch(console.error);
 
     setRows((prev) =>
       prev.map((r) =>
-        r.id === row.id ? { ...r, status: "accepted", final_payout: payout } : r
-      )
+        r.id === row.id
+          ? { ...r, status: "accepted", final_payout: payout }
+          : r,
+      ),
     );
   };
 
@@ -107,15 +124,24 @@ const AdminNegotiations = () => {
       toast.error("Failed to counter offer");
       return;
     }
+    // 🔔 Notify influencer about counter offer
+    sendNotification({
+      user_id: row.influencer.user_id,
+      role: "influencer",
+      type: "negotiation_countered",
+      title: "New offer from brand",
+      message: `Brand countered with ₹${counter}`,
+      metadata: {
+        campaign_id: row.id,
+      },
+    }).catch(console.error);
 
     toast.success("Counter offer sent");
 
     setRows((prev) =>
       prev.map((r) =>
-        r.id === row.id
-          ? { ...r, requested_payout: Number(counter) }
-          : r
-      )
+        r.id === row.id ? { ...r, requested_payout: Number(counter) } : r,
+      ),
     );
   };
 
@@ -160,8 +186,12 @@ const AdminNegotiations = () => {
           </CardHeader>
 
           <CardContent className="space-y-3">
-            <p><strong>Base payout:</strong> ₹{row.campaign.base_payout}</p>
-            <p><strong>Requested payout:</strong> ₹{row.requested_payout ?? "—"}</p>
+            <p>
+              <strong>Base payout:</strong> ₹{row.campaign.base_payout}
+            </p>
+            <p>
+              <strong>Requested payout:</strong> ₹{row.requested_payout ?? "—"}
+            </p>
 
             {row.negotiation_note && (
               <p className="text-sm text-muted-foreground">
@@ -175,9 +205,7 @@ const AdminNegotiations = () => {
               </p>
             ) : (
               <div className="flex gap-2 flex-wrap">
-                <Button onClick={() => acceptNegotiation(row)}>
-                  Accept
-                </Button>
+                <Button onClick={() => acceptNegotiation(row)}>Accept</Button>
 
                 <Input
                   placeholder="Counter amount"
@@ -191,11 +219,17 @@ const AdminNegotiations = () => {
                   }
                 />
 
-                <Button variant="outline" onClick={() => counterNegotiation(row)}>
+                <Button
+                  variant="outline"
+                  onClick={() => counterNegotiation(row)}
+                >
                   Counter
                 </Button>
 
-                <Button variant="destructive" onClick={() => rejectNegotiation(row.id)}>
+                <Button
+                  variant="destructive"
+                  onClick={() => rejectNegotiation(row.id)}
+                >
                   Reject
                 </Button>
               </div>

@@ -1,4 +1,6 @@
-import { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { sendNotification } from "@/lib/notifications";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,6 +12,13 @@ import { toast } from "sonner";
 const CreateCampaign = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+  }, []);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -22,6 +31,12 @@ const CreateCampaign = () => {
     e.preventDefault();
     setLoading(true);
 
+    if (!user) {
+      toast.error("User not authenticated");
+      setLoading(false);
+      return;
+    }
+
     const niches = nichesInput
       .split(",")
       .map((n) => n.trim().toLowerCase())
@@ -33,14 +48,18 @@ const CreateCampaign = () => {
       return;
     }
 
-    const { error } = await supabase.from("campaigns").insert({
-      name,
-      description,
-      niches,
-      deliverables,
-      timeline,
-      base_payout: Number(basePayout),
-    });
+    const { data: campaignData, error } = await supabase
+      .from("campaigns")
+      .insert({
+        name,
+        description,
+        niches,
+        deliverables,
+        timeline,
+        base_payout: Number(basePayout),
+        admin_user_id: user.id,
+      })
+      .select();
 
     if (error) {
       console.error(error);
@@ -49,6 +68,29 @@ const CreateCampaign = () => {
       return;
     }
 
+    const campaignId = campaignData?.[0]?.id;
+    if (!campaignId) {
+      toast.error("Campaign created but ID missing");
+      setLoading(false);
+      return;
+    }
+
+    // after campaign insert success
+    const { data: influencers } = await supabase
+      .from("influencer_profiles")
+      .select("user_id");
+
+    for (const inf of influencers || []) {
+      sendNotification({
+        user_id: inf.user_id,
+        role: "influencer",
+        type: "campaign_created",
+        title: "New campaign available",
+        message: "A new campaign has been created. Apply now!",
+        metadata: { campaign_id: campaignId },
+      }).catch(console.error);
+    }
+    setLoading(false);
     toast.success("Campaign created");
     navigate("/admin", { replace: true });
   };
@@ -61,12 +103,19 @@ const CreateCampaign = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label>Campaign Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
           </div>
 
           <div>
             <Label>Description</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
           </div>
 
           <div>
@@ -81,17 +130,30 @@ const CreateCampaign = () => {
 
           <div>
             <Label>Deliverables</Label>
-            <Textarea value={deliverables} onChange={(e) => setDeliverables(e.target.value)} required />
+            <Textarea
+              value={deliverables}
+              onChange={(e) => setDeliverables(e.target.value)}
+              required
+            />
           </div>
 
           <div>
             <Label>Timeline</Label>
-            <Input value={timeline} onChange={(e) => setTimeline(e.target.value)} required />
+            <Input
+              value={timeline}
+              onChange={(e) => setTimeline(e.target.value)}
+              required
+            />
           </div>
 
           <div>
             <Label>Base Payout (₹)</Label>
-            <Input type="number" value={basePayout} onChange={(e) => setBasePayout(e.target.value)} required />
+            <Input
+              type="number"
+              value={basePayout}
+              onChange={(e) => setBasePayout(e.target.value)}
+              required
+            />
           </div>
 
           <Button className="w-full" disabled={loading}>

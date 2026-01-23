@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type Json =
   | string
   | number
@@ -109,6 +110,8 @@ export type Database = {
           deliverables: string;
           timeline: string;
           base_payout: number;
+          admin_user_id: string | null;
+
           status: string | null;
           created_at: string;
         };
@@ -120,6 +123,7 @@ export type Database = {
           deliverables: string;
           timeline: string;
           base_payout: number;
+          admin_user_id?: string | null;
           status?: string | null;
           created_at?: string;
         };
@@ -131,6 +135,7 @@ export type Database = {
           deliverables?: string;
           timeline?: string;
           base_payout?: number;
+          admin_user_id?: string | null;
           status?: string | null;
           created_at?: string;
         };
@@ -185,6 +190,49 @@ export type Database = {
             foreignKeyName: "campaign_influencers_influencer_id_fkey";
             columns: ["influencer_id"];
             referencedRelation: "influencer_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          role: string;
+          type: string;
+          title: string;
+          message: string;
+          metadata: any | null;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          role: string;
+          type: string;
+          title: string;
+          message: string;
+          metadata?: any | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          role?: string;
+          type?: string;
+          title?: string;
+          message?: string;
+          metadata?: any | null;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];

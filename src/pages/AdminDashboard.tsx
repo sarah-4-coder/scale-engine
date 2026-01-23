@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   Card,
   CardContent,
@@ -205,6 +206,8 @@ const AdminDashboard = () => {
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell />
+
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <User size={16} />
               <span>{user?.email}</span>

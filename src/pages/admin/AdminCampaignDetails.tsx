@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import clsx from "clsx";
+import { sendNotification } from "@/lib/notifications";
 
 interface Campaign {
   id: string;
@@ -18,6 +20,7 @@ interface Row {
   final_payout: number | null;
   posted_link: string[] | null;
   influencer_profiles: {
+    user_id: string;
     full_name: string;
     phone_number: string;
     instagram_handle: string;
@@ -64,6 +67,7 @@ const AdminCampaignDetails = () => {
         final_payout,
         posted_link,
         influencer_profiles (
+        user_id,
           full_name,
           phone_number,
           instagram_handle
@@ -82,7 +86,12 @@ const AdminCampaignDetails = () => {
 
   const metrics = useMemo(
     () => ({
-      accepted: rows.filter((r) => r.status === "accepted").length,
+      accepted: rows.filter(
+        (r) =>
+          r.status === "accepted" ||
+          r.status == "completed" ||
+          r.status === "rejected",
+      ).length,
       submissions: rows.filter((r) => r.posted_link).length,
       completed: rows.filter((r) => r.status === "completed").length,
       rejected: rows.filter((r) => r.status === "rejected").length,
@@ -101,6 +110,17 @@ const AdminCampaignDetails = () => {
 
     toast.success("Marked as completed");
     fetchData();
+    // 🔔 Notify influencer: content approved
+    sendNotification({
+      user_id: rows.find((r) => r.id === rowId)?.influencer_profiles.user_id!,
+      role: "influencer",
+      type: "content_approved",
+      title: "Content approved 🎉",
+      message: "Your content has been approved. Campaign completed!",
+      metadata: {
+        campaign_id: campaignId,
+      },
+    }).catch(console.error);
   };
 
   const rejectSubmission = async (rowId: string) => {
@@ -115,6 +135,17 @@ const AdminCampaignDetails = () => {
 
     toast.success("Submission rejected");
     fetchData();
+    // 🔔 Notify influencer: content rejected
+    sendNotification({
+      user_id: rows.find((r) => r.id === rowId)?.influencer_profiles.user_id!,
+      role: "influencer",
+      type: "content_rejected",
+      title: "Content needs changes",
+      message: "Your content was rejected. Please resubmit.",
+      metadata: {
+        campaign_id: campaignId,
+      },
+    }).catch(console.error);
   };
   const exportCSV = () => {
     if (!campaign) return;
@@ -177,7 +208,7 @@ const AdminCampaignDetails = () => {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {[
           {
-            label: "Accepted Influencers",
+            label: "Total Influencers",
             value: metrics.accepted,
             color: "text-primary",
           },
@@ -203,9 +234,11 @@ const AdminCampaignDetails = () => {
           </Card>
         ))}
       </div>
-      <Button variant="outline" onClick={exportCSV}>
-        Export CSV
-      </Button>
+      <div className="flex justify-end mb-4">
+        <Button variant="outline" onClick={exportCSV}>
+          Export CSV
+        </Button>
+      </div>
 
       {/* Influencer Table */}
       <Card className="glass">

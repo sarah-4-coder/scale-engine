@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { sendNotification } from "@/lib/notifications";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,7 @@ interface Campaign {
   deliverables: string;
   timeline: string;
   base_payout: number;
+  admin_user_id: string;
 }
 
 interface Application {
@@ -109,6 +112,9 @@ const MyCampaigns = () => {
     fetchData();
   }, [user]);
 
+  const campaign = campaigns.find((c) => c.id === activeCampaignId);
+  if (!campaign?.admin_user_id) return;
+
   /* =========================
      EXISTING NEGOTIATION LOGIC
   ========================= */
@@ -129,6 +135,18 @@ const MyCampaigns = () => {
       toast.error("Failed to request negotiation");
       return;
     }
+    // 🔔 Notify admin about negotiation request
+    sendNotification({
+      user_id: campaign.admin_user_id, // admin user id
+      role: "admin",
+      type: "negotiation_started",
+      title: "New negotiation request",
+      message: `Influencer requested ₹${requestedPayout}`,
+      metadata: {
+        campaign_id: activeCampaignId,
+        influencer_id: influencerId,
+      },
+    }).catch(console.error);
 
     toast.success("Negotiation request sent");
     setActiveCampaignId(null);
@@ -221,9 +239,21 @@ const MyCampaigns = () => {
       toast.error("Failed to submit links");
       return;
     }
-
+    
     toast.success("Content submitted. Waiting for admin response.");
     fetchData();
+    // 🔔 Notify admin about content submission
+    sendNotification({
+      user_id: campaign.admin_user_id,
+      role: "admin",
+      type: "content_submitted",
+      title: "Content submitted",
+      message: "An influencer submitted content for review",
+      metadata: {
+        campaign_id: campaignId,
+        influencer_id: influencerId,
+      },
+    }).catch(console.error);
   };
 
   if (loading) {
