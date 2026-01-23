@@ -22,7 +22,17 @@ interface Application {
   status: string;
   requested_payout: number | null;
   final_payout: number | null;
+  posted_link?: string[] | null;
 }
+
+/* =========================
+   HELPER (EXISTING)
+========================= */
+const getRequiredLinksCount = (deliverables: string): number => {
+  const matches = deliverables.match(/\d+/g);
+  if (!matches) return 1;
+  return matches.map(Number).reduce((a, b) => a + b, 0);
+};
 
 const MyCampaigns = () => {
   const { user } = useAuth();
@@ -35,6 +45,17 @@ const MyCampaigns = () => {
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
   const [requestedPayout, setRequestedPayout] = useState("");
   const [note, setNote] = useState("");
+
+  /* =========================
+     CONTENT SUBMISSION STATE
+     🔽 ONLY ADDITION
+  ========================= */
+  const [postedLinks, setPostedLinks] = useState<
+    Record<string, { label: string; url: string }[]>
+  >({});
+  const [submittingCampaignId, setSubmittingCampaignId] = useState<
+    string | null
+  >(null);
 
   const fetchData = async () => {
     if (!user) return;
@@ -54,12 +75,14 @@ const MyCampaigns = () => {
 
     const { data: applicationsData } = await supabase
       .from("campaign_influencers")
-      .select("campaign_id, status, requested_payout, final_payout")
+      .select(
+        "campaign_id, status, requested_payout, final_payout, posted_link",
+      )
       .eq("influencer_id", profile.id);
 
     setApplications(applicationsData || []);
 
-    const campaignIds = applicationsData?.map(a => a.campaign_id) || [];
+    const campaignIds = applicationsData?.map((a) => a.campaign_id) || [];
 
     const { data: campaignsData } = await supabase
       .from("campaigns")
@@ -67,6 +90,18 @@ const MyCampaigns = () => {
       .in("id", campaignIds);
 
     setCampaigns(campaignsData || []);
+
+    /* 🔽 INIT LABEL + LINK INPUTS (ONLY ADDITION) */
+    const linkMap: Record<string, { label: string; url: string }[]> = {};
+    campaignsData?.forEach((c) => {
+      const count = getRequiredLinksCount(c.deliverables);
+      linkMap[c.id] = Array.from({ length: count }, () => ({
+        label: "",
+        url: "",
+      }));
+    });
+    setPostedLinks(linkMap);
+
     setLoading(false);
   };
 
@@ -74,6 +109,9 @@ const MyCampaigns = () => {
     fetchData();
   }, [user]);
 
+  /* =========================
+     EXISTING NEGOTIATION LOGIC
+  ========================= */
   const submitNegotiation = async () => {
     if (!activeCampaignId || !requestedPayout || !influencerId) return;
 
@@ -100,7 +138,7 @@ const MyCampaigns = () => {
   };
 
   const acceptCounterOffer = async (campaignId: string) => {
-    const application = applications.find(a => a.campaign_id === campaignId);
+    const application = applications.find((a) => a.campaign_id === campaignId);
     if (!application?.requested_payout || !influencerId) return;
 
     await supabase
@@ -145,6 +183,49 @@ const MyCampaigns = () => {
     fetchData();
   };
 
+  /* =========================
+     CONTENT SUBMISSION
+     🔽 ONLY ADDITION
+  ========================= */
+  const submitPostedLinks = async (campaignId: string) => {
+    const entries = postedLinks[campaignId];
+
+    if (
+      !entries ||
+      entries.some((e) => !e.label.trim() || !e.url.trim()) ||
+      !influencerId
+    ) {
+      toast.error("Please fill label and link for all deliverables");
+      return;
+    }
+
+    const formattedLinks = entries.map(
+      (e) => `${e.label.trim()} | ${e.url.trim()}`,
+    );
+
+    setSubmittingCampaignId(campaignId);
+
+    const { error } = await supabase
+      .from("campaign_influencers")
+      .update({
+        posted_link: formattedLinks,
+        posted_at: new Date().toISOString(),
+        status: "content_posted",
+      })
+      .eq("campaign_id", campaignId)
+      .eq("influencer_id", influencerId);
+
+    setSubmittingCampaignId(null);
+
+    if (error) {
+      toast.error("Failed to submit links");
+      return;
+    }
+
+    toast.success("Content submitted. Waiting for admin response.");
+    fetchData();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -159,9 +240,8 @@ const MyCampaigns = () => {
 
       {campaigns.map((campaign) => {
         const application = applications.find(
-          (a) => a.campaign_id === campaign.id
+          (a) => a.campaign_id === campaign.id,
         );
-
         if (!application) return null;
 
         return (
@@ -171,10 +251,18 @@ const MyCampaigns = () => {
             </CardHeader>
 
             <CardContent className="space-y-3">
-              <p><strong>Niches:</strong> {campaign.niches.join(", ")}</p>
-              <p><strong>Deliverables:</strong> {campaign.deliverables}</p>
-              <p><strong>Timeline:</strong> {campaign.timeline}</p>
-              <p><strong>Base Payout:</strong> ₹{campaign.base_payout}</p>
+              <p>
+                <strong>Niches:</strong> {campaign.niches.join(", ")}
+              </p>
+              <p>
+                <strong>Deliverables:</strong> {campaign.deliverables}
+              </p>
+              <p>
+                <strong>Timeline:</strong> {campaign.timeline}
+              </p>
+              <p>
+                <strong>Base Payout:</strong> ₹{campaign.base_payout}
+              </p>
 
               {application.status === "applied" && (
                 <Button
@@ -192,19 +280,25 @@ const MyCampaigns = () => {
               )}
 
               {application.status === "admin_negotiated" && (
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => acceptCounterOffer(campaign.id)}
-                  >
-                    Accept Offer
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setActiveCampaignId(campaign.id)}
-                  >
-                    Counter Again
-                  </Button>
-                </div>
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Admin has proposed a new payout of ₹
+                    <span className="text-sm text-red">
+                      {application.requested_payout}
+                    </span>
+                  </p>
+                  <div className="flex gap-2">
+                    <Button onClick={() => acceptCounterOffer(campaign.id)}>
+                      Accept Offer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setActiveCampaignId(campaign.id)}
+                    >
+                      Counter Again
+                    </Button>
+                  </div>
+                </>
               )}
 
               {application.status === "accepted" && (
@@ -229,6 +323,77 @@ const MyCampaigns = () => {
                     Accept Base Payout
                   </Button>
                 </div>
+              )}
+
+              {(application.status === "accepted" ||
+                application.status === "rejected") && (
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/40">
+                  <p className="text-sm text-yellow-500">
+                    ⏳ Submit Instagram post links
+                  </p>
+
+                  {postedLinks[campaign.id]?.map((item, index) => (
+                    <div key={index} className="space-y-1">
+                      <Input
+                        placeholder="Label (eg: Reel / Story)"
+                        value={item.label}
+                        onChange={(e) => {
+                          const copy = [...postedLinks[campaign.id]];
+                          copy[index].label = e.target.value;
+                          setPostedLinks({
+                            ...postedLinks,
+                            [campaign.id]: copy,
+                          });
+                        }}
+                        disabled={submittingCampaignId === campaign.id}
+                      />
+
+                      <Input
+                        placeholder="Instagram link"
+                        value={item.url}
+                        onChange={(e) => {
+                          const copy = [...postedLinks[campaign.id]];
+                          copy[index].url = e.target.value;
+                          setPostedLinks({
+                            ...postedLinks,
+                            [campaign.id]: copy,
+                          });
+                        }}
+                        disabled={submittingCampaignId === campaign.id}
+                      />
+                    </div>
+                  ))}
+
+                  <Button
+                    onClick={() => submitPostedLinks(campaign.id)}
+                    disabled={
+                      submittingCampaignId === campaign.id ||
+                      postedLinks[campaign.id]?.some(
+                        (l) => !l.label.trim() || !l.url.trim(),
+                      )
+                    }
+                  >
+                    Submit Posted Links
+                  </Button>
+
+                  {application.status === "rejected" && (
+                    <p className="text-xs text-red-500">
+                      Admin rejected previous submission. Please submit again.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {application.status === "content_posted" && (
+                <p className="text-sm text-muted-foreground">
+                  ✅ Content submitted. Waiting for admin response.
+                </p>
+              )}
+
+              {application.status === "completed" && (
+                <p className="text-green-600 font-medium">
+                  🎉 Campaign completed
+                </p>
               )}
             </CardContent>
           </Card>

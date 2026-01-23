@@ -320,7 +320,7 @@ const AdminDashboard = () => {
                   onClick={() => navigate("/admin/campaigns")}
                 >
                   <BarChart3 className="mr-2 h-4 w-4" />
-                  Campaign Analytics
+                  Campaign Management
                 </Button>
 
                 <Button

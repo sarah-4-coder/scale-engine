@@ -19,6 +19,8 @@ import InfluencerCampaigns from "./pages/influencer/MyCampaigns";
 import AdminNegotiations from "./pages/admin/Negotiations";
 import AllCampaigns from "./pages/influencer/AllCampaigns";
 import MyCampaigns from "./pages/influencer/MyCampaigns";
+import AdminCampaignDetails from "./pages/admin/AdminCampaignDetails";
+import AdminAllCampaigns from "./pages/admin/AdminAllCampaigns";
 
 const queryClient = new QueryClient();
 
@@ -101,7 +103,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path="/admin"
         element={
@@ -126,6 +128,23 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/campaigns"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminAllCampaigns />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/campaigns/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminCampaignDetails />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Catch-all */}
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -68,7 +68,7 @@ export type Database = {
           user_id: string;
           instagram_handle: string;
           instagram_profile_url: string;
-          niches: string[] | null
+          niches: string[] | null;
           phone_number: string;
           followers_count: number | null;
           following_count: number | null;
@@ -76,6 +76,7 @@ export type Database = {
           bio: string | null;
           is_private: boolean | null;
           profile_completed: boolean;
+          full_name: string;
           created_at: string;
           updated_at: string;
         };
@@ -84,7 +85,7 @@ export type Database = {
           user_id: string;
           instagram_handle: string;
           instagram_profile_url: string;
-          niches?: string[] | null
+          niches?: string[] | null;
           phone_number: string;
           followers_count?: number | null;
           following_count?: number | null;
@@ -92,6 +93,7 @@ export type Database = {
           bio?: string | null;
           is_private?: boolean | null;
           profile_completed?: boolean;
+          full_name?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -103,7 +105,7 @@ export type Database = {
           id: string;
           name: string;
           description: string | null;
-          niches: string[] | null
+          niches: string[] | null;
           deliverables: string;
           timeline: string;
           base_payout: number;
@@ -114,7 +116,7 @@ export type Database = {
           id?: string;
           name: string;
           description?: string | null;
-          niches?: string[] | null
+          niches?: string[] | null;
           deliverables: string;
           timeline: string;
           base_payout: number;
@@ -125,7 +127,7 @@ export type Database = {
           id?: string;
           name?: string;
           description?: string | null;
-          niches?: string[] | null
+          niches?: string[] | null;
           deliverables?: string;
           timeline?: string;
           base_payout?: number;
@@ -142,7 +144,9 @@ export type Database = {
           influencer_id: string;
           requested_payout: number | null;
           final_payout: number | null;
-          posted_link: string | null;
+          posted_link: string[] | null;
+          posted_at: string | null;
+          completed_at: string | null;
           status: string;
           created_at: string;
         };
@@ -152,7 +156,9 @@ export type Database = {
           influencer_id: string;
           requested_payout?: number | null;
           final_payout?: number | null;
-          posted_link?: string | null;
+          posted_link?: string[] | null;
+          posted_at?: string | null;
+          completed_at?: string | null;
           status?: string;
           created_at?: string;
         };
@@ -162,7 +168,9 @@ export type Database = {
           influencer_id?: string;
           requested_payout?: number | null;
           final_payout?: number | null;
-          posted_link?: string | null;
+          posted_link?: string[] | null;
+          posted_at?: string | null;
+          completed_at?: string | null;
           status?: string;
           created_at?: string;
         };
