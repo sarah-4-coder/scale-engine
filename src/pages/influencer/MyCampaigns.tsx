@@ -112,9 +112,6 @@ const MyCampaigns = () => {
     fetchData();
   }, [user]);
 
-  const campaign = campaigns.find((c) => c.id === activeCampaignId);
-  if (!campaign?.admin_user_id) return;
-
   /* =========================
      EXISTING NEGOTIATION LOGIC
   ========================= */
@@ -135,6 +132,8 @@ const MyCampaigns = () => {
       toast.error("Failed to request negotiation");
       return;
     }
+    const campaign = campaigns.find((c) => c.id === activeCampaignId);
+    if (!campaign?.admin_user_id) return;
     // 🔔 Notify admin about negotiation request
     sendNotification({
       user_id: campaign.admin_user_id, // admin user id
@@ -239,9 +238,11 @@ const MyCampaigns = () => {
       toast.error("Failed to submit links");
       return;
     }
-    
+
     toast.success("Content submitted. Waiting for admin response.");
     fetchData();
+    const campaign = campaigns.find((c) => c.id === activeCampaignId);
+    if (!campaign?.admin_user_id) return;
     // 🔔 Notify admin about content submission
     sendNotification({
       user_id: campaign.admin_user_id,
