@@ -1,167 +1,334 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { sendNotification } from "@/lib/notifications";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { sendNotification } from "@/lib/notifications";
+import { useNavigate } from "react-router-dom";
+import { normalizeLabel } from "@/utils/normalize";
+import { useRef } from "react";
+import AdminNavbar from "@/components/adminNavbar";
+
+/* -----------------------
+   STATIC CITY OPTIONS
+----------------------- */
+const DEFAULT_CITIES = [
+  "Delhi",
+  "Mumbai",
+  "Bengaluru",
+  "Hyderabad",
+  "Chennai",
+  "Kolkata",
+];
 
 const CreateCampaign = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
-  }, []);
-
+  /* -----------------------
+     CORE FIELDS
+  ----------------------- */
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [nichesInput, setNichesInput] = useState("");
-  const [deliverables, setDeliverables] = useState("");
   const [timeline, setTimeline] = useState("");
   const [basePayout, setBasePayout] = useState("");
+  const [deliverables, setDeliverables] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  /* -----------------------
+     NICHES
+  ----------------------- */
+  const [allNiches, setAllNiches] = useState<string[]>([]);
+  const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
+  const [newNiche, setNewNiche] = useState("");
+  const [showNicheDropdown, setShowNicheDropdown] = useState(false);
 
-    if (!user) {
-      toast.error("User not authenticated");
-      setLoading(false);
+  /* -----------------------
+     ELIGIBILITY TOGGLE
+  ----------------------- */
+  const [eligibilityEnabled, setEligibilityEnabled] = useState(false);
+  const [minFollowers, setMinFollowers] = useState<number | "">("");
+  const [allowedCities, setAllowedCities] = useState<string[]>([]);
+  const [customCity, setCustomCity] = useState("");
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+
+  const fetchNiches = async () => {
+    const { data } = await supabase.from("niches").select("name");
+    setAllNiches(data?.map((n) => n.name) || []);
+  };
+
+  useEffect(() => {
+    fetchNiches();
+  }, []);
+
+  const addNewNiche = async () => {
+    const clean = normalizeLabel(newNiche);
+    if (!clean) return;
+
+    const { error } = await supabase.from("niches").insert({ name: clean });
+
+    if (!error) {
+      setAllNiches((prev) => [...prev, clean]);
+      setSelectedNiches((prev) => [...prev, clean]);
+      setNewNiche("");
+    }
+  };
+
+  const addCustomCity = () => {
+    const clean = normalizeLabel(customCity);
+    if (!clean) return;
+
+    setAllowedCities((prev) =>
+      prev.includes(clean) ? prev : [...prev, clean],
+    );
+    setCustomCity("");
+  };
+
+  const createCampaign = async () => {
+    if (!name || !description || !timeline || selectedNiches.length === 0) {
+      toast.error("Please fill required fields");
       return;
     }
 
-    const niches = nichesInput
-      .split(",")
-      .map((n) => n.trim().toLowerCase())
-      .filter(Boolean);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (niches.length === 0) {
-      toast.error("Enter at least one niche");
-      setLoading(false);
-      return;
-    }
+    if (!user) return;
+
+    const eligibility = eligibilityEnabled
+      ? {
+          min_followers: minFollowers || undefined,
+          allowed_niches: selectedNiches,
+          allowed_cities: allowedCities,
+        }
+      : {};
 
     const { data: campaignData, error } = await supabase
       .from("campaigns")
       .insert({
         name,
         description,
-        niches,
-        deliverables,
         timeline,
-        base_payout: Number(basePayout),
+        base_payout: basePayout ? Number(basePayout) : null,
+        deliverables,
+        niches: selectedNiches,
+        eligibility,
+        requirements: {
+          deliverables,
+        },
         admin_user_id: user.id,
       })
-      .select();
+      .select()
+      .single();
 
-    if (error) {
-      console.error(error);
+    if (error || !campaignData) {
       toast.error("Failed to create campaign");
-      setLoading(false);
       return;
     }
 
-    const campaignId = campaignData?.[0]?.id;
-    if (!campaignId) {
-      toast.error("Campaign created but ID missing");
-      setLoading(false);
-      return;
-    }
-
-    // after campaign insert success
-    const { data: influencers } = await supabase
+    /* -----------------------
+       NOTIFY ONLY ELIGIBLE INFLUENCERS
+    ----------------------- */
+    const { data: influencers, error: influencersError } = await supabase
       .from("influencer_profiles")
-      .select("user_id");
+      .select("user_id, followers_count,city, niches");
 
-    for (const inf of influencers || []) {
+    if (influencersError) {
+      toast.error(`Failed to fetch influencers: ${influencersError.message}`);
+      return;
+    }
+
+    if (!Array.isArray(influencers)) {
+      toast.error("Influencer data is not an array");
+      return;
+    }
+
+    const eligibleInfluencers = influencers.filter((inf: any) => {
+      if (
+        eligibility.min_followers &&
+        inf.followers_count < eligibility.min_followers
+      )
+        return false;
+
+      if (
+        eligibility.allowed_cities?.length &&
+        !eligibility.allowed_cities.includes(inf.city)
+      )
+        return false;
+
+      if (
+        eligibility.allowed_niches?.length &&
+        !inf.niches?.some((n: string) => eligibility.allowed_niches.includes(n))
+      )
+        return false;
+
+      return true;
+    });
+
+    eligibleInfluencers.forEach((inf) => {
       sendNotification({
         user_id: inf.user_id,
         role: "influencer",
         type: "campaign_created",
         title: "New campaign available",
-        message: "A new campaign has been created. Apply now!",
-        metadata: { campaign_id: campaignId },
+        message: `You are eligible for the campaign "${name}"`,
+        metadata: { campaign_id: campaignData.id },
       }).catch(console.error);
-    }
-    setLoading(false);
+    });
+
     toast.success("Campaign created");
-    navigate("/admin", { replace: true });
+    navigate("/admin");
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-2xl mx-auto bg-card border border-border rounded-xl p-6 space-y-6">
+    <>
+    <AdminNavbar/>
+      <div className="max-w-3xl mx-auto p-6 space-y-6">
         <h1 className="text-2xl font-bold">Create Campaign</h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label>Campaign Name</Label>
+        <Input
+          placeholder="Campaign name *"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Textarea
+          placeholder="Description *"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <Input
+          placeholder="Timeline *"
+          value={timeline}
+          onChange={(e) => setTimeline(e.target.value)}
+        />
+        <Input
+          placeholder="Base payout (optional)"
+          type="number"
+          value={basePayout}
+          onChange={(e) => setBasePayout(e.target.value)}
+        />
+        <Textarea
+          placeholder="Deliverables (optional)"
+          value={deliverables}
+          onChange={(e) => setDeliverables(e.target.value)}
+        />
+
+        <div>
+          <p className="font-medium">Niches *</p>
+          <div className="relative">
+            <button
+              onClick={() => setShowNicheDropdown(!showNicheDropdown)}
+              className="w-full p-2 border border-gray-300 rounded-lg bg-black text-white text-left font-medium hover:bg-gray-900 transition"
+            >
+              {selectedNiches.length > 0
+                ? `${selectedNiches.length} niche(s) selected`
+                : "Select niches *"}
+            </button>
+
+            {showNicheDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-black border text-white border-gray-300 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                {allNiches.map((n) => (
+                  <label
+                    key={n}
+                    className="flex items-center gap-3 p-2 hover:bg-gray-900 cursor-pointer transition"
+                  >
+                    <Checkbox
+                      checked={selectedNiches.includes(n)}
+                      onCheckedChange={() =>
+                        setSelectedNiches((prev) =>
+                          prev.includes(n)
+                            ? prev.filter((x) => x !== n)
+                            : [...prev, n],
+                        )
+                      }
+                    />
+                    <span className="text-sm">{n}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2 mt-2">
             <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
+              placeholder="Add new niche"
+              value={newNiche}
+              onChange={(e) => setNewNiche(e.target.value)}
             />
+            <Button onClick={addNewNiche}>Add</Button>
           </div>
+        </div>
 
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+        <div className="border p-4 rounded">
+          <label className="flex items-center gap-2">
+            <Checkbox
+              checked={eligibilityEnabled}
+              onCheckedChange={() => setEligibilityEnabled(!eligibilityEnabled)}
             />
-          </div>
+            Add eligibility rules
+          </label>
 
-          <div>
-            <Label>Niches (comma separated)</Label>
-            <Input
-              placeholder="fashion, beauty, lifestyle"
-              value={nichesInput}
-              onChange={(e) => setNichesInput(e.target.value)}
-              required
-            />
-          </div>
+          {eligibilityEnabled && (
+            <div className="space-y-3 mt-3">
+              <Input
+                placeholder="Minimum followers"
+                type="number"
+                value={minFollowers}
+                onChange={(e) => setMinFollowers(Number(e.target.value))}
+              />
 
-          <div>
-            <Label>Deliverables</Label>
-            <Textarea
-              value={deliverables}
-              onChange={(e) => setDeliverables(e.target.value)}
-              required
-            />
-          </div>
+              <div>
+                <p>Allowed Cities</p>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowCityDropdown(!showCityDropdown)}
+                    className="w-full p-2 border border-gray-300 rounded-lg bg-black text-white text-left font-medium hover:bg-gray-900 transition"
+                  >
+                    {allowedCities.length > 0
+                      ? `${allowedCities.length} city(ies) selected`
+                      : "Select cities"}
+                  </button>
 
-          <div>
-            <Label>Timeline</Label>
-            <Input
-              value={timeline}
-              onChange={(e) => setTimeline(e.target.value)}
-              required
-            />
-          </div>
+                  {showCityDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-black border text-white border-gray-300 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                      {DEFAULT_CITIES.map((c) => (
+                        <label
+                          key={c}
+                          className="flex items-center gap-3 p-2 hover:bg-gray-900 cursor-pointer transition"
+                        >
+                          <Checkbox
+                            checked={allowedCities.includes(c)}
+                            onCheckedChange={() =>
+                              setAllowedCities((prev) =>
+                                prev.includes(c)
+                                  ? prev.filter((x) => x !== c)
+                                  : [...prev, c],
+                              )
+                            }
+                          />
+                          <span className="text-sm">{c}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder="Add custom city"
+                    value={customCity}
+                    onChange={(e) => setCustomCity(e.target.value)}
+                  />
+                  <Button onClick={addCustomCity}>Add</Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-          <div>
-            <Label>Base Payout (₹)</Label>
-            <Input
-              type="number"
-              value={basePayout}
-              onChange={(e) => setBasePayout(e.target.value)}
-              required
-            />
-          </div>
-
-          <Button className="w-full" disabled={loading}>
-            {loading ? "Creating..." : "Create Campaign"}
-          </Button>
-        </form>
+        <Button onClick={createCampaign}>Create Campaign</Button>
       </div>
-    </div>
+    </>
   );
 };
 

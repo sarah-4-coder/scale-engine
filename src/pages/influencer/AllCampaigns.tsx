@@ -4,6 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { LogOut, User } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { Link, useNavigate } from "react-router-dom";
 
 interface Campaign {
   id: string;
@@ -13,32 +16,47 @@ interface Campaign {
   deliverables: string;
   timeline: string;
   base_payout: number;
+  eligibility?: {
+    min_followers?: number;
+    allowed_niches?: string[];
+    allowed_cities?: string[];
+  };
+}
+
+interface InfluencerProfile {
+  id: string;
+  niches: string[] | null;
+  followers_count: number | null;
+  city: string | null;
 }
 
 const AllCampaigns = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [appliedCampaignIds, setAppliedCampaignIds] = useState<string[]>([]);
   const [influencerId, setInfluencerId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<InfluencerProfile | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
 
-      // Influencer profile
-      const { data: profile } = await supabase
+      // Influencer profile (FULL – needed for eligibility)
+      const { data: profileData } = await supabase
         .from("influencer_profiles")
-        .select("id")
+        .select("id, niches, followers_count, city")
         .eq("user_id", user.id)
         .single();
 
-      if (!profile) {
+      if (!profileData) {
         toast.error("Influencer profile not found");
         return;
       }
 
-      setInfluencerId(profile.id);
+      setInfluencerId(profileData.id);
+      setProfile(profileData);
 
       // All campaigns
       const { data: campaignsData } = await supabase
@@ -52,11 +70,9 @@ const AllCampaigns = () => {
       const { data: applications } = await supabase
         .from("campaign_influencers")
         .select("campaign_id")
-        .eq("influencer_id", profile.id);
+        .eq("influencer_id", profileData.id);
 
-      setAppliedCampaignIds(
-        applications?.map((a) => a.campaign_id) || []
-      );
+      setAppliedCampaignIds(applications?.map((a) => a.campaign_id) || []);
 
       setLoading(false);
     };
@@ -64,16 +80,51 @@ const AllCampaigns = () => {
     fetchData();
   }, [user]);
 
+  /* -----------------------
+     ELIGIBILITY CHECK (NEW)
+  ----------------------- */
+  const isEligible = (campaign: Campaign) => {
+    if (!profile) return false;
+
+    const e = campaign.eligibility || {};
+
+    // Min followers
+    if (
+      e.min_followers &&
+      (!profile.followers_count ||
+        profile.followers_count < e.min_followers)
+    ) {
+      return false;
+    }
+
+    // Allowed cities
+    if (
+      e.allowed_cities?.length &&
+      (!profile.city || !e.allowed_cities.includes(profile.city))
+    ) {
+      return false;
+    }
+
+    // Allowed niches
+    if (
+      e.allowed_niches?.length &&
+      (!profile.niches ||
+        !profile.niches.some((n) => e.allowed_niches!.includes(n)))
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
   const applyToCampaign = async (campaignId: string) => {
     if (!influencerId) return;
 
-    const { error } = await supabase
-      .from("campaign_influencers")
-      .insert({
-        campaign_id: campaignId,
-        influencer_id: influencerId,
-        status: "applied",
-      });
+    const { error } = await supabase.from("campaign_influencers").insert({
+      campaign_id: campaignId,
+      influencer_id: influencerId,
+      status: "applied",
+    });
 
     if (error) {
       toast.error("Already applied or not allowed");
@@ -82,6 +133,11 @@ const AllCampaigns = () => {
 
     toast.success("Applied successfully");
     setAppliedCampaignIds((prev) => [...prev, campaignId]);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
   };
 
   if (loading) {
@@ -93,40 +149,85 @@ const AllCampaigns = () => {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">All Campaigns</h1>
+    <>
+      {/* Header */}
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 w-full px-10 py-2">
+        <div className="px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-primary">DotFluence</h1>
+            <span className="text-sm text-muted-foreground bg-primary/10 px-3 py-1 rounded-full">
+              Influencer
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              to={"/dashboard"}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Dashboard
+            </Link>
+            <NotificationBell />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User size={16} />
+              <span>{user?.email}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut size={16} className="mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </header>
 
-      {campaigns.map((campaign) => (
-        <Card key={campaign.id}>
-          <CardHeader>
-            <CardTitle>{campaign.name}</CardTitle>
-          </CardHeader>
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold">All Campaigns</h1>
 
-          <CardContent className="space-y-3">
-            {campaign.description && (
-              <p className="text-sm text-muted-foreground">
-                {campaign.description}
+        {campaigns.filter(isEligible).map((campaign) => (
+          <Card key={campaign.id}>
+            <CardHeader>
+              <CardTitle>{campaign.name}</CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-3">
+              {campaign.description && (
+                <p className="text-sm text-muted-foreground">
+                  {campaign.description}
+                </p>
+              )}
+
+              <p>
+                <strong>Niches:</strong> {campaign.niches.join(", ")}
               </p>
-            )}
+              <p>
+                <strong>Deliverables:</strong> {campaign.deliverables}
+              </p>
+              <p>
+                <strong>Timeline:</strong> {campaign.timeline}
+              </p>
+              <p>
+                <strong>Base Payout:</strong> ₹{campaign.base_payout}
+              </p>
 
-            <p><strong>Niches:</strong> {campaign.niches.join(", ")}</p>
-            <p><strong>Deliverables:</strong> {campaign.deliverables}</p>
-            <p><strong>Timeline:</strong> {campaign.timeline}</p>
-            <p><strong>Base Payout:</strong> ₹{campaign.base_payout}</p>
+              {appliedCampaignIds.includes(campaign.id) ? (
+                <Button disabled variant="outline">
+                  Already Applied
+                </Button>
+              ) : (
+                <Button onClick={() => applyToCampaign(campaign.id)}>
+                  Apply
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ))}
 
-            {appliedCampaignIds.includes(campaign.id) ? (
-              <Button disabled variant="outline">
-                Already Applied
-              </Button>
-            ) : (
-              <Button onClick={() => applyToCampaign(campaign.id)}>
-                Apply
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+        {campaigns.filter(isEligible).length === 0 && (
+          <p className="text-muted-foreground">
+            No campaigns available for you at the moment.
+          </p>
+        )}
+      </div>
+    </>
   );
 };
 

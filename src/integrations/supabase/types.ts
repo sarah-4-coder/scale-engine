@@ -77,6 +77,8 @@ export type Database = {
           bio: string | null;
           is_private: boolean | null;
           profile_completed: boolean;
+          city: string | null;
+          state: string | null;
           full_name: string;
           created_at: string;
           updated_at: string;
@@ -94,6 +96,8 @@ export type Database = {
           bio?: string | null;
           is_private?: boolean | null;
           profile_completed?: boolean;
+          city?: string | null;
+          state?: string | null;
           full_name?: string;
           created_at?: string;
           updated_at?: string;
@@ -111,6 +115,8 @@ export type Database = {
           timeline: string;
           base_payout: number;
           admin_user_id: string | null;
+          eligibility: Record<string, any> | null;
+          requirements: Record<string, any> | null;
 
           status: string | null;
           created_at: string;
@@ -120,10 +126,13 @@ export type Database = {
           name: string;
           description?: string | null;
           niches?: string[] | null;
-          deliverables: string;
-          timeline: string;
-          base_payout: number;
+          deliverables?: string;
+          timeline?: string;
+          base_payout?: number;
           admin_user_id?: string | null;
+          eligibility?: Record<string, any> | null;
+          requirements?: Record<string, any> | null;
+
           status?: string | null;
           created_at?: string;
         };
@@ -136,7 +145,28 @@ export type Database = {
           timeline?: string;
           base_payout?: number;
           admin_user_id?: string | null;
+          eligibility?: Record<string, any> | null;
+          requirements?: Record<string, any> | null;
+
           status?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      niches: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
           created_at?: string;
         };
         Relationships: [];

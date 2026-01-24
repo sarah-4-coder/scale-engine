@@ -309,14 +309,12 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => navigate("/admin/influencers")}
+                  className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => navigate("/admin/campaigns/new")}
                 >
-                  <Users className="mr-2 h-4 w-4" />
-                  Manage Influencers
+                  <Activity className="mr-2 h-4 w-4" />
+                  Create New Campaign
                 </Button>
-
                 <Button
                   className="w-full justify-start"
                   variant="outline"
@@ -325,23 +323,26 @@ const AdminDashboard = () => {
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Campaign Management
                 </Button>
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/admin/influencers")}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Manage Influencers
+                </Button>
+
+                
 
                 <Button
                   className="w-full justify-start"
                   variant="outline"
-                  disabled
+                  onClick={()=>navigate("/admin/negotiations")}
                 >
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Payment Management
+                  Negotiations
                 </Button>
 
-                <Button
-                  className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={() => navigate("/admin/campaigns/new")}
-                >
-                  <Activity className="mr-2 h-4 w-4" />
-                  Create New Campaign
-                </Button>
+                
               </CardContent>
             </Card>
           </div>

@@ -59,7 +59,7 @@ const InfluencerDashboard = () => {
         /* ========== INFLUENCER PROFILE ========== */
         const { data: influencer } = await supabase
           .from("influencer_profiles")
-          .select("id")
+          .select("id, followers_count")
           .eq("user_id", user.id)
           .single();
 
@@ -111,9 +111,9 @@ const InfluencerDashboard = () => {
             return {
               name: campaign?.name || "Campaign",
               status:
-                r.status === "accepted"
+                r.status === "shortlisted" || r.status === "accepted"
                   ? "Active"
-                  : r.status === "rejected"
+                  : r.status === "completed"
                     ? "Completed"
                     : "Pending",
               deadline: "—", // No deadline column, so use placeholder
@@ -140,6 +140,8 @@ const InfluencerDashboard = () => {
     navigate("/");
   };
 
+  const influencer: { followers_count?: number } | null = null; // Declare influencer here
+
   const stats = [
     {
       title: "Active Campaigns",
@@ -149,7 +151,7 @@ const InfluencerDashboard = () => {
     },
     {
       title: "Total Reach",
-      value: "Fetching soon",
+      value: influencer?.followers_count?.toString() || "Fetching soon",
       icon: TrendingUp,
       change: "Instagram data pending",
     },
@@ -302,6 +304,21 @@ const InfluencerDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button
+                  className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => navigate("/dashboard/campaigns/all")}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Browse All Campaigns
+                </Button>
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/dashboard/campaigns/my")}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  My Campaigns
+                </Button>
+                <Button
                   className="w-full justify-start"
                   variant="outline"
                   disabled
@@ -316,21 +333,6 @@ const InfluencerDashboard = () => {
                 >
                   <BarChart3 className="mr-2 h-4 w-4" />
                   View Analytics (Coming Soon)
-                </Button>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => navigate("/dashboard/campaigns/my")}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  My Campaigns
-                </Button>
-                <Button
-                  className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={() => navigate("/dashboard/campaigns/all")}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Browse All Campaigns
                 </Button>
               </CardContent>
             </Card>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { sendNotification } from "@/lib/notifications";
+import AdminNavbar from "@/components/adminNavbar";
 
 interface NegotiationRow {
   id: string;
@@ -49,7 +50,7 @@ const AdminNegotiations = () => {
           )
         `,
         )
-        .in("status", ["admin_negotiated", "applied", "influencer_negotiated"]);
+        .in("status", ["admin_negotiated", "influencer_negotiated"]);
 
       if (error) {
         console.error(error);
@@ -170,74 +171,78 @@ const AdminNegotiations = () => {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Negotiations</h1>
+    <>
+      <AdminNavbar />
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold">Negotiations</h1>
 
-      {rows.length === 0 && (
-        <p className="text-muted-foreground">No negotiations pending.</p>
-      )}
+        {rows.length === 0 && (
+          <p className="text-muted-foreground">No negotiations pending.</p>
+        )}
 
-      {rows.map((row) => (
-        <Card key={row.id}>
-          <CardHeader>
-            <CardTitle>
-              {row.campaign.name} — @{row.influencer.instagram_handle}
-            </CardTitle>
-          </CardHeader>
+        {rows.map((row) => (
+          <Card key={row.id}>
+            <CardHeader>
+              <CardTitle>
+                {row.campaign.name} — @{row.influencer.instagram_handle}
+              </CardTitle>
+            </CardHeader>
 
-          <CardContent className="space-y-3">
-            <p>
-              <strong>Base payout:</strong> ₹{row.campaign.base_payout}
-            </p>
-            <p>
-              <strong>Requested payout:</strong> ₹{row.requested_payout ?? "—"}
-            </p>
-
-            {row.negotiation_note && (
-              <p className="text-sm text-muted-foreground">
-                <strong>Note:</strong> {row.negotiation_note}
+            <CardContent className="space-y-3">
+              <p>
+                <strong>Base payout:</strong> ₹{row.campaign.base_payout}
               </p>
-            )}
-
-            {row.status === "accepted" ? (
-              <p className="text-green-600 font-medium">
-                Accepted · Final payout ₹{row.final_payout}
+              <p>
+                <strong>Requested payout:</strong> ₹
+                {row.requested_payout ?? "—"}
               </p>
-            ) : (
-              <div className="flex gap-2 flex-wrap">
-                <Button onClick={() => acceptNegotiation(row)}>Accept</Button>
 
-                <Input
-                  placeholder="Counter amount"
-                  className="w-40"
-                  value={counterValue[row.id] || ""}
-                  onChange={(e) =>
-                    setCounterValue((prev) => ({
-                      ...prev,
-                      [row.id]: e.target.value,
-                    }))
-                  }
-                />
+              {row.negotiation_note && (
+                <p className="text-sm text-muted-foreground">
+                  <strong>Note:</strong> {row.negotiation_note}
+                </p>
+              )}
 
-                <Button
-                  variant="outline"
-                  onClick={() => counterNegotiation(row)}
-                >
-                  Counter
-                </Button>
+              {row.status === "accepted" ? (
+                <p className="text-green-600 font-medium">
+                  Accepted · Final payout ₹{row.final_payout}
+                </p>
+              ) : (
+                <div className="flex gap-2 flex-wrap">
+                  <Button onClick={() => acceptNegotiation(row)}>Accept</Button>
 
-                <Button
-                  variant="destructive"
-                  onClick={() => rejectNegotiation(row.id)}
-                >
-                  Reject
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+                  <Input
+                    placeholder="Counter amount"
+                    className="w-40"
+                    value={counterValue[row.id] || ""}
+                    onChange={(e) =>
+                      setCounterValue((prev) => ({
+                        ...prev,
+                        [row.id]: e.target.value,
+                      }))
+                    }
+                  />
+
+                  <Button
+                    variant="outline"
+                    onClick={() => counterNegotiation(row)}
+                  >
+                    Counter
+                  </Button>
+
+                  <Button
+                    variant="destructive"
+                    onClick={() => rejectNegotiation(row.id)}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </>
   );
 };
 

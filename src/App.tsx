@@ -21,6 +21,7 @@ import AllCampaigns from "./pages/influencer/AllCampaigns";
 import MyCampaigns from "./pages/influencer/MyCampaigns";
 import AdminCampaignDetails from "./pages/admin/AdminCampaignDetails";
 import AdminAllCampaigns from "./pages/admin/AdminAllCampaigns";
+import AdminCampaignAppliedInfluencers from "./pages/admin/AdminCampaignAppliedInfluencers";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +142,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdminCampaignDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/campaigns/:id/applied"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminCampaignAppliedInfluencers />
           </ProtectedRoute>
         }
       />

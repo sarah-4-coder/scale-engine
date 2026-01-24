@@ -8,6 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { LogOut, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
 interface Campaign {
   id: string;
@@ -38,7 +41,8 @@ const getRequiredLinksCount = (deliverables: string): number => {
 };
 
 const MyCampaigns = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -257,6 +261,11 @@ const MyCampaigns = () => {
     }).catch(console.error);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -266,202 +275,269 @@ const MyCampaigns = () => {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">My Campaigns</h1>
+    <>
+      {/* Header */}
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 w-full px-10 py-2">
+        <div className="px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-primary">DotFluence</h1>
+            <span className="text-sm text-muted-foreground bg-primary/10 px-3 py-1 rounded-full">
+              Influencer
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              to={"/dashboard"}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Dashboard
+            </Link>
 
-      {campaigns.map((campaign) => {
-        const application = applications.find(
-          (a) => a.campaign_id === campaign.id,
-        );
-        if (!application) return null;
+            <NotificationBell />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User size={16} />
+              <span>{user?.email}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut size={16} className="mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </header>
 
-        return (
-          <Card key={campaign.id}>
-            <CardHeader>
-              <CardTitle>{campaign.name}</CardTitle>
-            </CardHeader>
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold">My Campaigns</h1>
 
-            <CardContent className="space-y-3">
-              <p>
-                <strong>Niches:</strong> {campaign.niches.join(", ")}
-              </p>
-              <p>
-                <strong>Deliverables:</strong> {campaign.deliverables}
-              </p>
-              <p>
-                <strong>Timeline:</strong> {campaign.timeline}
-              </p>
-              <p>
-                <strong>Base Payout:</strong> ₹{campaign.base_payout}
-              </p>
+        {campaigns.map((campaign) => {
+          const application = applications.find(
+            (a) => a.campaign_id === campaign.id,
+          );
+          if (!application) return null;
 
-              {application.status === "applied" && (
-                <Button
-                  variant="outline"
-                  onClick={() => setActiveCampaignId(campaign.id)}
-                >
-                  Request Different Payout
-                </Button>
-              )}
+          return (
+            <Card key={campaign.id}>
+              <CardHeader>
+                <CardTitle>{campaign.name}</CardTitle>
+              </CardHeader>
 
-              {application.status === "influencer_negotiated" && (
-                <p className="text-sm text-muted-foreground">
-                  Waiting for admin response
+              <CardContent className="space-y-3">
+                <p>
+                  <strong>Niches:</strong> {campaign.niches.join(", ")}
                 </p>
-              )}
+                <p>
+                  <strong>Deliverables:</strong> {campaign.deliverables}
+                </p>
+                <p>
+                  <strong>Timeline:</strong> {campaign.timeline}
+                </p>
+                <p>
+                  <strong>Base Payout:</strong> ₹{campaign.base_payout}
+                </p>
 
-              {application.status === "admin_negotiated" && (
-                <>
+                {application.status === "applied" && (
                   <p className="text-sm text-muted-foreground">
-                    Admin has proposed a new payout of ₹
-                    <span className="text-sm text-red">
-                      {application.requested_payout}
-                    </span>
+                    Application submitted. Waiting for Brand Approval.
                   </p>
-                  <div className="flex gap-2">
-                    <Button onClick={() => acceptCounterOffer(campaign.id)}>
-                      Accept Offer
+                )}
+
+                {application.status === "shortlisted" && (
+                  <>
+                    <p className="text-green-600 font-medium">
+                      Your application has been shortlisted!
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Now Either accept the base payout or if you think you
+                      deserve Different payout then only request a different
+                      payout.
+                    </p>
+                    <Button
+                      onClick={() =>
+                        acceptBasePayout(campaign.id, campaign.base_payout)
+                      }
+                    >
+                      Accept Base Payout
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => setActiveCampaignId(campaign.id)}
                     >
-                      Counter Again
+                      Request Different Payout
+                    </Button>
+                  </>
+                )}
+
+                {application.status === "influencer_negotiated" && (
+                  <p className="text-sm text-muted-foreground">
+                    Waiting for admin response
+                  </p>
+                )}
+
+                {application.status === "admin_negotiated" && (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Admin has proposed a new payout of ₹
+                      <span className="text-sm text-red">
+                        {application.requested_payout}
+                      </span>
+                    </p>
+                    <div className="flex gap-2">
+                      <Button onClick={() => acceptCounterOffer(campaign.id)}>
+                        Accept Offer
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setActiveCampaignId(campaign.id)}
+                      >
+                        Counter Again
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {application.status === "accepted" && (
+                  <p className="text-green-600 font-medium">
+                    Accepted · ₹{application.final_payout}
+                  </p>
+                )}
+                {application.status === "not_shortlisted" && (
+                  <>
+                    <p className="text-red-600 font-medium">
+                      Your application was not shortlisted.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => unregisterFromCampaign(campaign.id)}
+                    >
+                      Leave Campaign
+                    </Button>
+                  </>
+                )}
+                {application.status === "rejected" && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => unregisterFromCampaign(campaign.id)}
+                    >
+                      Leave Campaign
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        acceptBasePayout(campaign.id, campaign.base_payout)
+                      }
+                    >
+                      Accept Base Payout
                     </Button>
                   </div>
-                </>
-              )}
+                )}
 
-              {application.status === "accepted" && (
-                <p className="text-green-600 font-medium">
-                  Accepted · ₹{application.final_payout}
-                </p>
-              )}
-
-              {application.status === "rejected" && (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => unregisterFromCampaign(campaign.id)}
-                  >
-                    Leave Campaign
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      acceptBasePayout(campaign.id, campaign.base_payout)
-                    }
-                  >
-                    Accept Base Payout
-                  </Button>
-                </div>
-              )}
-
-              {(application.status === "accepted" ||
-                application.status === "rejected") && (
-                <div className="space-y-3 p-4 border rounded-lg bg-muted/40">
-                  <p className="text-sm text-yellow-500">
-                    ⏳ Submit Instagram post links
-                  </p>
-
-                  {postedLinks[campaign.id]?.map((item, index) => (
-                    <div key={index} className="space-y-1">
-                      <Input
-                        placeholder="Label (eg: Reel / Story)"
-                        value={item.label}
-                        onChange={(e) => {
-                          const copy = [...postedLinks[campaign.id]];
-                          copy[index].label = e.target.value;
-                          setPostedLinks({
-                            ...postedLinks,
-                            [campaign.id]: copy,
-                          });
-                        }}
-                        disabled={submittingCampaignId === campaign.id}
-                      />
-
-                      <Input
-                        placeholder="Instagram link"
-                        value={item.url}
-                        onChange={(e) => {
-                          const copy = [...postedLinks[campaign.id]];
-                          copy[index].url = e.target.value;
-                          setPostedLinks({
-                            ...postedLinks,
-                            [campaign.id]: copy,
-                          });
-                        }}
-                        disabled={submittingCampaignId === campaign.id}
-                      />
-                    </div>
-                  ))}
-
-                  <Button
-                    onClick={() => submitPostedLinks(campaign.id)}
-                    disabled={
-                      submittingCampaignId === campaign.id ||
-                      postedLinks[campaign.id]?.some(
-                        (l) => !l.label.trim() || !l.url.trim(),
-                      )
-                    }
-                  >
-                    Submit Posted Links
-                  </Button>
-
-                  {application.status === "rejected" && (
-                    <p className="text-xs text-red-500">
-                      Admin rejected previous submission. Please submit again.
+                {(application.status === "accepted" ||
+                  application.status === "content_rejected") && (
+                  <div className="space-y-3 p-4 border rounded-lg bg-muted/40">
+                    <p className="text-sm text-yellow-500">
+                      ⏳ Submit Instagram post links
                     </p>
-                  )}
-                </div>
-              )}
 
-              {application.status === "content_posted" && (
-                <p className="text-sm text-muted-foreground">
-                  ✅ Content submitted. Waiting for admin response.
-                </p>
-              )}
+                    {postedLinks[campaign.id]?.map((item, index) => (
+                      <div key={index} className="space-y-1">
+                        <Input
+                          placeholder="Label (eg: Reel / Story)"
+                          value={item.label}
+                          onChange={(e) => {
+                            const copy = [...postedLinks[campaign.id]];
+                            copy[index].label = e.target.value;
+                            setPostedLinks({
+                              ...postedLinks,
+                              [campaign.id]: copy,
+                            });
+                          }}
+                          disabled={submittingCampaignId === campaign.id}
+                        />
 
-              {application.status === "completed" && (
-                <p className="text-green-600 font-medium">
-                  🎉 Campaign completed
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+                        <Input
+                          placeholder="Instagram link"
+                          value={item.url}
+                          onChange={(e) => {
+                            const copy = [...postedLinks[campaign.id]];
+                            copy[index].url = e.target.value;
+                            setPostedLinks({
+                              ...postedLinks,
+                              [campaign.id]: copy,
+                            });
+                          }}
+                          disabled={submittingCampaignId === campaign.id}
+                        />
+                      </div>
+                    ))}
 
-      {activeCampaignId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-card p-6 rounded-lg w-96 space-y-4">
-            <h3 className="text-lg font-bold">Request Different Payout</h3>
+                    <Button
+                      onClick={() => submitPostedLinks(campaign.id)}
+                      disabled={
+                        submittingCampaignId === campaign.id ||
+                        postedLinks[campaign.id]?.some(
+                          (l) => !l.label.trim() || !l.url.trim(),
+                        )
+                      }
+                    >
+                      Submit Posted Links
+                    </Button>
 
-            <Input
-              type="number"
-              placeholder="Requested amount"
-              value={requestedPayout}
-              onChange={(e) => setRequestedPayout(e.target.value)}
-            />
+                    {application.status === "content_rejected" && (
+                      <p className="text-xs text-red-500">
+                        Admin rejected previous submission. Please submit again.
+                      </p>
+                    )}
+                  </div>
+                )}
 
-            <Textarea
-              placeholder="Optional note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
+                {application.status === "content_posted" && (
+                  <p className="text-sm text-muted-foreground">
+                    ✅ Content submitted. Waiting for admin response.
+                  </p>
+                )}
 
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setActiveCampaignId(null)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={submitNegotiation}>Submit</Button>
+                {application.status === "completed" && (
+                  <p className="text-green-600 font-medium">
+                    🎉 Campaign completed
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        {activeCampaignId && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-card p-6 rounded-lg w-96 space-y-4">
+              <h3 className="text-lg font-bold">Request Different Payout</h3>
+
+              <Input
+                type="number"
+                placeholder="Requested amount"
+                value={requestedPayout}
+                onChange={(e) => setRequestedPayout(e.target.value)}
+              />
+
+              <Textarea
+                placeholder="Optional note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveCampaignId(null)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={submitNegotiation}>Submit</Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
 

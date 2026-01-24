@@ -1,151 +1,232 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+/* ------------------------
+   HELPERS
+------------------------ */
+const normalizeLabel = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+const parseFollowers = (input: string): number | null => {
+  const v = input.trim().toLowerCase();
+  if (!v) return null;
+
+  if (v.endsWith("k")) return Math.round(Number(v.replace("k", "")) * 1000);
+  if (v.endsWith("m"))
+    return Math.round(Number(v.replace("m", "")) * 1_000_000);
+
+  const n = Number(v.replace(/[^0-9]/g, ""));
+  return isNaN(n) ? null : n;
+};
+
+/* ------------------------
+   DEFAULT OPTIONS
+------------------------ */
+const DEFAULT_CITIES = ["Delhi", "Mumbai", "Bengaluru", "Hyderabad", "Chennai"];
+const DEFAULT_STATES = [
+  "Delhi",
+  "Maharashtra",
+  "Karnataka",
+  "Telangana",
+  "Tamil Nadu",
+];
 
 const ProfileSetup = () => {
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
+  const [fullName, setFullName] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
-  const [nichesInput, setNichesInput] = useState("");
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [followersInput, setFollowersInput] = useState("");
+  const [phone_number, setPhoneNumber] = useState("");
 
-  // 🔒 Block access if profile already completed
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [customCity, setCustomCity] = useState("");
+  const [customState, setCustomState] = useState("");
+
+  const [allNiches, setAllNiches] = useState<string[]>([]);
+  const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
+  const [newNiche, setNewNiche] = useState("");
+
+  const fetchNiches = async () => {
+    const { data } = await supabase.from("niches").select("name");
+    setAllNiches(data?.map((n) => n.name) || []);
+  };
+
   useEffect(() => {
-    const checkExistingProfile = async () => {
-      if (!user) return;
+    fetchNiches();
+  }, []);
 
-      const { data } = await supabase
-        .from("influencer_profiles")
-        .select("profile_completed")
-        .eq("user_id", user.id)
-        .maybeSingle();
+  const addNiche = async () => {
+    const clean = normalizeLabel(newNiche);
+    if (!clean) return;
 
-      if (data?.profile_completed) {
-        navigate("/dashboard", { replace: true });
-        return;
-      }
+    const { error } = await supabase.from("niches").insert({ name: clean });
+    if (!error) {
+      setAllNiches((p) => [...p, clean]);
+      setSelectedNiches((p) => [...p, clean]);
+      setNewNiche("");
+    }
+  };
 
-      setChecking(false);
-    };
+  const submitProfile = async () => {
+    const followers = parseFollowers(followersInput);
 
-    checkExistingProfile();
-  }, [user, navigate]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    setLoading(true);
-
-    const niches = nichesInput
-      .split(",")
-      .map((n) => n.trim().toLowerCase())
-      .filter(Boolean);
-
-    if (niches.length === 0) {
-      toast.error("Please enter at least one niche");
-      setLoading(false);
+    if (
+      !fullName ||
+      !instagramHandle ||
+      !followers ||
+      !city ||
+      !state ||
+      !phone_number ||
+      selectedNiches.length === 0
+    ) {
+      toast.error("Please complete all fields");
       return;
     }
 
-    const cleanHandle = instagramHandle.replace("@", "").trim();
-    const instagramProfileUrl = `https://www.instagram.com/${cleanHandle}`;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
 
     const { error } = await supabase.from("influencer_profiles").insert({
       user_id: user.id,
-      instagram_handle: cleanHandle,
-      instagram_profile_url: instagramProfileUrl,
-      niches,
-      phone_number: phone,
+      full_name: fullName.trim(),
+      instagram_handle: instagramHandle.replace("@", "").trim(),
+      instagram_profile_url: `https://instagram.com/${instagramHandle.replace("@", "")}`,
+      followers_count: followers,
+      city,
+      state,
+      phone_number: phone_number.trim(),
+      niches: selectedNiches,
       profile_completed: true,
     });
 
     if (error) {
-      console.error(error);
-      toast.error("Failed to complete profile");
-      setLoading(false);
+      toast.error("Failed to save profile");
       return;
     }
 
-    toast.success("Profile completed successfully");
-    navigate("/dashboard", { replace: true });
-  };
-
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary" />
-      </div>
-    );
-  }
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+    toast.success("Profile completed");
+    navigate("/dashboard");
   };
 
   return (
-    <>
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <form
-          onSubmit={handleSubmit}
-          className="w-full max-w-md bg-card border border-border rounded-xl p-6 space-y-6"
+    <div className="max-w-xl mx-auto p-6 space-y-4">
+      <h1 className="text-xl font-bold">Complete Your Profile</h1>
+
+      <Input
+        placeholder="Full Name *"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+      />
+      <Input
+        placeholder="Instagram Handle *"
+        value={instagramHandle}
+        onChange={(e) => setInstagramHandle(e.target.value)}
+      />
+      <Input
+        placeholder="Phone Number *"
+        value={phone_number}
+        onChange={(e) => {
+          const numericOnly = e.target.value.replace(/[^0-9]/g, "");
+          if (numericOnly.length <= 15) {
+            setPhoneNumber(numericOnly);
+          }
+        }}
+      />
+      <Input
+        placeholder="Followers (e.g. 100k, 1.2M) *"
+        value={followersInput}
+        onChange={(e) => setFollowersInput(e.target.value)}
+      />
+
+      <div>
+        <p>City *</p>
+        {DEFAULT_CITIES.map((c) => (
+          <label key={c} className="flex gap-2">
+            <Checkbox checked={city === c} onCheckedChange={() => setCity(c)} />{" "}
+            {c}
+          </label>
+        ))}
+        <Input
+          placeholder="Add city"
+          value={customCity}
+          onChange={(e) => setCustomCity(e.target.value)}
+        />
+        <Button
+          onClick={() => {
+            setCity(normalizeLabel(customCity));
+            setCustomCity("");
+          }}
         >
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold">Complete Your Profile</h1>
-            <p className="text-sm text-muted-foreground">
-              One-time setup. Cannot be edited later.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Instagram Handle</Label>
-            <Input
-              placeholder="@yourhandle"
-              value={instagramHandle}
-              onChange={(e) => setInstagramHandle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Niches (comma separated)</Label>
-            <Input
-              placeholder="fashion, beauty, lifestyle"
-              value={nichesInput}
-              onChange={(e) => setNichesInput(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Phone Number</Label>
-            <Input
-              placeholder="+91XXXXXXXXXX"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-            />
-          </div>
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Saving..." : "Complete Profile"}
-          </Button>
-        </form>
-        <Button variant="outline" size="sm" onClick={handleSignOut}>
-          <LogOut size={16} className="mr-2" />
-          Sign Out
+          Add
         </Button>
       </div>
-    </>
+
+      <div>
+        <p>State *</p>
+        {DEFAULT_STATES.map((s) => (
+          <label key={s} className="flex gap-2">
+            <Checkbox
+              checked={state === s}
+              onCheckedChange={() => setState(s)}
+            />{" "}
+            {s}
+          </label>
+        ))}
+        <Input
+          placeholder="Add state"
+          value={customState}
+          onChange={(e) => setCustomState(e.target.value)}
+        />
+        <Button
+          onClick={() => {
+            setState(normalizeLabel(customState));
+            setCustomState("");
+          }}
+        >
+          Add
+        </Button>
+      </div>
+
+      <div>
+        <p>Niches *</p>
+        {allNiches.map((n) => (
+          <label key={n} className="flex gap-2">
+            <Checkbox
+              checked={selectedNiches.includes(n)}
+              onCheckedChange={() =>
+                setSelectedNiches((p) =>
+                  p.includes(n) ? p.filter((x) => x !== n) : [...p, n],
+                )
+              }
+            />
+            {n}
+          </label>
+        ))}
+        <Input
+          placeholder="Add new niche"
+          value={newNiche}
+          onChange={(e) => setNewNiche(e.target.value)}
+        />
+        <Button onClick={addNiche}>Add</Button>
+      </div>
+
+      <Button onClick={submitProfile}>Save Profile</Button>
+    </div>
   );
 };
 
