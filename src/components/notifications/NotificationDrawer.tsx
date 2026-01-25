@@ -21,7 +21,7 @@ export const NotificationDrawer = ({ onClose }: { onClose: () => void }) => {
     }
 
     if (n.role === "influencer") {
-      navigate(`/dashboard/campaigns/my`);
+      navigate(`/dashboard/campaigns/all`);
       return;
     }
   };
