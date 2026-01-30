@@ -1,22 +1,34 @@
-import ParallaxBlobs from "@/components/ParallaxBlobs";
-import Navigation from "@/components/Navigation";
-import HeroSection from "@/components/HeroSection";
-import AILabSection from "@/components/AILabSection";
-import PortfolioSection from "@/components/PortfolioSection";
-import ContactSection from "@/components/ContactSection";
-import ChatAssistant from "@/components/ChatAssistant";
-import Footer from "@/components/Footer";
+import { useState } from 'react';
+import ParallaxBlobs from '@/components/ParallaxBlobs';
+import Navbar from '@/components/Navbar';
+import HeroSection from '@/components/HeroSection';
+import ManualEraSection from '@/components/ManualEraSection';
+import ServicesSection from '@/components/ServicesSection';
+import MarqueeSection from '@/components/MarqueeSection';
+import CaseEvidenceSection from '@/components/CaseEvidenceSection';
+import CTASection from '@/components/CTASection';
+import BrandFormOverlay from '@/components/BrandFormOverlay';
+import Footer from '@/components/Footer';
+import ChatAssistant from '@/components/ChatAssistant';
 
 const Index = () => {
+  const [isBrandFormOpen, setIsBrandFormOpen] = useState(false);
+
+  const openBrandForm = () => setIsBrandFormOpen(true);
+  const closeBrandForm = () => setIsBrandFormOpen(false);
+
   return (
-    <div className="relative">
+    <div className="dot-matrix scanline relative">
       <ParallaxBlobs />
-      <Navigation />
-      <HeroSection />
-      <AILabSection />
-      <PortfolioSection />
-      <ContactSection />
-      <ChatAssistant />
+      <Navbar onOpenBrandForm={openBrandForm} />
+      <HeroSection onOpenBrandForm={openBrandForm} />
+      <ManualEraSection />
+      <ServicesSection />
+      <MarqueeSection />
+      <CaseEvidenceSection />
+      <ChatAssistant/>
+      <CTASection onOpenBrandForm={openBrandForm} />
+      <BrandFormOverlay isOpen={isBrandFormOpen} onClose={closeBrandForm} />
       <Footer />
     </div>
   );

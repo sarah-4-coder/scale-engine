@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -61,20 +61,37 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
   }
 }
 
 @layer components {
+  .dot-matrix {
+    background-image: radial-gradient(hsl(var(--primary) / 0.1) 1px, transparent 0);
+    background-size: 30px 30px;
+  }
   .glass {
     @apply bg-[hsl(var(--glass-bg))] backdrop-blur-xl border border-[hsl(var(--glass-border))];
   }
 
   .text-gradient {
-    background: linear-gradient(90deg, hsl(var(--neon)) 0%, hsl(var(--teal)) 100%);
+    background: linear-gradient(
+      90deg,
+      hsl(var(--neon)) 0%,
+      hsl(var(--teal)) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .btn-protocol {
+    @apply bg-primary text-primary-foreground font-extrabold uppercase tracking-widest transition-all duration-300;
+  }
+
+  .btn-protocol:hover {
+    @apply bg-white -translate-y-0.5;
+    /* box-shadow: 0 10px 30px hsl(var(--primary) / 0.4); */
   }
 
   .btn-primary {
@@ -106,6 +123,7 @@
     background: hsl(var(--neon));
     border-radius: 10px;
   }
+  
 }
 
 @layer utilities {
@@ -120,4 +138,26 @@
   .duration-400 {
     transition-duration: 400ms;
   }
+
+  
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-marquee {
+    animation: marquee 40s linear infinite;
+  }
+
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+
+  
+
 }
