@@ -283,6 +283,15 @@ export type Database = {
         };
         Returns: boolean;
       };
+      get_user_emails: {
+        Args: {
+          user_ids: string[];
+        };
+        Returns: {
+          id: string;
+          email: string;
+        }[];
+      };
     };
     Enums: {
       app_role: "admin" | "influencer";
