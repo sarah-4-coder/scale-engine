@@ -33,7 +33,7 @@ const HeroSection = ({ onOpenBrandForm }: HeroSectionProps) => {
             Request Brand Access
           </button>
           <a
-            href="#join"
+            href="/login"
             className="text-[11px] font-black uppercase tracking-[0.4em] text-white flex items-center group"
           >
             Influencer Portal Entrance

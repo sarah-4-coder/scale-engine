@@ -1,4 +1,5 @@
 import {useRevealAnimation} from '@/hooks/useRevealAnimation';
+import { Link } from 'react-router-dom';
 
 interface CTASectionProps {
   onOpenBrandForm: () => void;
@@ -47,7 +48,9 @@ const CTASection = ({ onOpenBrandForm }: CTASectionProps) => {
               outcomes.
             </p>
             <button className="bg-foreground text-background font-black w-full py-5 rounded-sm text-[10px] uppercase tracking-widest hover:bg-foreground/90 transition">
+            <Link to="/login">
               Sign Up to Protocol
+            </Link>
             </button>
           </div>
         </div>
