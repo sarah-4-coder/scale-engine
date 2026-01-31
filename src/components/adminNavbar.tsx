@@ -22,10 +22,10 @@ const AdminNavbar = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
-        .single();
+        .single() as { data: { role: string } | null; error: Error | null };
       
       if (error) console.error("Error fetching role:", error);
-      else setRole(data?.role || null);
+      else setRole(data ? data.role : null);
     };
     
     fetchUserRole();

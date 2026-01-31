@@ -1,176 +1,163 @@
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import {
+  Calendar,
+  TrendingUp,
+  DollarSign,
+  BarChart3,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
+import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
-import {
-  LogOut,
-  User,
-  BarChart3,
-  Calendar,
-  MessageSquare,
-  TrendingUp,
-  DollarSign,
-  Users,
-} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import AdminNavbar from "@/components/adminNavbar";
+import { Button } from "@/components/ui/button";
+import AmbientLayer from "@/components/ambient/AmbientLayer";
 
+/* --------------------------------
+   TYPES
+-------------------------------- */
 type RecentCampaign = {
   name: string;
   status: "Active" | "Pending" | "Completed";
-  deadline: string;
 };
 
 const InfluencerDashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
+  /* -------------------------------
+     THEME
+  ------------------------------- */
+  const {
+    theme,
+    themeKey,
+    setTheme,
+    loading: themeLoading,
+  } = useInfluencerTheme();
+
+  /* -------------------------------
+     STATE
+  ------------------------------- */
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState("Creator");
-
+  const [followers, setFollowers] = useState<number | null>(null);
   const [activeCampaigns, setActiveCampaigns] = useState(0);
   const [earnings, setEarnings] = useState(0);
   const [recentCampaigns, setRecentCampaigns] = useState<RecentCampaign[]>([]);
 
+  /* -------------------------------
+     FETCH DASHBOARD DATA
+  ------------------------------- */
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboard = async () => {
+      if (!user) return;
+
       try {
         setLoading(true);
-        if (!user) return;
 
-        /* ================= PROFILE ================= */
+        /* ===== USER PROFILE ===== */
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
           .eq("user_id", user.id)
-          .single();
+          .single<{ full_name: string }>();
 
-        setFullName(profile?.full_name || "Creator");
+        setFullName(profile ? profile.full_name || "Creator" : "Creator");
 
-        /* ========== INFLUENCER PROFILE ========== */
+        /* ===== INFLUENCER PROFILE ===== */
         const { data: influencer } = await supabase
           .from("influencer_profiles")
           .select("id, followers_count")
           .eq("user_id", user.id)
-          .single();
+          .single<{ id: string; followers_count: number }>();
 
         if (!influencer) {
-          toast.error("Influencer profile not found");
+          toast.error("Please complete your profile to unlock campaigns");
+          navigate("/profile-setup");
           return;
         }
 
-        /* ========== CAMPAIGN RELATIONS ========== */
-        const { data: relations } = await supabase
+        setFollowers(influencer.followers_count ?? null);
+
+        /* ===== CAMPAIGN RELATIONS ===== */
+        const { data: relations } = (await supabase
           .from("campaign_influencers")
           .select("campaign_id, status, final_payout, created_at")
           .eq("influencer_id", influencer.id)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })) as {
+          data: Array<{
+            campaign_id: string;
+            status: string;
+            final_payout: number | null;
+            created_at: string;
+          }> | null;
+        };
 
         if (!relations || relations.length === 0) {
           setLoading(false);
           return;
         }
 
-        /* ========== CAMPAIGNS ========== */
         const campaignIds = relations.map((r) => r.campaign_id);
 
-        const { data: campaigns, error: campaignsError } = await supabase
+        const { data: campaigns } = (await supabase
           .from("campaigns")
-          .select("id, name") // Removed 'deadline'
-          .in("id", campaignIds);
+          .select("id, name")
+          .in("id", campaignIds)) as {
+          data: Array<{ id: string; name: string }> | null;
+        };
 
-        if (campaignsError) {
-          toast.error("Failed to fetch campaigns: " + campaignsError.message);
-          setLoading(false);
-          return;
-        }
-
-        /* ========== STATS ========== */
-        const active = relations.filter((r) => r.status === "accepted").length;
-
-        const totalEarnings = relations.reduce(
-          (sum, r) => sum + (r.final_payout || 0),
-          0,
+        /* ===== STATS ===== */
+        setActiveCampaigns(
+          relations.filter((r) => r.status === "accepted").length,
         );
 
-        /* ========== RECENT CAMPAIGNS ========== */
-        let recent: RecentCampaign[] = [];
-        if (Array.isArray(campaigns)) {
-          recent = relations.slice(0, 3).map((r) => {
-            const campaign = campaigns.find((c) => c.id === r.campaign_id);
+        setEarnings(
+          relations.reduce((sum, r) => sum + (r.final_payout || 0), 0),
+        );
 
-            return {
-              name: campaign?.name || "Campaign",
-              status:
-                r.status === "shortlisted" || r.status === "accepted"
-                  ? "Active"
-                  : r.status === "completed"
-                    ? "Completed"
-                    : "Pending",
-              deadline: "—", // No deadline column, so use placeholder
-            };
-          });
-        }
+        /* ===== RECENT CAMPAIGNS ===== */
+        const recent = relations.slice(0, 3).map((r) => {
+          const campaign = campaigns?.find((c) => c.id === r.campaign_id);
+          const status: "Active" | "Completed" | "Pending" =
+            r.status === "accepted"
+              ? "Active"
+              : r.status === "completed"
+                ? "Completed"
+                : "Pending";
+          return {
+            name: campaign?.name || "Campaign",
+            status,
+          };
+        });
 
-        setActiveCampaigns(active);
-        setEarnings(totalEarnings);
         setRecentCampaigns(recent);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load influencer dashboard");
+        toast.error("Failed to load dashboard");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [user]);
+    fetchDashboard();
+  }, [user, navigate]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
-  const influencer: { followers_count?: number } | null = null; // Declare influencer here
-
-  const stats = [
-    {
-      title: "Active Campaigns",
-      value: activeCampaigns.toString(),
-      icon: Calendar,
-      change: "Currently running",
-    },
-    {
-      title: "Total Reach",
-      value: influencer?.followers_count?.toString() || "Fetching soon",
-      icon: TrendingUp,
-      change: "Instagram data pending",
-    },
-    {
-      title: "Engagement Rate",
-      value: "Fetching soon",
-      icon: BarChart3,
-      change: "Instagram data pending",
-    },
-    {
-      title: "Earnings",
-      value: `₹${earnings}`,
-      icon: DollarSign,
-      change: "Lifetime earnings",
-    },
-  ];
-
-  if (loading) {
+  /* -------------------------------
+     LOADING STATE
+  ------------------------------- */
+  if (loading || themeLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary" />
@@ -178,146 +165,155 @@ const InfluencerDashboard = () => {
     );
   }
 
+  /* -------------------------------
+     STATS CONFIG
+  ------------------------------- */
+  const stats = [
+    {
+      title: "Active Campaigns",
+      value: activeCampaigns,
+      icon: Calendar,
+      note: "Currently running",
+    },
+    {
+      title: "Total Reach",
+      value: followers ? followers.toLocaleString() : "—",
+      icon: TrendingUp,
+      note: "Instagram followers",
+    },
+    {
+      title: "Engagement",
+      value: "Coming soon",
+      icon: BarChart3,
+      note: "Auto-calculated",
+    },
+    {
+      title: "Earnings",
+      value: `₹${earnings}`,
+      icon: DollarSign,
+      note: "Lifetime earnings",
+    },
+  ];
+
+  /* -------------------------------
+     RENDER
+  ------------------------------- */
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNavbar />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Theme Background */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        style={{ background: theme.background }}
+      />
+      {/* Ambient Background */}
+      <AmbientLayer themeKey={themeKey} />
 
-      <main className="container mx-auto px-4 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {/* Welcome */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-foreground">
-              Welcome {fullName} 👋
-            </h2>
-            <p className="text-muted-foreground mt-2">
-              Here's what's happening with your campaigns
-            </p>
-          </div>
+      {/* Navbar */}
+      <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card className="bg-card/50 backdrop-blur-xl border-border/50">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {stat.title}
-                    </CardTitle>
-                    <stat.icon className="h-4 w-4 text-primary" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-foreground">
-                      {stat.value}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {stat.change}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+      {/* CONTENT */}
+      <main className="relative z-10 px-6 py-10 max-w-6xl mx-auto">
+        {/* HEADER */}
+        <div className="mb-10">
+          <h2 className={`text-3xl font-bold ${theme.text}`}>
+            Welcome {fullName} 👋
+          </h2>
+          <p className={theme.muted}>Your personalized creator dashboard</p>
+        </div>
 
-          {/* Recent Campaigns */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-card/50 backdrop-blur-xl border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Recent Campaigns
-                </CardTitle>
-                <CardDescription>
-                  Your latest campaign activities
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentCampaigns.map((c, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-4 bg-background/50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium text-foreground">{c.name}</p>
-                      </div>
-                      <div className="text-right">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            c.status === "Active"
-                              ? "bg-green-500/20 text-green-400"
-                              : c.status === "Pending"
-                                ? "bg-yellow-500/20 text-yellow-400"
-                                : "bg-gray-500/20 text-gray-400"
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {c.deadline}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+        {/* STATS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {stats.map((s, i) => (
+            <motion.div
+              key={s.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <Card className={`${theme.card} ${theme.radius}`}>
+                <CardHeader className="flex flex-row justify-between items-center pb-2">
+                  <CardTitle className="text-sm opacity-70">
+                    {s.title}
+                  </CardTitle>
+                  <s.icon className="h-4 w-4 opacity-70" />
+                </CardHeader>
+
+                <CardContent>
+                  <div className="text-2xl font-bold">{s.value}</div>
+                  <p className="text-xs opacity-60 mt-1">{s.note}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* RECENT + ACTIONS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* RECENT CAMPAIGNS */}
+          <Card className={`${theme.card} ${theme.radius}`}>
+            <CardHeader>
+              <CardTitle>Recent Campaigns</CardTitle>
+              <CardDescription>Your latest activity</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {recentCampaigns.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No campaigns yet — explore new opportunities 🚀
+                </p>
+              )}
+
+              {recentCampaigns.map((c, i) => (
+                <div
+                  key={i}
+                  className="flex justify-between items-center p-4 rounded-lg bg-white/10"
+                >
+                  <span className={theme.text}>{c.name}</span>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      c.status === "Active"
+                        ? "bg-green-500/20 text-green-400"
+                        : c.status === "Pending"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-gray-500/20 text-gray-400"
+                    }`}
+                  >
+                    {c.status}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </CardContent>
+          </Card>
 
-            {/* Quick Actions */}
-            <Card className="bg-card/50 backdrop-blur-xl border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Quick Actions
-                </CardTitle>
-                <CardDescription>
-                  Manage your influencer activity
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={() => navigate("/dashboard/campaigns/all")}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Browse All Campaigns
-                </Button>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => navigate("/dashboard/campaigns/my")}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  My Campaigns
-                </Button>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  disabled
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Update Profile (Locked)
-                </Button>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  disabled
-                >
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  View Analytics (Coming Soon)
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
+          {/* QUICK ACTIONS */}
+          <Card className={`${theme.card} ${theme.radius}`}>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Move faster</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                className="w-full"
+                onClick={() => navigate("/dashboard/campaigns/all")}
+              >
+                Browse Campaigns
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate("/dashboard/campaigns/my")}
+              >
+                My Campaigns
+              </Button>
+              <Button variant="outline" className="w-full" disabled>
+                Analytics (Coming Soon)
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   );

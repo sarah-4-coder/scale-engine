@@ -19,7 +19,7 @@ const ProfileCompletionGuard = ({ children }: { children: ReactNode }) => {
         .from('influencer_profiles')
         .select('profile_completed')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .maybeSingle<{ profile_completed: boolean }>();
 
       if (error || !data || data.profile_completed !== true) {
         setCompleted(false);

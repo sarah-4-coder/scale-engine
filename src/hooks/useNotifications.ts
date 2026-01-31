@@ -1,3 +1,7 @@
+//disable eslint @typescript-eslint/no-explicit-any
+//disable eslint @typescript-eslint/no-unused-vars
+//disable eslint @typescript-eslint/no-non-null-assertion
+//
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Notification } from "@/types/notification"
@@ -20,9 +24,9 @@ export const useNotifications = () => {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (!error) {
+    if (!error && data) {
       setNotifications((data as Notification[]) || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      setUnreadCount((data as Notification[]).filter(n => !n.is_read).length || 0);
     }
 
     setLoading(false);
