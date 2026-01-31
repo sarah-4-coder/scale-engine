@@ -45,7 +45,7 @@ const CaseEvidenceSection = () => {
               within 14 days. Spread across specific categories (50K+ and 100K+ tiers) with
               structured orchestration.
             </p>
-            <div className="grid grid-cols-3 gap-6 border-t border-white/10 pt-10">
+            <div className="grid md:grid-cols-3 gap-6 border-t border-white/10 pt-10">
               <div>
                 <p className="text-3xl font-black text-white">
                   {flipkartCreators.toLocaleString()}+

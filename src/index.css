@@ -67,7 +67,10 @@
 
 @layer components {
   .dot-matrix {
-    background-image: radial-gradient(hsl(var(--primary) / 0.1) 1px, transparent 0);
+    background-image: radial-gradient(
+      hsl(var(--primary) / 0.1) 1px,
+      transparent 0
+    );
     background-size: 30px 30px;
   }
   .glass {
@@ -123,7 +126,6 @@
     background: hsl(var(--neon));
     border-radius: 10px;
   }
-  
 }
 
 @layer utilities {
@@ -138,8 +140,6 @@
   .duration-400 {
     transition-duration: 400ms;
   }
-
-  
 
   @keyframes marquee {
     0% {
@@ -157,7 +157,4 @@
   .animate-marquee:hover {
     animation-play-state: paused;
   }
-
-  
-
 }
