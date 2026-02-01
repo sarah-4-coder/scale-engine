@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
 //@ts-ignore
-import react from '@vitejs/plugin-react-swc';
-import path from 'path';
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -10,7 +10,7 @@ export default defineConfig({
     react({
       // Use SWC for faster builds and better performance
       //@ts-ignore
-      jsxRuntime: 'automatic',
+      jsxRuntime: "automatic",
       // Enable Fast Refresh
       fastRefresh: true,
       // Babel plugins if needed
@@ -24,8 +24,9 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ["react", "react-dom"],
   },
 
   // ============================================
@@ -33,22 +34,22 @@ export default defineConfig({
   // ============================================
   build: {
     // Output directory
-    outDir: 'dist',
-    
+    outDir: "dist",
+
     // Generate sourcemaps for debugging (disable in production for smaller size)
     sourcemap: false,
-    
+
     // Target modern browsers for better optimization
-    target: 'esnext',
-    
+    target: "esnext",
+
     // Minification
-    minify: 'terser',
+    minify: "terser",
     terserOptions: {
       compress: {
         // Remove console.log in production
         drop_console: true,
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'],
+        pure_funcs: ["console.log", "console.info", "console.debug"],
       },
       format: {
         // Remove comments
@@ -70,49 +71,44 @@ export default defineConfig({
         // Manual chunk splitting for better caching
         manualChunks: (id) => {
           // Vendor chunks
-          if (id.includes('node_modules')) {
-            // React ecosystem
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react-vendor';
-            }
-            
+          if (id.includes("node_modules")) {
             // Supabase
-            if (id.includes('@supabase')) {
-              return 'supabase-vendor';
+            if (id.includes("@supabase")) {
+              return "supabase-vendor";
             }
-            
+
             // React Query
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
+            if (id.includes("@tanstack/react-query")) {
+              return "query-vendor";
             }
-            
+
             // UI libraries
-            if (id.includes('framer-motion')) {
-              return 'motion-vendor';
+            if (id.includes("framer-motion")) {
+              return "motion-vendor";
             }
-            
-            if (id.includes('lucide-react')) {
-              return 'icons-vendor';
+
+            if (id.includes("lucide-react")) {
+              return "icons-vendor";
             }
-            
+
             // All other node_modules
-            return 'vendor';
+            return "vendor";
           }
-          
+
           // Split by route
-          if (id.includes('/pages/admin/')) {
-            return 'admin';
+          if (id.includes("/pages/admin/")) {
+            return "admin";
           }
-          
-          if (id.includes('/pages/influencer/')) {
-            return 'influencer';
+
+          if (id.includes("/pages/influencer/")) {
+            return "influencer";
           }
         },
-        
+
         // Naming pattern for chunks
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        chunkFileNames: "assets/[name]-[hash].js",
+        entryFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash].[ext]",
       },
     },
 
@@ -120,7 +116,7 @@ export default defineConfig({
     // ASSET OPTIMIZATION
     // ============================================
     assetsInlineLimit: 4096, // Inline assets smaller than 4kb
-    
+
     // CSS optimization
     cssMinify: true,
   },
@@ -131,18 +127,15 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,
-    
+
     // Hot Module Replacement
     hmr: {
       overlay: false, // Less intrusive error overlay
     },
-    
+
     // Optimize deps on server start
     warmup: {
-      clientFiles: [
-        './src/App.tsx',
-        './src/main.tsx',
-      ],
+      clientFiles: ["./src/App.tsx", "./src/main.tsx"],
     },
   },
 
@@ -160,15 +153,13 @@ export default defineConfig({
   optimizeDeps: {
     // Pre-bundle these dependencies for faster dev server startup
     include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'framer-motion',
-      '@supabase/supabase-js',
-      '@tanstack/react-query',
-      'lucide-react',
+      "react-router-dom",
+      "framer-motion",
+      "@supabase/supabase-js",
+      "@tanstack/react-query",
+      "lucide-react",
     ],
-    
+
     // Exclude large dependencies that don't need pre-bundling
     exclude: [
       // Add any deps that should not be pre-bundled
@@ -178,12 +169,12 @@ export default defineConfig({
   // ============================================
   // PERFORMANCE HINTS
   // ============================================
-  
+
   // Enable esbuild for faster builds
   esbuild: {
     // Drop console and debugger in production
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
-    
+    drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
+
     // Minify identifiers for smaller bundle
     minifyIdentifiers: true,
     minifySyntax: true,
