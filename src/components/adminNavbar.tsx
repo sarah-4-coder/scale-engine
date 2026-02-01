@@ -35,7 +35,7 @@ const AdminNavbar = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/dotfluence.in");
+    window.location.href = "/dotfluence.in";
   };
 
   return (
