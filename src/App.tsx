@@ -15,14 +15,16 @@ import AuthRedirect from "./components/AuthRedirect";
 import ProfileCompletionGuard from "./components/ProfileCompletionGuard";
 import ProfileSetup from "./pages/ProfileSetup";
 import CreateCampaign from "./pages/admin/CreateCampaign";
-import InfluencerCampaigns from "./pages/influencer/MyCampaigns";
+// import InfluencerCampaigns from "./pages/influencer/MyCampaigns";
 import AdminNegotiations from "./pages/admin/Negotiations";
 import AllCampaigns from "./pages/influencer/AllCampaigns";
-import MyCampaigns from "./pages/influencer/MyCampaigns";
+
 import AdminCampaignDetails from "./pages/admin/AdminCampaignDetails";
 import AdminAllCampaigns from "./pages/admin/AdminAllCampaigns";
 import AdminCampaignAppliedInfluencers from "./pages/admin/AdminCampaignAppliedInfluencers";
 import AdminManageInfluencers from "./pages/admin/AdminManageInfluencers";
+import CampaignDetail from "./pages/influencer/CampaignDetail";
+import MyCampaigns from "./pages/influencer/MyCampaigns";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +103,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={["influencer"]}>
             <ProfileCompletionGuard>
               <MyCampaigns />
+            </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/campaigns/my/:campaignId"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <ProfileCompletionGuard>
+              <CampaignDetail/>
             </ProfileCompletionGuard>
           </ProtectedRoute>
         }
