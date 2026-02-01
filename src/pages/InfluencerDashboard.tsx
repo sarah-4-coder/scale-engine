@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { memo, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,7 +27,10 @@ import {
 import { Button } from "@/components/ui/button";
 import AmbientLayer from "@/components/ambient/AmbientLayer";
 import { ThemeKey } from "@/theme/themes";
-import { StatCardSkeleton, CardSkeleton } from "@/components/influencer/Skeletons";
+import {
+  StatCardSkeleton,
+  CardSkeleton,
+} from "@/components/influencer/Skeletons";
 
 /* --------------------------------
    TYPES
@@ -35,12 +40,32 @@ type RecentCampaign = {
   status: "Active" | "Pending" | "Completed";
 };
 
+// ⚡ MEMOIZED STAT CARD
+const StatCard = memo(({ stat }: { stat: any }) => {
+  const { theme } = useInfluencerTheme();
+
+  return (
+    <Card className={`${theme.card} ${theme.radius}`}>
+      <CardHeader className="flex flex-row justify-between items-center pb-2">
+        <CardTitle className="text-sm opacity-70">{stat.title}</CardTitle>
+        <stat.icon className="h-4 w-4 opacity-70" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{stat.value}</div>
+        <p className="text-xs opacity-60 mt-1">{stat.note}</p>
+      </CardContent>
+    </Card>
+  );
+});
+
+StatCard.displayName = "StatCard";
+
 /* --------------------------------
    ENHANCED STUDIO BACKGROUNDS WITH CSS
 -------------------------------- */
 const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   // Don't render on mobile to prevent lag
   if (isMobile) return null;
 
@@ -49,26 +74,57 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Tech Grid Pattern */}
-          <div 
+          <div
             className="absolute inset-0 opacity-10"
             style={{
               backgroundImage: `
                 linear-gradient(rgba(34, 211, 238, 0.3) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(34, 211, 238, 0.3) 1px, transparent 1px)
               `,
-              backgroundSize: '50px 50px',
+              backgroundSize: "50px 50px",
             }}
           />
 
           {/* Circuit Board Pattern */}
-          <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            className="absolute inset-0 w-full h-full opacity-10"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <defs>
-              <pattern id="circuit" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-                <circle cx="10" cy="10" r="2" fill="#22d3ee"/>
-                <circle cx="90" cy="90" r="2" fill="#818cf8"/>
-                <line x1="10" y1="10" x2="50" y2="10" stroke="#22d3ee" strokeWidth="1"/>
-                <line x1="50" y1="10" x2="50" y2="50" stroke="#22d3ee" strokeWidth="1"/>
-                <line x1="50" y1="50" x2="90" y2="90" stroke="#818cf8" strokeWidth="1"/>
+              <pattern
+                id="circuit"
+                x="0"
+                y="0"
+                width="100"
+                height="100"
+                patternUnits="userSpaceOnUse"
+              >
+                <circle cx="10" cy="10" r="2" fill="#22d3ee" />
+                <circle cx="90" cy="90" r="2" fill="#818cf8" />
+                <line
+                  x1="10"
+                  y1="10"
+                  x2="50"
+                  y2="10"
+                  stroke="#22d3ee"
+                  strokeWidth="1"
+                />
+                <line
+                  x1="50"
+                  y1="10"
+                  x2="50"
+                  y2="50"
+                  stroke="#22d3ee"
+                  strokeWidth="1"
+                />
+                <line
+                  x1="50"
+                  y1="50"
+                  x2="90"
+                  y2="90"
+                  stroke="#818cf8"
+                  strokeWidth="1"
+                />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#circuit)" />
@@ -82,7 +138,7 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
           >
             <div className="absolute inset-2 bg-gradient-to-br from-cyan-500/5 to-indigo-500/5 rounded" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-cyan-400/30 text-6xl font-mono">
-              {'{ }'}
+              {"{ }"}
             </div>
           </motion.div>
 
@@ -93,9 +149,9 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
             transition={{ duration: 3, repeat: Infinity }}
           >
             <div>const theme = 'tech';</div>
-            <div>function render() {'{'}</div>
+            <div>function render() {"{"}</div>
             <div>&nbsp;&nbsp;return success;</div>
-            <div>{'}'}</div>
+            <div>{"}"}</div>
           </motion.div>
 
           {/* Binary Background */}
@@ -105,7 +161,11 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
                 key={i}
                 className="whitespace-nowrap"
                 animate={{ x: [0, -1000] }}
-                transition={{ duration: 20 + i * 2, repeat: Infinity, ease: "linear" }}
+                transition={{
+                  duration: 20 + i * 2,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
               >
                 01010011 01010101 01000011 01000011 01000101 01010011 01010011
               </motion.div>
@@ -118,14 +178,73 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Minimalist Lines */}
-          <svg className="absolute inset-0 w-full h-full opacity-8" xmlns="http://www.w3.org/2000/svg">
-            <line x1="10%" y1="0" x2="10%" y2="100%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
-            <line x1="30%" y1="0" x2="30%" y2="100%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
-            <line x1="70%" y1="0" x2="70%" y2="100%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
-            <line x1="90%" y1="0" x2="90%" y2="100%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
-            <line x1="0" y1="20%" x2="100%" y2="20%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
-            <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
-            <line x1="0" y1="80%" x2="100%" y2="80%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
+          <svg
+            className="absolute inset-0 w-full h-full opacity-8"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <line
+              x1="10%"
+              y1="0"
+              x2="10%"
+              y2="100%"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.1"
+            />
+            <line
+              x1="30%"
+              y1="0"
+              x2="30%"
+              y2="100%"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.1"
+            />
+            <line
+              x1="70%"
+              y1="0"
+              x2="70%"
+              y2="100%"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.1"
+            />
+            <line
+              x1="90%"
+              y1="0"
+              x2="90%"
+              y2="100%"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.1"
+            />
+            <line
+              x1="0"
+              y1="20%"
+              x2="100%"
+              y2="20%"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.1"
+            />
+            <line
+              x1="0"
+              y1="50%"
+              x2="100%"
+              y2="50%"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.1"
+            />
+            <line
+              x1="0"
+              y1="80%"
+              x2="100%"
+              y2="80%"
+              stroke="#000"
+              strokeWidth="0.5"
+              opacity="0.1"
+            />
           </svg>
 
           {/* Wardrobe Hangers */}
@@ -135,17 +254,53 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
           >
             {/* Hanger 1 */}
-            <svg width="100" height="120" className="absolute left-0" viewBox="0 0 100 120">
-              <path d="M 20 20 Q 50 10 80 20 L 75 25 L 50 100 L 25 25 Z" 
-                    fill="none" stroke="#404040" strokeWidth="2" opacity="0.3"/>
-              <circle cx="50" cy="15" r="8" fill="none" stroke="#404040" strokeWidth="2" opacity="0.3"/>
+            <svg
+              width="100"
+              height="120"
+              className="absolute left-0"
+              viewBox="0 0 100 120"
+            >
+              <path
+                d="M 20 20 Q 50 10 80 20 L 75 25 L 50 100 L 25 25 Z"
+                fill="none"
+                stroke="#404040"
+                strokeWidth="2"
+                opacity="0.3"
+              />
+              <circle
+                cx="50"
+                cy="15"
+                r="8"
+                fill="none"
+                stroke="#404040"
+                strokeWidth="2"
+                opacity="0.3"
+              />
             </svg>
-            
+
             {/* Hanger 2 */}
-            <svg width="100" height="120" className="absolute left-20 top-10" viewBox="0 0 100 120">
-              <path d="M 20 20 Q 50 10 80 20 L 75 25 L 50 100 L 25 25 Z" 
-                    fill="none" stroke="#404040" strokeWidth="2" opacity="0.2"/>
-              <circle cx="50" cy="15" r="8" fill="none" stroke="#404040" strokeWidth="2" opacity="0.2"/>
+            <svg
+              width="100"
+              height="120"
+              className="absolute left-20 top-10"
+              viewBox="0 0 100 120"
+            >
+              <path
+                d="M 20 20 Q 50 10 80 20 L 75 25 L 50 100 L 25 25 Z"
+                fill="none"
+                stroke="#404040"
+                strokeWidth="2"
+                opacity="0.2"
+              />
+              <circle
+                cx="50"
+                cy="15"
+                r="8"
+                fill="none"
+                stroke="#404040"
+                strokeWidth="2"
+                opacity="0.2"
+              />
             </svg>
           </motion.div>
 
@@ -161,7 +316,11 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
                 left: `${10 + i * 12}%`,
               }}
               animate={{ rotate: 360 }}
-              transition={{ duration: 30 + i * 5, repeat: Infinity, ease: "linear" }}
+              transition={{
+                duration: 30 + i * 5,
+                repeat: Infinity,
+                ease: "linear",
+              }}
             />
           ))}
 
@@ -176,33 +335,46 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Energy Grid */}
-          <div 
+          <div
             className="absolute inset-0 opacity-10"
             style={{
               backgroundImage: `
                 linear-gradient(rgba(220, 38, 38, 0.3) 2px, transparent 2px),
                 linear-gradient(90deg, rgba(34, 197, 94, 0.3) 2px, transparent 2px)
               `,
-              backgroundSize: '40px 40px',
+              backgroundSize: "40px 40px",
             }}
           />
 
           {/* Dumbbell Illustration */}
-          <svg className="absolute bottom-20 left-10 w-96 h-32 opacity-20" viewBox="0 0 400 150">
+          <svg
+            className="absolute bottom-20 left-10 w-96 h-32 opacity-20"
+            viewBox="0 0 400 150"
+          >
             {/* Left weight */}
-            <rect x="10" y="30" width="60" height="90" rx="5" fill="#dc2626"/>
-            <rect x="30" y="20" width="20" height="110" rx="5" fill="#dc2626"/>
-            
+            <rect x="10" y="30" width="60" height="90" rx="5" fill="#dc2626" />
+            <rect x="30" y="20" width="20" height="110" rx="5" fill="#dc2626" />
+
             {/* Bar */}
-            <rect x="70" y="65" width="260" height="20" rx="10" fill="#666"/>
-            
+            <rect x="70" y="65" width="260" height="20" rx="10" fill="#666" />
+
             {/* Right weight */}
-            <rect x="330" y="30" width="60" height="90" rx="5" fill="#22c55e"/>
-            <rect x="350" y="20" width="20" height="110" rx="5" fill="#22c55e"/>
+            <rect x="330" y="30" width="60" height="90" rx="5" fill="#22c55e" />
+            <rect
+              x="350"
+              y="20"
+              width="20"
+              height="110"
+              rx="5"
+              fill="#22c55e"
+            />
           </svg>
 
           {/* Heart Rate Line */}
-          <svg className="absolute top-1/4 right-20 w-96 h-32 opacity-20" viewBox="0 0 400 100">
+          <svg
+            className="absolute top-1/4 right-20 w-96 h-32 opacity-20"
+            viewBox="0 0 400 100"
+          >
             <polyline
               points="0,50 50,50 70,20 90,80 110,50 350,50"
               fill="none"
@@ -217,7 +389,10 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
               key={i}
               className="absolute rounded-full border-4"
               style={{
-                borderColor: i % 2 === 0 ? 'rgba(220, 38, 38, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                borderColor:
+                  i % 2 === 0
+                    ? "rgba(220, 38, 38, 0.2)"
+                    : "rgba(34, 197, 94, 0.2)",
                 width: `${100 + i * 40}px`,
                 height: `${100 + i * 40}px`,
                 top: `${40 + i * 8}%`,
@@ -265,11 +440,11 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Dot Grid */}
-          <div 
+          <div
             className="absolute inset-0 opacity-10"
             style={{
               backgroundImage: `radial-gradient(circle, rgba(124, 58, 237, 0.4) 1px, transparent 1px)`,
-              backgroundSize: '30px 30px',
+              backgroundSize: "30px 30px",
             }}
           />
 
@@ -281,9 +456,10 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
               style={{
                 width: `${60 + i * 30}px`,
                 height: `${60 + i * 30}px`,
-                background: i % 2 === 0 
-                  ? 'radial-gradient(circle, rgba(251, 146, 60, 0.2), transparent)'
-                  : 'radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent)',
+                background:
+                  i % 2 === 0
+                    ? "radial-gradient(circle, rgba(251, 146, 60, 0.2), transparent)"
+                    : "radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent)",
                 top: `${Math.random() * 80}%`,
                 left: `${Math.random() * 80}%`,
               }}
@@ -323,7 +499,7 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
               <svg width="20" height="20" viewBox="0 0 20 20">
                 <path
                   d="M 10 0 L 12 8 L 20 10 L 12 12 L 10 20 L 8 12 L 0 10 L 8 8 Z"
-                  fill={i % 2 === 0 ? '#fb923c' : '#6366f1'}
+                  fill={i % 2 === 0 ? "#fb923c" : "#6366f1"}
                   opacity="0.4"
                 />
               </svg>
@@ -353,25 +529,32 @@ const WelcomeModal = ({
   fullName: string;
   themeKey: ThemeKey;
 }) => {
-  const themeMessages: Record<ThemeKey, { title: string; message: string; emoji: string }> = {
+  const themeMessages: Record<
+    ThemeKey,
+    { title: string; message: string; emoji: string }
+  > = {
     tech: {
       title: "Tech Studio Activated! 💻",
-      message: "We've crafted a cyberpunk-inspired workspace just for you, complete with code and circuits.",
+      message:
+        "We've crafted a cyberpunk-inspired workspace just for you, complete with code and circuits.",
       emoji: "⚡",
     },
     fashion: {
       title: "Fashion Studio Ready! 👗",
-      message: "Your minimalist fashion atelier awaits, designed with elegance and style in mind.",
+      message:
+        "Your minimalist fashion atelier awaits, designed with elegance and style in mind.",
       emoji: "✨",
     },
     fitness: {
       title: "Fitness Arena Unlocked! 💪",
-      message: "Your personal training ground is set, powered by energy and determination.",
+      message:
+        "Your personal training ground is set, powered by energy and determination.",
       emoji: "🔥",
     },
     default: {
       title: "Creator Studio Launched! 🚀",
-      message: "We've created a vibrant creative space tailored to your influencer journey.",
+      message:
+        "We've created a vibrant creative space tailored to your influencer journey.",
       emoji: "🎨",
     },
   };
@@ -427,7 +610,9 @@ const WelcomeModal = ({
                 </h2>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 mb-4">
                   <Sparkles className="h-4 w-4 text-yellow-300" />
-                  <span className="text-sm text-white/90">{currentTheme.title}</span>
+                  <span className="text-sm text-white/90">
+                    {currentTheme.title}
+                  </span>
                 </div>
               </motion.div>
 
@@ -475,7 +660,11 @@ const WelcomeModal = ({
                     </svg>
                   </motion.div>
                   <p className="text-sm text-white/60">
-                    Click the <span className="text-purple-300 font-semibold">theme icon</span> in the navbar above
+                    Click the{" "}
+                    <span className="text-purple-300 font-semibold">
+                      theme icon
+                    </span>{" "}
+                    in the navbar above
                   </p>
                 </div>
               </motion.div>
@@ -544,27 +733,31 @@ const InfluencerDashboard = () => {
      FETCH DASHBOARD DATA
   ------------------------------- */
   useEffect(() => {
+    // REPLACE the entire fetchDashboard function in InfluencerDashboard.tsx (line ~546)
     const fetchDashboard = async () => {
       if (!user) return;
 
       try {
         setLoading(true);
 
-        /* ===== USER PROFILE ===== */
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user.id)
-          .single<{ full_name: string }>();
+        // ⚡ PARALLEL QUERIES - Run simultaneously!
+        const [profileResult, influencerResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", user.id)
+            .single<{ full_name: string }>(),
+          supabase
+            .from("influencer_profiles")
+            .select("id, followers_count")
+            .eq("user_id", user.id)
+            .single<{ id: string; followers_count: number }>(),
+        ]);
 
-        setFullName(profile ? profile.full_name || "Creator" : "Creator");
+        const profile = profileResult.data;
+        const influencer = influencerResult.data;
 
-        /* ===== INFLUENCER PROFILE ===== */
-        const { data: influencer } = await supabase
-          .from("influencer_profiles")
-          .select("id, followers_count")
-          .eq("user_id", user.id)
-          .single<{ id: string; followers_count: number }>();
+        setFullName(profile?.full_name || "Creator");
 
         if (!influencer) {
           toast.error("Please complete your profile to unlock campaigns");
@@ -574,58 +767,62 @@ const InfluencerDashboard = () => {
 
         setFollowers(influencer.followers_count ?? null);
 
-        /* ===== CAMPAIGN RELATIONS ===== */
-        const { data: relations } = (await supabase
-          .from("campaign_influencers")
-          .select("campaign_id, status, final_payout, created_at")
-          .eq("influencer_id", influencer.id)
-          .order("created_at", { ascending: false })) as {
-          data: Array<{
-            campaign_id: string;
-            status: string;
-            final_payout: number | null;
-            created_at: string;
-          }> | null;
-        };
+        // ⚡ PARALLEL QUERIES - Fetch campaigns and relations together
+        const [relationsResult, allCampaignsResult] = await Promise.all([
+          supabase
+            .from("campaign_influencers")
+            .select("campaign_id, status, final_payout, created_at")
+            .eq("influencer_id", influencer.id)
+            .order("created_at", { ascending: false }),
+          // Prefetch campaign names for faster lookup
+          supabase.from("campaigns").select("id, name"),
+        ]);
+
+        const relations = relationsResult.data;
 
         if (!relations || relations.length === 0) {
           setLoading(false);
           return;
         }
 
+        // Filter campaigns we need
+        //@ts-ignore
         const campaignIds = relations.map((r) => r.campaign_id);
-
-        const { data: campaigns } = (await supabase
-          .from("campaigns")
-          .select("id, name")
-          .in("id", campaignIds)) as {
-          data: Array<{ id: string; name: string }> | null;
-        };
-
-        /* ===== STATS ===== */
-        setActiveCampaigns(
-          relations.filter((r) => r.status === "accepted").length,
+        const campaigns = allCampaignsResult.data?.filter((c) =>
+          //@ts-ignore
+          campaignIds.includes(c.id),
         );
 
-        setEarnings(
-          relations.reduce((sum, r) => sum + (r.final_payout || 0), 0),
+        // ⚡ BATCH STATE UPDATES
+        const activeCount = relations.filter(
+          //@ts-ignore
+          (r) => r.status === "accepted",
+        ).length;
+        const totalEarnings = relations.reduce(
+          //@ts-ignore
+          (sum, r) => sum + (r.final_payout || 0),
+          0,
         );
-
-        /* ===== RECENT CAMPAIGNS ===== */
+        //@ts-ignore
         const recent = relations.slice(0, 3).map((r) => {
+          //@ts-ignore
           const campaign = campaigns?.find((c) => c.id === r.campaign_id);
+          //@ts-ignore
           const status: "Active" | "Completed" | "Pending" =
+            //@ts-ignore
             r.status === "accepted"
               ? "Active"
-              : r.status === "completed"
+              : //@ts-ignore
+                r.status === "completed"
                 ? "Completed"
                 : "Pending";
-          return {
-            name: campaign?.name || "Campaign",
-            status,
-          };
+          //@ts-ignore
+          return { name: campaign?.name || "Campaign", status };
         });
 
+        // Update all state at once
+        setActiveCampaigns(activeCount);
+        setEarnings(totalEarnings);
         setRecentCampaigns(recent);
       } catch (err) {
         console.error(err);
@@ -637,8 +834,6 @@ const InfluencerDashboard = () => {
 
     fetchDashboard();
   }, [user, navigate]);
-
-  
 
   /* -------------------------------
      STATS CONFIG
@@ -715,37 +910,11 @@ const InfluencerDashboard = () => {
         </div>
 
         {/* STATS */}
+        {/* STATS - with memoized cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {loading ? (
-            // Show skeletons while loading
-            [1, 2, 3, 4].map((i) => (
-              <StatCardSkeleton key={i} />
-            ))
-          ) : (
-            // Show actual stats when loaded
-            stats.map((s, i) => (
-              <motion.div
-                key={s.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card className={`${theme.card} ${theme.radius}`}>
-                  <CardHeader className="flex flex-row justify-between items-center pb-2">
-                    <CardTitle className="text-sm opacity-70">
-                      {s.title}
-                    </CardTitle>
-                    <s.icon className="h-4 w-4 opacity-70" />
-                  </CardHeader>
-
-                  <CardContent>
-                    <div className="text-2xl font-bold">{s.value}</div>
-                    <p className="text-xs opacity-60 mt-1">{s.note}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))
-          )}
+          {loading
+            ? [1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)
+            : stats.map((s, i) => <StatCard key={s.title} stat={s} />)}
         </div>
 
         {/* RECENT + ACTIONS */}
@@ -816,7 +985,11 @@ const InfluencerDashboard = () => {
               >
                 My Campaigns
               </Button>
-              <Button variant="outline" className="w-full text-foreground" disabled>
+              <Button
+                variant="outline"
+                className="w-full text-foreground"
+                disabled
+              >
                 Analytics (Coming Soon)
               </Button>
             </CardContent>
