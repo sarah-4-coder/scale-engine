@@ -1208,6 +1208,16 @@ const CampaignDetail = () => {
                           Please submit your content links below to complete the
                           campaign.
                         </p>
+                        <div className={`p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 mt-4`}>
+                          <p className={`${theme.text} font-medium mb-2`}>
+                          📋 Submission Process:
+                          </p>
+                          <ol className={`${theme.muted} text-sm space-y-2 list-decimal list-inside`}>
+                          <li>First, submit your content to <span className={`${theme.text} font-semibold`}>+91 8546023170</span> for approval on WhatsApp</li>
+                          <li>After approval, post it on Instagram/YouTube/Twitter, etc.</li>
+                          <li>Submit the posted links below</li>
+                          </ol>
+                        </div>
                       </div>
 
                       {application.status === "content_rejected" && (
