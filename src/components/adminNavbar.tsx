@@ -35,7 +35,7 @@ const AdminNavbar = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/");
+    navigate("/dotfluence.in");
   };
 
   return (

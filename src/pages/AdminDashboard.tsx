@@ -153,10 +153,7 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
+
 
   const stats = [
     {

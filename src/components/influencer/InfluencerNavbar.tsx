@@ -20,7 +20,7 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/");
+    navigate("/dotfluence.in");
   };
 
   return (
