@@ -19,8 +19,8 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
   const [open, setOpen] = useState(false);
 
   const handleLogout = async () => {
-    await signOut();
-    window.location.replace("/dotfluence.in");
+    await supabase.auth.signOut({scope: "local"});
+    window.location.replace("https://dotfluence.in");
   };
 
   return (

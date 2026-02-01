@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -35,6 +36,10 @@ const Signup = () => {
     } else {
       toast.success("🎉 Account created! Let’s build your profile");
     }
+  };
+  const handlesignout = async () => {
+    await supabase.auth.signOut({ scope: "local" });
+    window.location.replace("https://dotfluence.in");
   };
 
   return (
@@ -124,9 +129,7 @@ const Signup = () => {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <p className="text-xs text-white/50">
-              Minimum 6 characters
-            </p>
+            <p className="text-xs text-white/50">Minimum 6 characters</p>
           </div>
 
           <Button
@@ -157,9 +160,12 @@ const Signup = () => {
         </div>
 
         <div className="mt-4 text-center">
-          <Link to="/" className="text-sm text-white/50 hover:text-white">
+          <button
+            onClick={handlesignout}
+            className="text-sm text-white/50 hover:text-white"
+          >
             ← Back to home
-          </Link>
+          </button>
         </div>
       </motion.div>
     </div>

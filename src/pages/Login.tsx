@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, LogIn } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -28,6 +29,10 @@ const Login = () => {
     } else {
       toast.success("Welcome back 👋");
     }
+  };
+  const handlesignout = async () => {
+    await supabase.auth.signOut({ scope: "local" });
+    window.location.replace("https://dotfluence.in");
   };
 
   return (
@@ -131,9 +136,12 @@ const Login = () => {
         </div>
 
         <div className="mt-4 text-center">
-          <Link to="/" className="text-sm text-white/50 hover:text-white">
+          <button
+            onClick={handlesignout}
+            className="text-sm text-white/50 hover:text-white"
+          >
             ← Back to home
-          </Link>
+          </button>
         </div>
       </motion.div>
     </div>

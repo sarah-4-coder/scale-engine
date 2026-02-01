@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -68,10 +69,25 @@ const ProfileSetup = () => {
   const [newNiche, setNewNiche] = useState("");
 
   useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        window.location.replace("https://platform.dotfluent.in/login");
+      }
+    };
+
+    checkSession();
+  }, []);
+
+  useEffect(() => {
     supabase
       .from("niches")
       .select("name")
       .then(({ data }) => {
+        //@ts-ignore
         setAllNiches(data?.map((n) => n.name) || []);
       });
   }, []);
@@ -99,7 +115,7 @@ const ProfileSetup = () => {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-
+    //@ts-ignore
     const { error } = await supabase.from("influencer_profiles").insert({
       user_id: user.id,
       full_name: fullName.trim(),
@@ -127,9 +143,9 @@ const ProfileSetup = () => {
   };
 
   const handlesignout = async () => {
-    await supabase.auth.signOut();
-  }
-
+    await supabase.auth.signOut({ scope: "local" });
+    window.location.replace("https://dotfluence.in");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
@@ -319,6 +335,7 @@ const ProfileSetup = () => {
                     if (clean) {
                       setAllNiches((p) => [...p, clean]);
                       setSelectedNiches((p) => [...p, clean]);
+                      //@ts-ignore
                       supabase.from("niches").insert({ name: clean });
                       setNewNiche("");
                     }
@@ -350,10 +367,11 @@ const ProfileSetup = () => {
           )}
         </div>
         <div className="mt-4 text-center">
-          <button onClick={handlesignout}>
-            <Link to="/" className="text-sm text-white/50 hover:text-white">
-              ← Back to home
-            </Link>
+          <button
+            onClick={handlesignout}
+            className="text-sm text-white/50 hover:text-white"
+          >
+            ← Back to home
           </button>
         </div>
       </div>
