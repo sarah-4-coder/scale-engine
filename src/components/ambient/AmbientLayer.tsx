@@ -39,15 +39,15 @@ const AmbientLayer = ({ themeKey }: Props) => {
     return (
       <div className="absolute inset-0 overflow-hidden">
         {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#f8f7f4] to-[#f1f1ee]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#4a4439] to-[#f1f1ee]" />
 
         {/* Floating editorial elements */}
         <Floating x={40} y={30} opacity={0.08}>
-          <Camera size={180} color="#111827" />
+          <Camera size={180} color="#ffffff" />
         </Floating>
 
         <Floating x={-30} y={50} duration={40} opacity={0.05}>
-          <div className="text-[200px] font-serif text-[#111827]">A</div>
+          <div className="text-[200px] font-serif text-[#ffffff]">A</div>
         </Floating>
       </div>
     );

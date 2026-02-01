@@ -31,12 +31,17 @@ export const THEMES: Record<ThemeKey, ThemeConfig> = {
   fashion: {
     key: "fashion",
     name: "Fashion",
-    background: "linear-gradient(180deg, #f8f7f4 0%, #f1f1ee 100%)",
-    card: "bg-white/95 backdrop-blur-xl border border-black/10 text-neutral-900",
-    primary: "from-neutral-900 to-neutral-700",
-    accent: "text-neutral-900",
-    text: "text-neutral-900",
-    muted: "text-neutral-600",
+    // Updated to darker gradient for better text contrast
+    background: "linear-gradient(180deg, #4a4439 0%, #2d2d1f 100%)",
+    // Updated card with darker background and better borders
+    card: "bg-neutral-900/80 backdrop-blur-xl border border-neutral-600/30 text-white shadow-2xl",
+    // Updated primary gradient
+    primary: "from-neutral-400 to-neutral-600",
+    // Updated accent for better visibility
+    accent: "text-amber-300",
+    // Updated text colors for better contrast
+    text: "text-neutral-100",
+    muted: "text-neutral-300",
     radius: "rounded-3xl",
   },
 

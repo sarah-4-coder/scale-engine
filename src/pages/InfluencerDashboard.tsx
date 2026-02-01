@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import AmbientLayer from "@/components/ambient/AmbientLayer";
 import { ThemeKey } from "@/theme/themes";
+import { StatCardSkeleton, CardSkeleton } from "@/components/influencer/Skeletons";
 
 /* --------------------------------
    TYPES
@@ -637,16 +638,7 @@ const InfluencerDashboard = () => {
     fetchDashboard();
   }, [user, navigate]);
 
-  /* -------------------------------
-     LOADING STATE
-  ------------------------------- */
-  if (loading || themeLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary" />
-      </div>
-    );
-  }
+  
 
   /* -------------------------------
      STATS CONFIG
@@ -724,28 +716,36 @@ const InfluencerDashboard = () => {
 
         {/* STATS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {stats.map((s, i) => (
-            <motion.div
-              key={s.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <Card className={`${theme.card} ${theme.radius}`}>
-                <CardHeader className="flex flex-row justify-between items-center pb-2">
-                  <CardTitle className="text-sm opacity-70">
-                    {s.title}
-                  </CardTitle>
-                  <s.icon className="h-4 w-4 opacity-70" />
-                </CardHeader>
+          {loading ? (
+            // Show skeletons while loading
+            [1, 2, 3, 4].map((i) => (
+              <StatCardSkeleton key={i} />
+            ))
+          ) : (
+            // Show actual stats when loaded
+            stats.map((s, i) => (
+              <motion.div
+                key={s.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <Card className={`${theme.card} ${theme.radius}`}>
+                  <CardHeader className="flex flex-row justify-between items-center pb-2">
+                    <CardTitle className="text-sm opacity-70">
+                      {s.title}
+                    </CardTitle>
+                    <s.icon className="h-4 w-4 opacity-70" />
+                  </CardHeader>
 
-                <CardContent>
-                  <div className="text-2xl font-bold">{s.value}</div>
-                  <p className="text-xs opacity-60 mt-1">{s.note}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  <CardContent>
+                    <div className="text-2xl font-bold">{s.value}</div>
+                    <p className="text-xs opacity-60 mt-1">{s.note}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
         </div>
 
         {/* RECENT + ACTIONS */}
@@ -757,31 +757,42 @@ const InfluencerDashboard = () => {
               <CardDescription>Your latest activity</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentCampaigns.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No campaigns yet — explore new opportunities 🚀
-                </p>
-              )}
-
-              {recentCampaigns.map((c, i) => (
-                <div
-                  key={i}
-                  className="flex justify-between items-center p-4 rounded-lg bg-white/10"
-                >
-                  <span className={theme.text}>{c.name}</span>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      c.status === "Active"
-                        ? "bg-green-500/20 text-green-400"
-                        : c.status === "Pending"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-gray-500/20 text-gray-400"
-                    }`}
-                  >
-                    {c.status}
-                  </span>
+              {loading ? (
+                // Show skeleton while loading
+                <div className="space-y-3">
+                  <CardSkeleton />
+                  <CardSkeleton />
+                  <CardSkeleton />
                 </div>
-              ))}
+              ) : (
+                <>
+                  {recentCampaigns.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No campaigns yet — explore new opportunities 🚀
+                    </p>
+                  )}
+
+                  {recentCampaigns.map((c, i) => (
+                    <div
+                      key={i}
+                      className="flex justify-between items-center p-4 rounded-lg bg-white/10"
+                    >
+                      <span className={theme.text}>{c.name}</span>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          c.status === "Active"
+                            ? "bg-green-500/20 text-green-400"
+                            : c.status === "Pending"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-gray-500/20 text-gray-400"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
             </CardContent>
           </Card>
 
