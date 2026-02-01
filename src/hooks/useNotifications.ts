@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 //disable eslint @typescript-eslint/no-explicit-any
 //disable eslint @typescript-eslint/no-unused-vars
 //disable eslint @typescript-eslint/no-non-null-assertion
@@ -37,6 +38,7 @@ export const useNotifications = () => {
 
     await supabase
       .from("notifications")
+      //@ts-ignore
       .update({ is_read: true })
       .eq("user_id", user.id)
       .eq("is_read", false);

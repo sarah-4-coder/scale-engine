@@ -303,12 +303,12 @@ const InfluencerDashboard = () => {
               </Button>
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full text-foreground"
                 onClick={() => navigate("/dashboard/campaigns/my")}
               >
                 My Campaigns
               </Button>
-              <Button variant="outline" className="w-full" disabled>
+              <Button variant="outline" className="w-full text-foreground" disabled>
                 Analytics (Coming Soon)
               </Button>
             </CardContent>
