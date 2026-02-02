@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Palette, LogOut, Check, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -171,4 +171,4 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
   );
 };
 
-export default InfluencerNavbar;
+export default memo(InfluencerNavbar);

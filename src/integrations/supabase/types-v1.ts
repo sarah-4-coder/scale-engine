@@ -8,6 +8,8 @@ export type Json =
   | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1";
   };
@@ -100,65 +102,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
-        Update: never;
-        Relationships: [];
-      };
-      // NEW: Brand/Agency profiles table
-      brand_profiles: {
-        Row: {
-          id: string;
-          user_id: string;
-          company_name: string;
-          work_email: string;
-          phone_number: string;
-          company_website: string | null;
-          industry: string | null;
-          company_size: string | null;
-          description: string | null;
-          is_verified: boolean;
-          profile_completed: boolean;
-          city: string | null;
-          state: string | null;
-          contact_person_name: string;
-          contact_person_designation: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          company_name: string;
-          work_email: string;
-          phone_number: string;
-          company_website?: string | null;
-          industry?: string | null;
-          company_size?: string | null;
-          description?: string | null;
-          is_verified?: boolean;
-          profile_completed?: boolean;
-          city?: string | null;
-          state?: string | null;
-          contact_person_name: string;
-          contact_person_designation?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          company_name?: string;
-          work_email?: string;
-          phone_number?: string;
-          company_website?: string | null;
-          industry?: string | null;
-          company_size?: string | null;
-          description?: string | null;
-          is_verified?: boolean;
-          profile_completed?: boolean;
-          city?: string | null;
-          state?: string | null;
-          contact_person_name?: string;
-          contact_person_designation?: string | null;
-          updated_at?: string;
-        };
+        Update: never; // 🔒 IMPORTANT: no updates allowed
         Relationships: [];
       };
       campaigns: {
@@ -171,10 +115,9 @@ export type Database = {
           timeline: string;
           base_payout: number;
           admin_user_id: string | null;
-          brand_user_id: string | null; // NEW: for brand-created campaigns
           eligibility: Record<string, any> | null;
           requirements: Record<string, any> | null;
-          can_negotiate: boolean; // NEW: false for brand campaigns
+
           status: string | null;
           created_at: string;
         };
@@ -187,10 +130,9 @@ export type Database = {
           timeline?: string;
           base_payout?: number;
           admin_user_id?: string | null;
-          brand_user_id?: string | null;
           eligibility?: Record<string, any> | null;
           requirements?: Record<string, any> | null;
-          can_negotiate?: boolean;
+
           status?: string | null;
           created_at?: string;
         };
@@ -203,10 +145,9 @@ export type Database = {
           timeline?: string;
           base_payout?: number;
           admin_user_id?: string | null;
-          brand_user_id?: string | null;
           eligibility?: Record<string, any> | null;
           requirements?: Record<string, any> | null;
-          can_negotiate?: boolean;
+
           status?: string | null;
           created_at?: string;
         };
@@ -230,6 +171,7 @@ export type Database = {
         };
         Relationships: [];
       };
+
       campaign_influencers: {
         Row: {
           id: string;
@@ -372,7 +314,7 @@ export type Database = {
       };
     };
     Enums: {
-      app_role: "admin" | "influencer" | "brand"; // UPDATED: Added "brand"
+      app_role: "admin" | "influencer";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -503,7 +445,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "influencer", "brand"],
+      app_role: ["admin", "influencer"],
     },
   },
 } as const;

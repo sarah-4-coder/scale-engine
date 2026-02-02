@@ -1,10 +1,10 @@
-import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: ('admin' | 'influencer')[];
+  allowedRoles?: ("admin" | "brand" | "influencer")[];
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
@@ -25,10 +25,13 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
+  // In ProtectedRoute.tsx, update the redirect logic:
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirect to appropriate dashboard based on role
-    if (role === 'admin') {
+    if (role === "admin") {
       return <Navigate to="/admin" replace />;
+    }
+    if (role === "brand") {
+      return <Navigate to="/brand/dashboard" replace />;
     }
     return <Navigate to="/dashboard" replace />;
   }

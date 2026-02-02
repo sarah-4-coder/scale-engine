@@ -1,43 +1,74 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+
+// ============================================
+// EAGER LOADED COMPONENTS (Small, needed immediately)
+// ============================================
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import InfluencerDashboard from "./pages/InfluencerDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AuthRedirect from "./components/AuthRedirect";
 import ProfileCompletionGuard from "./components/ProfileCompletionGuard";
-import ProfileSetup from "./pages/ProfileSetup";
-import CreateCampaign from "./pages/admin/CreateCampaign";
-// import InfluencerCampaigns from "./pages/influencer/MyCampaigns";
-import AdminNegotiations from "./pages/admin/Negotiations";
-import AllCampaigns from "./pages/influencer/AllCampaigns";
 
-import AdminCampaignDetails from "./pages/admin/AdminCampaignDetails";
-import AdminAllCampaigns from "./pages/admin/AdminAllCampaigns";
-import AdminCampaignAppliedInfluencers from "./pages/admin/AdminCampaignAppliedInfluencers";
-import AdminManageInfluencers from "./pages/admin/AdminManageInfluencers";
-import CampaignDetail from "./pages/influencer/CampaignDetail";
-import MyCampaigns from "./pages/influencer/MyCampaigns";
+// ============================================
+// LAZY LOADED COMPONENTS (Code splitting)
+// ============================================
+const InfluencerDashboard = lazy(() => import("./pages/InfluencerDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
+const AllCampaigns = lazy(() => import("./pages/influencer/AllCampaigns"));
+const MyCampaigns = lazy(() => import("./pages/influencer/MyCampaigns"));
+const CampaignDetail = lazy(() => import("./pages/influencer/CampaignDetail"));
 
-const queryClient = new QueryClient();
+// Admin routes (lazy loaded)
+const CreateCampaign = lazy(() => import("./pages/admin/CreateCampaign"));
+const AdminNegotiations = lazy(() => import("./pages/admin/Negotiations"));
+const AdminCampaignDetails = lazy(() => import("./pages/admin/AdminCampaignDetails"));
+const AdminAllCampaigns = lazy(() => import("./pages/admin/AdminAllCampaigns"));
+const AdminCampaignAppliedInfluencers = lazy(() => import("./pages/admin/AdminCampaignAppliedInfluencers"));
+const AdminManageInfluencers = lazy(() => import("./pages/admin/AdminManageInfluencers"));
 
-// Component to handle auth page redirects
+// ============================================
+// OPTIMIZED QUERY CLIENT
+// ============================================
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes
+      gcTime: 10 * 60 * 1000, // Cache for 10 minutes
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      refetchOnReconnect: true, // Do refetch on reconnect
+      retry: 1, // Only retry once on failure
+    },
+  },
+});
+
+// ============================================
+// LOADING FALLBACK COMPONENT
+// ============================================
+const PageLoader = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="text-center space-y-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+      <p className="text-muted-foreground text-sm">Loading...</p>
+    </div>
+  </div>
+);
+
+// ============================================
+// AUTH PAGE REDIRECT COMPONENT
+// ============================================
 const AuthPage = ({ children }: { children: React.ReactNode }) => {
   const { user, role, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (user && role) {
@@ -47,10 +78,15 @@ const AuthPage = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// ============================================
+// APP ROUTES
+// ============================================
 const AppRoutes = () => {
   return (
     <Routes>
+      {/* Landing page - no lazy load */}
       <Route path="/" element={<Index />} />
+      
       {/* Auth routes - redirect if already logged in */}
       <Route
         path="/login"
@@ -68,119 +104,162 @@ const AppRoutes = () => {
           </AuthPage>
         }
       />
-      {/* Protected routes */}
+
+      {/* ========================================
+          INFLUENCER ROUTES (Lazy Loaded)
+      ======================================== */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute allowedRoles={["influencer"]}>
             <ProfileCompletionGuard>
-              <InfluencerDashboard />
+              <Suspense fallback={<PageLoader />}>
+                <InfluencerDashboard />
+              </Suspense>
             </ProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/profile-setup"
         element={
           <ProtectedRoute allowedRoles={["influencer"]}>
-            <ProfileSetup />
+            <Suspense fallback={<PageLoader />}>
+              <ProfileSetup />
+            </Suspense>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/dashboard/campaigns/all"
         element={
           <ProtectedRoute allowedRoles={["influencer"]}>
             <ProfileCompletionGuard>
-              <AllCampaigns />
+              <Suspense fallback={<PageLoader />}>
+                <AllCampaigns />
+              </Suspense>
             </ProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/dashboard/campaigns/my"
         element={
           <ProtectedRoute allowedRoles={["influencer"]}>
             <ProfileCompletionGuard>
-              <MyCampaigns />
+              <Suspense fallback={<PageLoader />}>
+                <MyCampaigns />
+              </Suspense>
             </ProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/dashboard/campaigns/my/:campaignId"
         element={
           <ProtectedRoute allowedRoles={["influencer"]}>
             <ProfileCompletionGuard>
-              <CampaignDetail/>
+              <Suspense fallback={<PageLoader />}>
+                <CampaignDetail />
+              </Suspense>
             </ProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
 
+      {/* ========================================
+          ADMIN ROUTES (Lazy Loaded)
+      ======================================== */}
       <Route
         path="/admin"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <AdminDashboard />
+            <Suspense fallback={<PageLoader />}>
+              <AdminDashboard />
+            </Suspense>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/admin/campaigns/new"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <CreateCampaign />
+            <Suspense fallback={<PageLoader />}>
+              <CreateCampaign />
+            </Suspense>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/admin/negotiations"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <AdminNegotiations />
+            <Suspense fallback={<PageLoader />}>
+              <AdminNegotiations />
+            </Suspense>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/admin/campaigns"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <AdminAllCampaigns />
+            <Suspense fallback={<PageLoader />}>
+              <AdminAllCampaigns />
+            </Suspense>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/admin/campaigns/:id"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <AdminCampaignDetails />
+            <Suspense fallback={<PageLoader />}>
+              <AdminCampaignDetails />
+            </Suspense>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/admin/campaigns/:id/applied"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <AdminCampaignAppliedInfluencers />
+            <Suspense fallback={<PageLoader />}>
+              <AdminCampaignAppliedInfluencers />
+            </Suspense>
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/admin/influencers"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <AdminManageInfluencers />
+            <Suspense fallback={<PageLoader />}>
+              <AdminManageInfluencers />
+            </Suspense>
           </ProtectedRoute>
         }
       />
 
-      {/* Catch-all */}
+      {/* Catch-all - no lazy load needed */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
 
+// ============================================
+// MAIN APP COMPONENT
+// ============================================
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

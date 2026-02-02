@@ -1,54 +1,30 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { motion } from "framer-motion";
-import { Camera, Dumbbell, Code } from "lucide-react";
-import { ThemeKey } from "@/theme/themes";
+import { memo } from 'react';
+import { motion } from 'framer-motion';
+import { ThemeKey } from '@/theme/themes';
 
-type Props = {
-  themeKey: ThemeKey;
-};
+/**
+ * Optimized Ambient Layer
+ * - Memoized to prevent unnecessary re-renders
+ * - Reduced to minimal animations
+ * - Disabled on mobile and reduced-motion preference
+ * - GPU accelerated with willChange
+ */
+const AmbientLayer = memo(({ themeKey }: { themeKey: ThemeKey }) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const prefersReducedMotion = typeof window !== 'undefined' && 
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  
+  // Disable on mobile or if user prefers reduced motion
+  if (isMobile || prefersReducedMotion) return null;
 
-const Floating = ({
-  children,
-  x,
-  y,
-  duration = 30,
-  opacity = 0.15,
-}: any) => (
-  <motion.div
-    className="absolute"
-    style={{ opacity }}
-    animate={{
-      y: [0, y, 0],
-      x: [0, x, 0],
-    }}
-    transition={{
-      duration,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  >
-    {children}
-  </motion.div>
-);
-
-const AmbientLayer = ({ themeKey }: Props) => {
   /* ------------------------
      FASHION (LUXURY / EDITORIAL)
   ------------------------ */
   if (themeKey === "fashion") {
     return (
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+        {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#4a4439] to-[#f1f1ee]" />
-
-        {/* Floating editorial elements */}
-        <Floating x={40} y={30} opacity={0.08}>
-          <Camera size={180} color="#ffffff" />
-        </Floating>
-
-        <Floating x={-30} y={50} duration={40} opacity={0.05}>
-          <div className="text-[200px] font-serif text-[#ffffff]">A</div>
-        </Floating>
       </div>
     );
   }
@@ -58,25 +34,22 @@ const AmbientLayer = ({ themeKey }: Props) => {
   ------------------------ */
   if (themeKey === "tech") {
     return (
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-[#020617]" />
 
-        {/* Glow layers */}
+        {/* Only 2 glow layers - GPU accelerated */}
         <motion.div
-          className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[120px]"
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 20, repeat: Infinity }}
+          className="absolute -top-40 -left-40 w-[400px] h-[400px] bg-cyan-500/15 rounded-full blur-[100px]"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          style={{ willChange: 'transform' }}
         />
         <motion.div
-          className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/20 rounded-full blur-[120px]"
-          animate={{ scale: [1, 1.3, 1] }}
-          transition={{ duration: 25, repeat: Infinity }}
+          className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/15 rounded-full blur-[100px]"
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+          style={{ willChange: 'transform' }}
         />
-
-        {/* Floating icons */}
-        <Floating x={60} y={40}>
-          <Code size={160} color="#22d3ee" />
-        </Floating>
       </div>
     );
   }
@@ -86,30 +59,50 @@ const AmbientLayer = ({ themeKey }: Props) => {
   ------------------------ */
   if (themeKey === "fitness") {
     return (
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-[#020617]" />
 
-        {/* Energy glows */}
+        {/* Only 2 energy glows - GPU accelerated */}
         <motion.div
-          className="absolute top-0 left-1/3 w-[450px] h-[450px] bg-red-500/25 rounded-full blur-[120px]"
-          animate={{ scale: [1, 1.25, 1] }}
-          transition={{ duration: 18, repeat: Infinity }}
+          className="absolute top-0 left-1/3 w-[350px] h-[350px] bg-red-500/20 rounded-full blur-[100px]"
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+          style={{ willChange: 'transform' }}
         />
         <motion.div
-          className="absolute bottom-0 right-1/3 w-[450px] h-[450px] bg-green-500/20 rounded-full blur-[120px]"
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 22, repeat: Infinity }}
+          className="absolute bottom-0 right-1/3 w-[350px] h-[350px] bg-green-500/15 rounded-full blur-[100px]"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
+          style={{ willChange: 'transform' }}
         />
-
-        {/* Floating strength icon */}
-        <Floating x={0} y={60} duration={28}>
-          <Dumbbell size={160} color="#ef4444" />
-        </Floating>
       </div>
     );
   }
 
-  return null;
-};
+  /* ------------------------
+     DEFAULT
+  ------------------------ */
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 bg-[#020617]" />
+
+      {/* Minimal default glows */}
+      <motion.div
+        className="absolute -top-40 -left-40 w-[400px] h-[400px] bg-orange-500/15 rounded-full blur-[100px]"
+        animate={{ scale: [1, 1.1, 1] }}
+        transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+        style={{ willChange: 'transform' }}
+      />
+      <motion.div
+        className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/15 rounded-full blur-[100px]"
+        animate={{ scale: [1, 1.12, 1] }}
+        transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
+        style={{ willChange: 'transform' }}
+      />
+    </div>
+  );
+});
+
+AmbientLayer.displayName = 'AmbientLayer';
 
 export default AmbientLayer;
