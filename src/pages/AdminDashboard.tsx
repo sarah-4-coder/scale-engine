@@ -69,7 +69,7 @@ const AdminDashboard = () => {
         const { count: negotiations } = await supabase
           .from("campaign_influencers")
           .select("*", { count: "exact", head: true })
-          .in("status", ["influencer_negotiated", "applied"]);
+          .in("status", ["influencer_negotiated", "admin_negotiated"]);
 
         const { count: accepted } = await supabase
           .from("campaign_influencers")

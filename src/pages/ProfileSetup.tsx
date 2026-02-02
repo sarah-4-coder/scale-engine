@@ -163,17 +163,17 @@ const ProfileSetup = () => {
       />
 
       {/* CARD */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-black/40 backdrop-blur-xl p-8 shadow-2xl text-white">
-        <h1 className="text-2xl font-bold mb-1">
+      <div className="relative z-10 w-[90%] md:w-full max-w-lg rounded-2xl bg-black/40 backdrop-blur-xl p-6 md:p-8 shadow-2xl text-white">
+        <h1 className="text-xl md:text-2xl font-bold mb-1">
           Unlock campaigns by completing your profile
         </h1>
-        <p className="text-sm text-white/70 mb-4">
+        <p className="text-xs md:text-sm text-white/70 mb-4">
           Creators with 100% profiles get approved faster 🚀
         </p>
 
         {/* PROGRESS */}
-        <div className="mb-6">
-          <div className="flex justify-between text-xs mb-1">
+        <div className="mb-4 md:mb-6">
+          <div className="flex justify-between text-[10px] md:text-xs mb-1">
             <span>Profile completion</span>
             <span>{progress}%</span>
           </div>
@@ -193,22 +193,22 @@ const ProfileSetup = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.4 }}
-            className="space-y-4"
+            className="space-y-3 md:space-y-4"
           >
             {step === 1 && (
               <>
                 <Input
-                  placeholder="Your name"
+                  placeholder="Your name" className="h-11 text-base"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
                 <Input
-                  placeholder="Instagram handle"
+                  placeholder="Instagram handle" className="h-11 text-base"
                   value={instagramHandle}
                   onChange={(e) => setInstagramHandle(e.target.value)}
                 />
                 <Input
-                  placeholder="Phone number"
+                  placeholder="Phone number" className="h-11 text-base"
                   value={phone}
                   onChange={(e) =>
                     setPhone(e.target.value.replace(/[^0-9]/g, ""))
@@ -219,7 +219,7 @@ const ProfileSetup = () => {
 
             {step === 2 && (
               <Input
-                placeholder="Your reach (100k, 1M)"
+                placeholder="Your reach (100k, 1M)" className="h-11 text-base"
                 value={followersInput}
                 onChange={(e) => setFollowersInput(e.target.value)}
               />
@@ -227,12 +227,12 @@ const ProfileSetup = () => {
 
             {step === 3 && (
               <>
-                <p className="font-medium">Where are you based?</p>
+                <p className="text-sm md:text-base font-medium">Where are you based?</p>
 
                 {/* CITY */}
-                <p className="text-sm mt-2">City</p>
+                <p className="text-xs md:text-sm mt-2">City</p>
                 {DEFAULT_CITIES.map((c) => (
-                  <label key={c} className="flex gap-2">
+                  <label key={c} className="flex gap-2 text-sm md:text-base">
                     <Checkbox
                       checked={city === c}
                       onCheckedChange={() => setCity(c)}
@@ -240,14 +240,14 @@ const ProfileSetup = () => {
                     {c}
                   </label>
                 ))}
-                <div className="flex gap-2">
+                <div className="flex gap-2 text-sm md:text-base">
                   <Input
-                    placeholder="Add city"
+                    placeholder="Add city" className="h-11 text-base"
                     value={customCity}
                     onChange={(e) => setCustomCity(e.target.value)}
                   />
                   <Button
-                    type="button"
+                    type="button" className="h-11 text-sm md:text-base"
                     onClick={() => {
                       const clean = normalizeLabel(customCity);
                       if (clean) {
@@ -260,16 +260,16 @@ const ProfileSetup = () => {
                   </Button>
                 </div>
                 {city && !DEFAULT_CITIES.includes(city) && (
-                  <p className="text-xs text-green-400 mt-1">
+                  <p className="text-[10px] md:text-xs text-green-400 mt-1">
                     ✅ Selected city:{" "}
-                    <span className="font-medium">{city}</span>
+                    <span className="text-sm md:text-base font-medium">{city}</span>
                   </p>
                 )}
 
                 {/* STATE */}
-                <p className="text-sm mt-4">State</p>
+                <p className="text-xs md:text-sm mt-3 md:mt-4">State</p>
                 {DEFAULT_STATES.map((s) => (
-                  <label key={s} className="flex gap-2">
+                  <label key={s} className="flex gap-2 text-sm md:text-base">
                     <Checkbox
                       checked={state === s}
                       onCheckedChange={() => setState(s)}
@@ -277,14 +277,14 @@ const ProfileSetup = () => {
                     {s}
                   </label>
                 ))}
-                <div className="flex gap-2">
+                <div className="flex gap-2 text-sm md:text-base">
                   <Input
-                    placeholder="Add state"
+                    placeholder="Add state" className="h-11 text-base"
                     value={customState}
                     onChange={(e) => setCustomState(e.target.value)}
                   />
                   <Button
-                    type="button"
+                    type="button" className="h-11 text-sm md:text-base"
                     onClick={() => {
                       const clean = normalizeLabel(customState);
                       if (clean) {
@@ -297,9 +297,9 @@ const ProfileSetup = () => {
                   </Button>
                 </div>
                 {state && !DEFAULT_STATES.includes(state) && (
-                  <p className="text-xs text-green-400 mt-1">
+                  <p className="text-[10px] md:text-xs text-green-400 mt-1">
                     ✅ Selected state:{" "}
-                    <span className="font-medium">{state}</span>
+                    <span className="text-sm md:text-base font-medium">{state}</span>
                   </p>
                 )}
               </>
@@ -307,11 +307,11 @@ const ProfileSetup = () => {
 
             {step === 4 && (
               <>
-                <p className="font-medium">
+                <p className="text-sm md:text-base font-medium">
                   What should brands contact you for?
                 </p>
                 {allNiches.map((n) => (
-                  <label key={n} className="flex gap-2">
+                  <label key={n} className="flex gap-2 text-sm md:text-base">
                     <Checkbox
                       checked={selectedNiches.includes(n)}
                       onCheckedChange={() =>
@@ -325,11 +325,12 @@ const ProfileSetup = () => {
                 ))}
 
                 <Input
-                  placeholder="Add niche"
+                  placeholder="Add niche" className="h-11 text-base"
                   value={newNiche}
                   onChange={(e) => setNewNiche(e.target.value)}
                 />
                 <Button
+                  className="h-11 text-sm md:text-base"
                   onClick={() => {
                     const clean = normalizeLabel(newNiche);
                     if (clean) {
@@ -349,24 +350,24 @@ const ProfileSetup = () => {
         </AnimatePresence>
 
         {/* ACTIONS */}
-        <div className="flex justify-between mt-6">
+        <div className="flex justify-between mt-4 md:mt-6">
           {step > 1 && (
-            <Button variant="ghost" onClick={() => setStep(step - 1)}>
+            <Button variant="ghost" onClick={() => setStep(step - 1)} className="h-11 text-sm md:text-base">
               Back
             </Button>
           )}
 
           {step < 4 ? (
-            <Button disabled={!canProceed()} onClick={nextStep}>
+            <Button disabled={!canProceed()} onClick={nextStep} className="h-11 text-sm md:text-base">
               Next
             </Button>
           ) : (
-            <Button disabled={!canProceed()} onClick={submitProfile}>
+            <Button disabled={!canProceed()} onClick={submitProfile} className="h-11 text-sm md:text-base">
               Finish & Unlock
             </Button>
           )}
         </div>
-        <div className="mt-4 text-center">
+        <div className="mt-3 md:mt-4 text-center">
           <button
             onClick={handlesignout}
             className="text-sm text-white/50 hover:text-white"

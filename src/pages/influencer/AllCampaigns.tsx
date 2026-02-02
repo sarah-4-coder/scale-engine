@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { useEffect, useState, memo } from "react";
+import { useState, useMemo, memo } from "react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,12 +10,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
 import AmbientLayer from "@/components/ambient/AmbientLayer";
-import { ThemeKey } from "@/theme/themes";
 import {
   Calendar,
   DollarSign,
@@ -29,6 +26,7 @@ import {
 } from "lucide-react";
 import { CampaignCardSkeleton } from "@/components/influencer/Skeletons";
 import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
+import { useCampaigns, useInfluencerProfile, useApplyToCampaign, useMyCampaigns } from "@/hooks/useCampaigns";
 
 interface Campaign {
   id: string;
@@ -62,111 +60,94 @@ const AllCampaigns = () => {
     loading: themeLoading,
   } = useInfluencerTheme();
 
-  const [loading, setLoading] = useState(true);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [appliedCampaignIds, setAppliedCampaignIds] = useState<string[]>([]);
-  const [influencerId, setInfluencerId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<InfluencerProfile | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
+  // ⚡ REACT QUERY HOOKS - Automatic caching & refetching
+  const { data: campaigns = [], isLoading: campaignsLoading } = useCampaigns();
+  const { data: profile, isLoading: profileLoading } = useInfluencerProfile(user?.id || '');
+  const influencerId = profile?.id;
+  const { data: myApplications = [] } = useMyCampaigns(influencerId || '');
+  const applyMutation = useApplyToCampaign();
 
-      // Influencer profile (FULL — needed for eligibility)
-      const { data: profileData } = await supabase
-        .from("influencer_profiles")
-        .select("id, niches, followers_count, city")
-        .eq("user_id", user.id)
-        .single();
+  const loading = campaignsLoading || profileLoading;
 
-      if (!profileData) {
-        toast.error("Influencer profile not found");
-        return;
-      }
-      //@ts-ignore
-      setInfluencerId(profileData.id);
-      setProfile(profileData);
+  // Get applied campaign IDs from myApplications
+  //@ts-ignore
+  const appliedCampaignIds = useMemo(() => {
+    //@ts-ignore
+    return myApplications.map(app => app.campaign_id);
+  }, [myApplications]);
 
-      // All campaigns
-      const { data: campaignsData } = await supabase
-        .from("campaigns")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      setCampaigns(campaignsData || []);
-
-      // Applied campaigns
-      const { data: applications } = await supabase
-        .from("campaign_influencers")
-        .select("campaign_id")
-        //@ts-ignore
-        .eq("influencer_id", profileData.id);
-      //@ts-ignore
-      setAppliedCampaignIds(applications?.map((a) => a.campaign_id) || []);
-
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [user]);
-
-  /* -----------------------
+  /* -------------------------------
      ELIGIBILITY CHECK
-  ----------------------- */
-  const isEligible = (campaign: Campaign) => {
+  ------------------------------- */
+  const isEligible = (campaign: Campaign): boolean => {
     if (!profile) return false;
 
-    const e = campaign.eligibility || {};
+    const eligibility = campaign.eligibility;
+    if (!eligibility) return true;
 
-    // Min followers
+    // Check min followers
     if (
-      e.min_followers &&
-      (!profile.followers_count || profile.followers_count < e.min_followers)
+      eligibility.min_followers &&
+      (!profile.followers_count || profile.followers_count < eligibility.min_followers)
     ) {
       return false;
     }
 
-    // Allowed cities
-    if (
-      e.allowed_cities?.length &&
-      (!profile.city || !e.allowed_cities.includes(profile.city))
-    ) {
-      return false;
+    // Check niches
+    if (eligibility.allowed_niches && eligibility.allowed_niches.length > 0) {
+      if (!profile.niches || profile.niches.length === 0) return false;
+      const hasMatchingNiche = profile.niches.some((n) =>
+        //@ts-ignore
+        eligibility.allowed_niches.includes(n),
+      );
+      if (!hasMatchingNiche) return false;
     }
 
-    // Allowed niches
-    if (
-      e.allowed_niches?.length &&
-      (!profile.niches ||
-        !profile.niches.some((n) => e.allowed_niches!.includes(n)))
-    ) {
-      return false;
+    // Check cities
+    if (eligibility.allowed_cities && eligibility.allowed_cities.length > 0) {
+      if (
+        !profile.city ||
+        //@ts-ignore
+        !eligibility.allowed_cities.includes(profile.city)
+      ) {
+        return false;
+      }
     }
 
     return true;
   };
 
-  const applyToCampaign = async (campaignId: string) => {
-    if (!influencerId) return;
-    //@ts-ignore
-    const { error } = await supabase.from("campaign_influencers").insert({
-      campaign_id: campaignId,
-      influencer_id: influencerId,
-      status: "applied",
-    });
+  // ⚡ MEMOIZED filtered campaigns (performance optimization)
+  const eligibleCampaigns = useMemo(() => {
+    return campaigns.filter(isEligible);
+  }, [campaigns, profile]);
 
-    if (error) {
-      toast.error("Already applied or not allowed");
-      return;
-    }
-
-    toast.success(
-      "Applied successfully! Check My Campaigns to track progress.",
+  // ⚡ MEMOIZED searched campaigns
+  const displayedCampaigns = useMemo(() => {
+    if (!searchTerm) return eligibleCampaigns;
+    
+    const term = searchTerm.toLowerCase();
+    return eligibleCampaigns.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.description?.toLowerCase().includes(term) ||
+        c.niches.some((n) => n.toLowerCase().includes(term))
     );
-    setAppliedCampaignIds((prev) => [...prev, campaignId]);
-  };
+  }, [eligibleCampaigns, searchTerm]);
 
-  const eligibleCampaigns = campaigns.filter(isEligible);
+  /* -------------------------------
+     APPLY TO CAMPAIGN (using mutation)
+  ------------------------------- */
+  const applyToCampaign = (campaignId: string) => {
+    if (!influencerId) return;
+    
+    applyMutation.mutate({ 
+      campaignId, 
+      influencerId 
+    });
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -180,7 +161,7 @@ const AllCampaigns = () => {
         style={{ background: theme.background }}
       />
 
-      {/* Themed Studio Background (CSS-based, hidden on mobile) */}
+      {/* Themed Studio Background */}
       <ThemedStudioBackground themeKey={themeKey} />
 
       {/* Ambient Background */}
@@ -194,122 +175,74 @@ const AllCampaigns = () => {
       {/* CONTENT */}
       <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-6xl mx-auto">
         {/* HEADER */}
-        <div className="mb-6 md:mb-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 mb-3"
-          >
-            <Sparkles className={`h-6 w-6 md:h-8 md:w-8 ${theme.accent}`} />
-            <h2 className={`text-2xl md:text-3xl font-bold ${theme.text}`}>
-              Discover Campaigns
-            </h2>
-          </motion.div>
-          <p className={theme.muted}>
-            Find campaigns that match your profile and start earning
-          </p>
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <div>
+              <h2 className={`text-2xl md:text-3xl font-bold ${theme.text}`}>
+                Browse Campaigns
+              </h2>
+              <p className={theme.muted}>
+                Find campaigns that match your profile
+              </p>
+            </div>
 
-          {/* Stats Bar */}
-          {!loading && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className={`mt-4 md:mt-6 ${theme.card} ${theme.radius} p-4`}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg bg-gradient-to-r ${theme.primary} bg-opacity-20`}
-                  >
-                    <Target className={`h-5 w-5 ${theme.accent}`} />
-                  </div>
-                  <div>
-                    <p className={`text-xs md:text-sm ${theme.muted}`}>
-                      Available
-                    </p>
-                    <p className={`text-lg md:text-xl font-bold ${theme.text}`}>
-                      {eligibleCampaigns.length}
-                    </p>
-                  </div>
-                </div>
+            <div className={`${theme.card} ${theme.radius} px-4 py-2`}>
+              <p className={`text-sm ${theme.muted}`}>
+                <span className={`font-semibold ${theme.text}`}>
+                  {displayedCampaigns.length}
+                </span>{" "}
+                {displayedCampaigns.length === 1 ? "campaign" : "campaigns"} available
+              </p>
+            </div>
+          </div>
 
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg bg-gradient-to-r ${theme.primary} bg-opacity-20`}
-                  >
-                    <CheckCircle2 className={`h-5 w-5 ${theme.accent}`} />
-                  </div>
-                  <div>
-                    <p className={`text-xs md:text-sm ${theme.muted}`}>
-                      Applied
-                    </p>
-                    <p className={`text-lg md:text-xl font-bold ${theme.text}`}>
-                      {appliedCampaignIds.length}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg bg-gradient-to-r ${theme.primary} bg-opacity-20`}
-                  >
-                    <TrendingUp className={`h-5 w-5 ${theme.accent}`} />
-                  </div>
-                  <div>
-                    <p className={`text-xs md:text-sm ${theme.muted}`}>
-                      Your Niche
-                    </p>
-                    <p className={`text-sm font-medium ${theme.text}`}>
-                      {profile?.niches?.[0] || "Not set"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
+          {/* Search Bar */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search campaigns..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full px-4 py-3 rounded-xl ${theme.card} ${theme.text} placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/20`}
+            />
+          </div>
         </div>
 
         {/* LOADING STATE */}
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <CampaignCardSkeleton key={i} theme={theme} />
             ))}
           </div>
         ) : (
           <>
             {/* CAMPAIGNS GRID */}
-            {eligibleCampaigns.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`${theme.card} ${theme.radius} p-12 text-center`}
-              >
-                <div className="max-w-md mx-auto">
-                  <div
-                    className={`inline-flex p-4 rounded-full bg-gradient-to-r ${theme.primary} bg-opacity-20 mb-4`}
-                  >
-                    <Target className={`h-12 w-12 ${theme.accent}`} />
-                  </div>
-                  <h3 className={`text-xl font-bold ${theme.text} mb-2`}>
-                    No Campaigns Available
-                  </h3>
-                  <p className={`${theme.muted} mb-6`}>
-                    There are no campaigns matching your profile at the moment.
-                    Check back soon for new opportunities!
+            {displayedCampaigns.length === 0 ? (
+              <div className={`${theme.card} ${theme.radius} p-12 text-center`}>
+                {searchTerm ? (
+                  <>
+                    <p className={theme.muted}>
+                      No campaigns match your search "{searchTerm}"
+                    </p>
+                    <Button
+                      onClick={() => setSearchTerm("")}
+                      className="mt-4"
+                      variant="outline"
+                    >
+                      Clear Search
+                    </Button>
+                  </>
+                ) : (
+                  <p className={theme.muted}>
+                    No campaigns available that match your profile right now.
+                    Check back soon!
                   </p>
-                  <Button
-                    onClick={() => navigate("/dashboard")}
-                    className="bg-gradient-to-r from-purple-500 to-indigo-500"
-                  >
-                    Go to Dashboard
-                  </Button>
-                </div>
-              </motion.div>
+                )}
+              </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-                {eligibleCampaigns.map((campaign, index) => {
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+                {displayedCampaigns.map((campaign, index) => {
                   const isApplied = appliedCampaignIds.includes(campaign.id);
 
                   return (
@@ -317,176 +250,140 @@ const AllCampaigns = () => {
                       key={campaign.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ delay: index * 0.05 }}
                       whileHover={{ y: -4 }}
-                      className="h-full"
                     >
                       <Card
                         className={`${theme.card} ${theme.radius} overflow-hidden transition-all duration-300 hover:shadow-2xl h-full flex flex-col`}
                       >
-                        {/* Header with gradient overlay */}
-                        <div
-                          className={`relative p-4 md:p-6 bg-gradient-to-br ${theme.primary} bg-opacity-10`}
-                        >
-                          <CardHeader className="p-0">
-                            <div className="flex items-start justify-between gap-3 mb-2">
-                              <CardTitle
-                                className={`text-lg md:text-xl ${theme.text}`}
-                              >
-                                {campaign.name}
-                              </CardTitle>
-                              {isApplied && (
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20">
-                                  <CheckCircle2 className="h-3 w-3 text-green-400" />
-                                  <span className="text-xs text-green-400 font-medium">
-                                    Applied
-                                  </span>
-                                </div>
-                              )}
-                            </div>
+                        <CardHeader className="pb-3">
+                          <CardTitle className={`text-lg ${theme.text}`}>
+                            {campaign.name}
+                          </CardTitle>
+                          {campaign.description && (
+                            <CardDescription
+                              className={`${theme.muted} line-clamp-2 text-sm`}
+                            >
+                              {campaign.description}
+                            </CardDescription>
+                          )}
+                        </CardHeader>
 
-                            {campaign.description && (
-                              <CardDescription
-                                className={`${theme.muted} line-clamp-2`}
-                              >
-                                {campaign.description}
-                              </CardDescription>
-                            )}
-                          </CardHeader>
-                        </div>
-
-                        {/* Content */}
-                        <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4 flex-grow">
+                        <CardContent className="space-y-4 flex-grow flex flex-col">
                           {/* Niches */}
-                          <div>
-                            <p className={`text-xs ${theme.muted} mb-2`}>
-                              Niches
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {campaign.niches.map((niche) => (
-                                <span
-                                  key={niche}
-                                  className={`px-2 py-1 rounded-lg bg-white/10 text-xs ${theme.text}`}
-                                >
-                                  {niche}
-                                </span>
-                              ))}
-                            </div>
+                          <div className="flex flex-wrap gap-2">
+                            {campaign.niches.slice(0, 3).map((niche) => (
+                              <span
+                                key={niche}
+                                className={`px-2 py-1 rounded-lg bg-white/10 text-xs ${theme.muted}`}
+                              >
+                                {niche}
+                              </span>
+                            ))}
+                            {campaign.niches.length > 3 && (
+                              <span
+                                className={`px-2 py-1 rounded-lg bg-white/10 text-xs ${theme.muted}`}
+                              >
+                                +{campaign.niches.length - 3}
+                              </span>
+                            )}
                           </div>
 
                           {/* Info Grid */}
-                          <div className="space-y-3">
-                            <div className="flex items-start gap-3">
-                              <Target
-                                className={`h-4 w-4 ${theme.accent} mt-0.5 flex-shrink-0`}
-                              />
-                              <div className="flex-grow min-w-0">
-                                <p className={`text-xs ${theme.muted}`}>
-                                  Deliverables
-                                </p>
-                                <p
-                                  className={`text-sm ${theme.text} font-medium`}
-                                >
-                                  {campaign.deliverables}
-                                </p>
-                              </div>
+                          <div className="space-y-2 flex-grow">
+                            <div className="flex items-center gap-2">
+                              <Calendar className={`h-4 w-4 ${theme.accent}`} />
+                              <span
+                                className={`text-xs md:text-sm ${theme.muted}`}
+                              >
+                                {campaign.timeline}
+                              </span>
                             </div>
 
-                            <div className="flex items-start gap-3">
-                              <Calendar
-                                className={`h-4 w-4 ${theme.accent} mt-0.5 flex-shrink-0`}
-                              />
-                              <div className="flex-grow">
-                                <p className={`text-xs ${theme.muted}`}>
-                                  Timeline
-                                </p>
-                                <p
-                                  className={`text-sm ${theme.text} font-medium`}
-                                >
-                                  {campaign.timeline}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-center gap-2">
                               <DollarSign
-                                className={`h-4 w-4 ${theme.accent} mt-0.5 flex-shrink-0`}
+                                className={`h-4 w-4 ${theme.accent}`}
                               />
-                              <div className="flex-grow">
-                                <p className={`text-xs ${theme.muted}`}>
-                                  Base Payout
-                                </p>
-                                <p
-                                  className={`text-base md:text-lg ${theme.text} font-bold`}
-                                >
-                                  ₹{campaign.base_payout.toLocaleString()}
-                                </p>
-                              </div>
+                              <span
+                                className={`text-xs md:text-sm ${theme.text} font-medium`}
+                              >
+                                ₹{campaign.base_payout} base payout
+                              </span>
                             </div>
-                          </div>
 
-                          {/* Eligibility Info (if available) */}
-                          {campaign.eligibility && (
-                            <div className="pt-3 border-t border-white/10">
-                              <p className={`text-xs ${theme.muted} mb-2`}>
-                                Requirements
-                              </p>
-                              <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Target className={`h-4 w-4 ${theme.accent}`} />
+                              <span
+                                className={`text-xs md:text-sm ${theme.muted}`}
+                              >
+                                {campaign.deliverables}
+                              </span>
+                            </div>
+
+                            {/* Eligibility Info */}
+                            {campaign.eligibility && (
+                              <>
                                 {campaign.eligibility.min_followers && (
                                   <div className="flex items-center gap-2">
                                     <Users
-                                      className={`h-3 w-3 ${theme.accent}`}
+                                      className={`h-4 w-4 ${theme.accent}`}
                                     />
-                                    <span className={`text-xs ${theme.text}`}>
-                                      {campaign.eligibility.min_followers.toLocaleString()}
-                                      + followers
+                                    <span
+                                      className={`text-xs ${theme.muted}`}
+                                    >
+                                      Min {campaign.eligibility.min_followers.toLocaleString()}{" "}
+                                      followers
                                     </span>
                                   </div>
                                 )}
+
                                 {campaign.eligibility.allowed_cities &&
                                   campaign.eligibility.allowed_cities.length >
                                     0 && (
                                     <div className="flex items-center gap-2">
                                       <MapPin
-                                        className={`h-3 w-3 ${theme.accent}`}
+                                        className={`h-4 w-4 ${theme.accent}`}
                                       />
-                                      <span className={`text-xs ${theme.text}`}>
+                                      <span
+                                        className={`text-xs ${theme.muted}`}
+                                      >
                                         {campaign.eligibility.allowed_cities.join(
                                           ", ",
                                         )}
                                       </span>
                                     </div>
                                   )}
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
+                              </>
+                            )}
+                          </div>
 
-                        {/* Footer Action */}
-                        <div className="p-4 pt-0 md:p-6 md:pt-0">
+                          {/* Apply Button */}
                           {isApplied ? (
                             <Button
                               disabled
+                              className="w-full"
                               variant="outline"
-                              className="w-full h-11 text-sm md:text-base"
                             >
                               <CheckCircle2 className="h-4 w-4 mr-2" />
-                              Already Applied
+                              Applied
                             </Button>
                           ) : (
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
+                            <Button
+                              onClick={() => applyToCampaign(campaign.id)}
+                              disabled={applyMutation.isPending}
+                              className="w-full"
                             >
-                              <Button
-                                onClick={() => applyToCampaign(campaign.id)}
-                                className={`w-full h-11 text-sm md:text-base bg-gradient-to-r ${theme.primary}`}
-                              >
-                                Apply Now
-                              </Button>
-                            </motion.div>
+                              {applyMutation.isPending ? (
+                                "Applying..."
+                              ) : (
+                                <>
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  Apply Now
+                                </>
+                              )}
+                            </Button>
                           )}
-                        </div>
+                        </CardContent>
                       </Card>
                     </motion.div>
                   );

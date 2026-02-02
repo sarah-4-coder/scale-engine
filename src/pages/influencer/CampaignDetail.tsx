@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect, memo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,6 +17,7 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,8 +36,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DetailSkeleton } from "@/components/influencer/Skeletons";
-import { ThemeKey } from "@/theme/themes";
 import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
+import { useCampaign, useCampaignApplication, useInfluencerProfile } from "@/hooks/useCampaigns";
 
 /* --------------------------------
    TYPES
@@ -61,8 +62,6 @@ interface Application {
   negotiation_note?: string | null;
 }
 
-
-
 const getRequiredLinksCount = (deliverables: string): number => {
   const matches = deliverables.match(/\d+/g);
   if (!matches) return 1;
@@ -73,6 +72,7 @@ const CampaignDetail = () => {
   const { campaignId } = useParams<{ campaignId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const {
     theme,
     themeKey,
@@ -81,13 +81,25 @@ const CampaignDetail = () => {
   } = useInfluencerTheme();
 
   /* -------------------------------
-     STATE
+     REACT QUERY HOOKS - Automatic caching & real-time updates
   ------------------------------- */
-  const [loading, setLoading] = useState(true);
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [application, setApplication] = useState<Application | null>(null);
-  const [influencerId, setInfluencerId] = useState<string | null>(null);
+  const { data: profile } = useInfluencerProfile(user?.id || '');
+  const influencerId = profile?.id;
+  
+  // Campaign data (cached for 5 min)
+  const { data: campaign, isLoading: campaignLoading } = useCampaign(campaignId || '');
+  
+  // Application data (auto-refetches every 10 sec for status updates)
+  const { data: application, isLoading: appLoading } = useCampaignApplication(
+    campaignId || '',
+    influencerId || ''
+  );
 
+  const loading = campaignLoading || appLoading;
+
+  /* -------------------------------
+     LOCAL STATE
+  ------------------------------- */
   // Negotiation state
   const [showNegotiationModal, setShowNegotiationModal] = useState(false);
   const [requestedPayout, setRequestedPayout] = useState("");
@@ -100,79 +112,16 @@ const CampaignDetail = () => {
   const [submitting, setSubmitting] = useState(false);
 
   /* -------------------------------
-     FETCH DATA (with real-time updates)
+     INITIALIZE CONTENT FIELDS
   ------------------------------- */
-  const fetchData = useCallback(async () => {
-    if (!user || !campaignId) return;
-
-    try {
-      // Get influencer profile
-      const { data: profile } = await supabase
-        .from("influencer_profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile) {
-        toast.error("Influencer profile not found");
-        navigate("/dashboard/campaigns/my");
-        return;
-      }
-      //@ts-ignore
-      setInfluencerId(profile.id);
-
-      // Get campaign
-      const { data: campaignData } = await supabase
-        .from("campaigns")
-        .select("*")
-        .eq("id", campaignId)
-        .single();
-
-      if (!campaignData) {
-        toast.error("Campaign not found");
-        navigate("/dashboard/campaigns/my");
-        return;
-      }
-
-      setCampaign(campaignData);
-
-      // Get application
-      const { data: applicationData } = await supabase
-        .from("campaign_influencers")
-        .select(
-          "campaign_id, status, requested_payout, final_payout, posted_link, negotiation_note",
-        )
-        //@ts-ignore
-        .eq("influencer_id", profile.id)
-        .eq("campaign_id", campaignId)
-        .single();
-
-      if (!applicationData) {
-        toast.error("Application not found");
-        navigate("/dashboard/campaigns/my");
-        return;
-      }
-
-      setApplication(applicationData);
-
-      // Initialize content submission fields
-      //@ts-ignore
-      const count = getRequiredLinksCount(campaignData.deliverables);
-      setPostedLinks(
-        Array.from({ length: count }, () => ({ label: "", url: "" })),
-      );
-
-      setLoading(false);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load campaign details");
-      navigate("/dashboard/campaigns/my");
-    }
-  }, [user, campaignId, navigate]);
-
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (campaign) {
+      const count = getRequiredLinksCount(campaign.deliverables);
+      setPostedLinks(
+        Array.from({ length: count }, () => ({ label: "", url: "" }))
+      );
+    }
+  }, [campaign]);
 
   /* -------------------------------
      REAL-TIME SUBSCRIPTION
@@ -180,7 +129,6 @@ const CampaignDetail = () => {
   useEffect(() => {
     if (!influencerId || !campaignId) return;
 
-    // Subscribe to changes in campaign_influencers table
     const subscription = supabase
       .channel(`campaign_${campaignId}_influencer_${influencerId}`)
       .on(
@@ -193,16 +141,32 @@ const CampaignDetail = () => {
         },
         (payload) => {
           console.log("Real-time update:", payload);
-          // Refetch data when changes occur
-          fetchData();
-        },
+          // Invalidate query cache to trigger refetch
+          queryClient.invalidateQueries({ 
+            queryKey: ['campaign-application', campaignId, influencerId] 
+          });
+        }
       )
       .subscribe();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [influencerId, campaignId, fetchData]);
+  }, [influencerId, campaignId, queryClient]);
+
+  /* -------------------------------
+     REDIRECT IF NO DATA
+  ------------------------------- */
+  useEffect(() => {
+    if (!loading && !campaign) {
+      toast.error("Campaign not found");
+      navigate("/dashboard/campaigns/my");
+    }
+    if (!loading && campaign && !application) {
+      toast.error("Application not found");
+      navigate("/dashboard/campaigns/my");
+    }
+  }, [loading, campaign, application, navigate]);
 
   /* -------------------------------
      NEGOTIATION ACTIONS
@@ -244,106 +208,102 @@ const CampaignDetail = () => {
     setRequestedPayout("");
     setNote("");
 
-    // Data will be refreshed by real-time subscription
+    // Invalidate cache to trigger refetch
+    queryClient.invalidateQueries({ 
+      queryKey: ['campaign-application', campaignId, influencerId] 
+    });
   };
 
   const acceptCounterOffer = async () => {
-    if (!application?.requested_payout || !influencerId || !campaignId) return;
+    if (!campaignId || !influencerId || !campaign) return;
 
-    await supabase
+    const { error } = await supabase
       .from("campaign_influencers")
       //@ts-ignore
-      .update({
-        final_payout: application.requested_payout,
-        status: "accepted",
-      })
+      .update({ status: "accepted" })
       .eq("campaign_id", campaignId)
       .eq("influencer_id", influencerId);
 
-    toast.success("Offer accepted");
-    // Data will be refreshed by real-time subscription
-  };
+    if (error) {
+      toast.error("Failed to accept offer");
+      return;
+    }
 
-  const acceptBasePayout = async () => {
-    if (!influencerId || !campaign || !campaignId) return;
+    // Send notification
+    sendNotification({
+      user_id: campaign.admin_user_id,
+      role: "admin",
+      type: "offer_accepted",
+      title: "Offer accepted",
+      message: "Influencer accepted your counter offer",
+      metadata: {
+        campaign_id: campaignId,
+        influencer_id: influencerId,
+      },
+    }).catch(console.error);
 
-    await supabase
-      .from("campaign_influencers")
-      //@ts-ignore
-      .update({
-        final_payout: campaign.base_payout,
-        status: "accepted",
-      })
-      .eq("campaign_id", campaignId)
-      .eq("influencer_id", influencerId);
+    toast.success("Counter offer accepted! Campaign started.");
 
-    toast.success("Base payout accepted");
-    // Data will be refreshed by real-time subscription
-  };
-
-  const unregisterFromCampaign = async () => {
-    if (!influencerId || !campaignId) return;
-
-    await supabase
-      .from("campaign_influencers")
-      .delete()
-      .eq("campaign_id", campaignId)
-      .eq("influencer_id", influencerId);
-
-    toast.success("You have left the campaign");
-    navigate("/dashboard/campaigns/my");
+    // Invalidate cache
+    queryClient.invalidateQueries({ 
+      queryKey: ['campaign-application', campaignId, influencerId] 
+    });
   };
 
   /* -------------------------------
      CONTENT SUBMISSION
   ------------------------------- */
-  const submitPostedLinks = async () => {
-    if (!campaignId || !influencerId) return;
+  const submitContent = async () => {
+    if (!campaignId || !influencerId || !campaign) return;
 
-    if (postedLinks.some((e) => !e.label.trim() || !e.url.trim())) {
-      toast.error("Please fill label and link for all deliverables");
+    // Validate all links are filled
+    const allFilled = postedLinks.every((link) => link.url.trim() !== "");
+    if (!allFilled) {
+      toast.error("Please fill in all content links");
       return;
     }
 
-    const formattedLinks = postedLinks.map(
-      (e) => `${e.label.trim()} | ${e.url.trim()}`,
-    );
-
     setSubmitting(true);
+
+    // Convert to array of URLs
+    const urls = postedLinks.map((link) => link.url.trim());
 
     const { error } = await supabase
       .from("campaign_influencers")
       //@ts-ignore
       .update({
-        posted_link: formattedLinks,
+        posted_link: urls,
         status: "content_posted",
       })
       .eq("campaign_id", campaignId)
       .eq("influencer_id", influencerId);
 
-    setSubmitting(false);
-
     if (error) {
-      toast.error("Failed to submit links");
+      toast.error("Failed to submit content");
+      setSubmitting(false);
       return;
     }
 
-    if (campaign?.admin_user_id) {
-      sendNotification({
-        user_id: campaign.admin_user_id,
-        role: "admin",
-        type: "content_submitted",
-        title: "Content submitted",
-        message: `Influencer submitted content for ${campaign.name}`,
-        metadata: {
-          campaign_id: campaignId,
-          influencer_id: influencerId,
-        },
-      }).catch(console.error);
-    }
+    // Send notification
+    sendNotification({
+      user_id: campaign.admin_user_id,
+      role: "admin",
+      type: "content_submitted",
+      title: "Content submitted",
+      message: `Content submitted for review`,
+      metadata: {
+        campaign_id: campaignId,
+        influencer_id: influencerId,
+      },
+    }).catch(console.error);
 
-    toast.success("Content submitted successfully");
-    // Data will be refreshed by real-time subscription
+    toast.success("Content submitted for review!");
+    setSubmitting(false);
+
+    // Invalidate cache
+    queryClient.invalidateQueries({ 
+      queryKey: ['campaign-application', campaignId, influencerId] 
+    });
   };
 
   /* -------------------------------
@@ -352,67 +312,67 @@ const CampaignDetail = () => {
   const getStatusInfo = (status: string) => {
     const statusMap: Record<
       string,
-      { label: string; color: string; icon: any; bg: string }
+      { label: string; color: string; icon: any; description: string }
     > = {
       applied: {
-        label: "Applied",
+        label: "Application Submitted",
         color: "text-blue-400",
         icon: Clock,
-        bg: "bg-blue-500/20",
+        description: "Waiting for admin review",
       },
       shortlisted: {
         label: "Shortlisted",
         color: "text-green-400",
         icon: CheckCircle2,
-        bg: "bg-green-500/20",
+        description: "You've been shortlisted! You can start negotiation.",
       },
       influencer_negotiated: {
-        label: "Negotiating",
+        label: "Negotiation Pending",
         color: "text-yellow-400",
         icon: AlertCircle,
-        bg: "bg-yellow-500/20",
+        description: "Waiting for admin response on your offer",
       },
       admin_negotiated: {
-        label: "Counter Offer",
+        label: "Counter Offer Received",
         color: "text-orange-400",
         icon: AlertCircle,
-        bg: "bg-orange-500/20",
+        description: "Admin sent a counter offer. Review and accept/reject.",
       },
       accepted: {
-        label: "Accepted",
+        label: "Campaign Active",
         color: "text-green-400",
         icon: CheckCircle2,
-        bg: "bg-green-500/20",
+        description: "Campaign accepted! Create and submit your content.",
       },
       not_shortlisted: {
         label: "Not Shortlisted",
         color: "text-red-400",
         icon: XCircle,
-        bg: "bg-red-500/20",
+        description: "Unfortunately, you weren't selected this time.",
       },
       rejected: {
-        label: "Rejected",
+        label: "Application Rejected",
         color: "text-red-400",
         icon: XCircle,
-        bg: "bg-red-500/20",
+        description: "Your application was rejected.",
       },
       content_posted: {
-        label: "Content Submitted",
+        label: "Content Under Review",
         color: "text-purple-400",
-        icon: CheckCircle2,
-        bg: "bg-purple-500/20",
+        icon: Clock,
+        description: "Your content is being reviewed by the admin.",
       },
       content_rejected: {
         label: "Content Rejected",
         color: "text-red-400",
         icon: XCircle,
-        bg: "bg-red-500/20",
+        description: "Content needs revision. Please resubmit.",
       },
       completed: {
-        label: "Completed",
+        label: "Campaign Completed",
         color: "text-emerald-400",
         icon: CheckCircle2,
-        bg: "bg-emerald-500/20",
+        description: "Campaign successfully completed! 🎉",
       },
     };
 
@@ -421,17 +381,29 @@ const CampaignDetail = () => {
         label: status,
         color: "text-gray-400",
         icon: Clock,
-        bg: "bg-gray-500/20",
+        description: "",
       }
     );
   };
 
-  const statusInfo = application ? getStatusInfo(application.status) : null;
-  const StatusIcon = statusInfo?.icon;
-
   /* -------------------------------
-     RENDER
+     LOADING STATE
   ------------------------------- */
+  // if (themeLoading) {
+  //   return (
+  //     <div className="min-h-screen bg-background flex items-center justify-center">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+  //     </div>
+  //   );
+  // }
+
+  if (!campaign || !application) {
+    return null; // Will redirect in useEffect
+  }
+
+  const statusInfo = getStatusInfo(application.status);
+  const StatusIcon = statusInfo.icon;
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated Theme Background */}
@@ -444,10 +416,10 @@ const CampaignDetail = () => {
         style={{ background: theme.background }}
       />
 
-      {/* Themed Studio Background (CSS-based, hidden on mobile) */}
+      {/* Themed Studio Background */}
       <ThemedStudioBackground themeKey={themeKey} />
 
-      {/* Ambient Background (hidden on mobile) */}
+      {/* Ambient Background */}
       <div className="hidden md:block">
         <AmbientLayer themeKey={themeKey} />
       </div>
@@ -456,440 +428,269 @@ const CampaignDetail = () => {
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
 
       {/* CONTENT */}
-      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-5xl mx-auto">
+      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-4xl mx-auto">
         {/* BACK BUTTON */}
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+        <Button
+          variant="ghost"
           onClick={() => navigate("/dashboard/campaigns/my")}
-          className={`flex items-center gap-2 mb-6 ${theme.muted} hover:${theme.text} transition-colors`}
+          className="mb-6"
         >
-          <ArrowLeft className="h-5 w-5" />
-          <span>Back to My Campaigns</span>
-        </motion.button>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to My Campaigns
+        </Button>
 
-        {loading || !campaign || !application ? (
+        {loading ? (
           <DetailSkeleton theme={theme} />
         ) : (
           <>
             {/* CAMPAIGN HEADER */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
-            >
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div>
-                  <h1 className={`text-4xl font-bold ${theme.text} mb-2`}>
-                    {campaign.name}
-                  </h1>
-                  {campaign.description && (
-                    <p className={`${theme.muted} text-lg`}>
-                      {campaign.description}
-                    </p>
-                  )}
-                </div>
+            <Card className={`${theme.card} ${theme.radius} mb-6`}>
+              <CardHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-grow">
+                    <CardTitle className={`text-2xl md:text-3xl ${theme.text} mb-2`}>
+                      {campaign.name}
+                    </CardTitle>
+                    {campaign.description && (
+                      <CardDescription className={`${theme.muted} text-base`}>
+                        {campaign.description}
+                      </CardDescription>
+                    )}
+                  </div>
 
-                {/* Status Badge */}
-                {statusInfo && StatusIcon && (
+                  {/* Status Badge */}
                   <div
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${statusInfo.bg} flex-shrink-0`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+                      statusInfo.color.includes("blue")
+                        ? "bg-blue-500/20"
+                        : statusInfo.color.includes("green")
+                          ? "bg-green-500/20"
+                          : statusInfo.color.includes("yellow")
+                            ? "bg-yellow-500/20"
+                            : statusInfo.color.includes("orange")
+                              ? "bg-orange-500/20"
+                              : statusInfo.color.includes("red")
+                                ? "bg-red-500/20"
+                                : statusInfo.color.includes("purple")
+                                  ? "bg-purple-500/20"
+                                  : statusInfo.color.includes("emerald")
+                                    ? "bg-emerald-500/20"
+                                    : "bg-gray-500/20"
+                    } shrink-0`}
                   >
-                    <StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
-                    <span className={`text-sm font-medium ${statusInfo.color}`}>
+                    <StatusIcon className={`h-4 w-4 ${statusInfo.color}`} />
+                    <span className={`text-sm font-medium ${statusInfo.color} whitespace-nowrap`}>
                       {statusInfo.label}
                     </span>
                   </div>
-                )}
-              </div>
+                </div>
+              </CardHeader>
 
-              {/* Niches */}
-              <div className="flex flex-wrap gap-2">
-                {campaign.niches.map((niche) => (
-                  <span
-                    key={niche}
-                    className={`px-3 py-1.5 rounded-lg bg-white/10 text-sm ${theme.muted}`}
-                  >
-                    {niche}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
+              <CardContent>
+                <p className={`${theme.muted} text-sm mb-4`}>
+                  {statusInfo.description}
+                </p>
 
-            {/* CAMPAIGN DETAILS */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <Card className={`${theme.card} ${theme.radius}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <Target className={`h-5 w-5 ${theme.accent}`} />
-                      <CardTitle className="text-sm">Deliverables</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className={`${theme.text} font-medium`}>
-                      {campaign.deliverables}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card className={`${theme.card} ${theme.radius}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
+                {/* Campaign Info Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg bg-white/10`}>
                       <Calendar className={`h-5 w-5 ${theme.accent}`} />
-                      <CardTitle className="text-sm">Timeline</CardTitle>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className={`${theme.text} font-medium`}>
-                      {campaign.timeline}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                    <div>
+                      <p className={`text-xs ${theme.muted}`}>Timeline</p>
+                      <p className={`text-sm font-medium ${theme.text}`}>
+                        {campaign.timeline}
+                      </p>
+                    </div>
+                  </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Card className={`${theme.card} ${theme.radius}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg bg-white/10`}>
                       <DollarSign className={`h-5 w-5 ${theme.accent}`} />
-                      <CardTitle className="text-sm">Payout</CardTitle>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className={`${theme.text} font-medium text-xl`}>
-                      {application.final_payout
-                        ? `₹${application.final_payout}`
-                        : `₹${campaign.base_payout} (Base)`}
+                    <div>
+                      <p className={`text-xs ${theme.muted}`}>Payout</p>
+                      <p className={`text-sm font-medium ${theme.text}`}>
+                        {application.final_payout
+                          ? `₹${application.final_payout} (Final)`
+                          : `₹${campaign.base_payout} (Base)`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg bg-white/10`}>
+                      <Target className={`h-5 w-5 ${theme.accent}`} />
+                    </div>
+                    <div>
+                      <p className={`text-xs ${theme.muted}`}>Deliverables</p>
+                      <p className={`text-sm font-medium ${theme.text}`}>
+                        {campaign.deliverables}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg bg-white/10`}>
+                      <MessageSquare className={`h-5 w-5 ${theme.accent}`} />
+                    </div>
+                    <div>
+                      <p className={`text-xs ${theme.muted}`}>Niches</p>
+                      <p className={`text-sm font-medium ${theme.text}`}>
+                        {campaign.niches.join(", ")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ACTION SECTION */}
+            <Card className={`${theme.card} ${theme.radius}`}>
+              <CardHeader>
+                <CardTitle className="text-xl">Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* SHORTLISTED - CAN NEGOTIATE */}
+                {application.status === "shortlisted" && (
+                  <div className="space-y-3">
+                    <p className={theme.muted}>
+                      You've been shortlisted! Negotiate payout or accept the
+                      base offer.
                     </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
-
-            {/* STATUS-BASED ACTIONS */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Card className={`${theme.card} ${theme.radius}`}>
-                <CardHeader>
-                  <CardTitle>Campaign Actions</CardTitle>
-                  <CardDescription>
-                    Manage your campaign participation
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* APPLIED */}
-                  {application.status === "applied" && (
-                    <div
-                      className={`p-4 rounded-lg bg-blue-500/10 border border-blue-500/20`}
-                    >
-                      <p className={`${theme.text} mb-2`}>
-                        ⏳ Application submitted. Waiting for brand approval.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* SHORTLISTED */}
-                  {application.status === "shortlisted" && (
-                    <div className="space-y-4">
-                      <div
-                        className={`p-4 rounded-lg bg-green-500/10 border border-green-500/20`}
-                      >
-                        <p className={`${theme.text} font-medium mb-2`}>
-                          🎉 Congratulations! You've been shortlisted!
-                        </p>
-                        <p className={`${theme.muted} text-sm`}>
-                          You can accept the base payout or negotiate for a
-                          different amount.
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col md:flex-row gap-3">
-                        <Button onClick={acceptBasePayout} className="flex-1">
-                          Accept Base Payout (₹{campaign.base_payout})
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowNegotiationModal(true)}
-                          className="flex-1"
-                        >
-                          Negotiate Payout
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* INFLUENCER NEGOTIATED */}
-                  {application.status === "influencer_negotiated" && (
-                    <div
-                      className={`p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20`}
-                    >
-                      <p className={`${theme.text} mb-2`}>
-                        💬 Your negotiation request (₹
-                        {application.requested_payout}) has been sent.
-                      </p>
-                      <p className={`${theme.muted} text-sm`}>
-                        Waiting for brand response...
-                      </p>
-                      {application.negotiation_note && (
-                        <div className="mt-3 p-3 rounded bg-white/5">
-                          <p className={`${theme.muted} text-xs mb-1`}>
-                            Your note:
-                          </p>
-                          <p className={`${theme.text} text-sm`}>
-                            {application.negotiation_note}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ADMIN COUNTER OFFER */}
-                  {application.status === "admin_negotiated" && (
-                    <div className="space-y-4">
-                      <div
-                        className={`p-4 rounded-lg bg-orange-500/10 border border-orange-500/20`}
-                      >
-                        <p className={`${theme.text} mb-2`}>
-                          💰 Brand has proposed a counter offer: ₹
-                          {application.requested_payout}
-                        </p>
-                        <p className={`${theme.muted} text-sm`}>
-                          You can accept this offer or make another counter
-                          proposal.
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col md:flex-row gap-3">
-                        <Button onClick={acceptCounterOffer} className="flex-1">
-                          Accept Counter Offer
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowNegotiationModal(true)}
-                          className="flex-1"
-                        >
-                          Counter Again
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* REJECTED */}
-                  {application.status === "rejected" && (
-                    <div className="space-y-4">
-                      <div
-                        className={`p-4 rounded-lg bg-red-500/10 border border-red-500/20`}
-                      >
-                        <p className={`${theme.text} mb-2`}>
-                          Negotiation rejected by brand.
-                        </p>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <Button onClick={acceptBasePayout} className="flex-1">
-                          Accept Base Payout (₹{campaign.base_payout})
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={unregisterFromCampaign}
-                          className="flex-1"
-                        >
-                          Leave Campaign
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* NOT SHORTLISTED */}
-                  {application.status === "not_shortlisted" && (
-                    <div className="space-y-4">
-                      <div
-                        className={`p-4 rounded-lg bg-red-500/10 border border-red-500/20`}
-                      >
-                        <p className={`${theme.text} mb-2`}>
-                          Unfortunately, you were not shortlisted for this
-                          campaign.
-                        </p>
-                      </div>
-
+                    <div className="flex gap-3">
                       <Button
-                        variant="outline"
-                        onClick={unregisterFromCampaign}
-                        className="w-full"
+                        onClick={() => setShowNegotiationModal(true)}
+                        className="flex-1"
                       >
-                        Leave Campaign
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Negotiate Payout
+                      </Button>
+                      <Button
+                        onClick={acceptCounterOffer}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Accept Base (₹{campaign.base_payout})
                       </Button>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* ACCEPTED - CONTENT SUBMISSION */}
-                  {(application.status === "accepted" ||
-                    application.status === "content_rejected") && (
-                    <div className="space-y-4">
-                      <div
-                        className={`p-4 rounded-lg bg-green-500/10 border border-green-500/20`}
-                      >
-                        <p className={`${theme.text} font-medium mb-2`}>
-                          ✅ Campaign Accepted! Final Payout: ₹
-                          {application.final_payout}
+                {/* ADMIN COUNTER OFFER */}
+                {application.status === "admin_negotiated" && (
+                  <div className="space-y-3">
+                    <div className={`p-4 rounded-lg bg-white/5 border border-white/10`}>
+                      <p className={`text-sm ${theme.text} font-medium mb-2`}>
+                        Counter Offer: ₹{application.final_payout}
+                      </p>
+                      {application.negotiation_note && (
+                        <p className={`text-xs ${theme.muted}`}>
+                          Note: {application.negotiation_note}
                         </p>
-                        <p className={`${theme.muted} text-sm`}>
-                          Please submit your content links below to complete the
-                          campaign.
-                        </p>
-                        <div
-                          className={`p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 mt-4`}
-                        >
-                          <p className={`${theme.text} font-medium mb-2`}>
-                            📋 Submission Process:
-                          </p>
-                          <ol
-                            className={`${theme.muted} text-sm space-y-2 list-decimal list-inside`}
-                          >
-                            <li>
-                              First, submit your content to{" "}
-                              <span className={`${theme.text} font-semibold`}>
-                                +91 8546023170
-                              </span>{" "}
-                              for approval on WhatsApp
-                            </li>
-                            <li>
-                              After approval, post it on
-                              Instagram/YouTube/Twitter, etc.
-                            </li>
-                            <li>Submit the posted links below</li>
-                          </ol>
-                        </div>
-                      </div>
-
-                      {application.status === "content_rejected" && (
-                        <div
-                          className={`p-3 rounded-lg bg-red-500/10 border border-red-500/20`}
-                        >
-                          <p className={`text-red-400 text-sm`}>
-                            ⚠️ Previous content was rejected. Please submit
-                            again.
-                          </p>
-                        </div>
                       )}
+                    </div>
+                    <Button onClick={acceptCounterOffer} className="w-full">
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Accept Counter Offer
+                    </Button>
+                  </div>
+                )}
 
-                      <div className="space-y-3">
-                        <p
-                          className={`${theme.text} font-medium flex items-center gap-2`}
-                        >
-                          <LinkIcon className="h-4 w-4" />
-                          Submit Content Links
-                        </p>
+                {/* ACCEPTED - SUBMIT CONTENT */}
+                {application.status === "accepted" && (
+                  <div className="space-y-4">
+                    <p className={theme.muted}>
+                      Campaign accepted! Create your content and submit the links
+                      below:
+                    </p>
 
-                        {postedLinks.map((item, index) => (
-                          <div
-                            key={index}
-                            className="space-y-2 p-4 rounded-lg bg-white/5"
-                          >
-                            <p className={`${theme.muted} text-xs`}>
-                              Deliverable #{index + 1}
-                            </p>
-                            <Input
-                              className="h-11 bg-white/10 border-white/20"
-                              placeholder="Label (e.g., Reel, Story, Post)"
-                              value={item.label}
-                              onChange={(e) => {
-                                const copy = [...postedLinks];
-                                copy[index].label = e.target.value;
-                                setPostedLinks(copy);
-                              }}
-                              disabled={submitting}
-                            />
-                            <Input
-                              className="h-11 bg-white/10 border-white/20"
-                              placeholder="Instagram link"
-                              value={item.url}
-                              onChange={(e) => {
-                                const copy = [...postedLinks];
-                                copy[index].url = e.target.value;
-                                setPostedLinks(copy);
-                              }}
-                              disabled={submitting}
-                            />
-                          </div>
-                        ))}
-
-                        <Button
-                          onClick={submitPostedLinks}
-                          disabled={
-                            submitting ||
-                            postedLinks.some(
-                              (l) => !l.label.trim() || !l.url.trim(),
-                            )
-                          }
-                          className="w-full"
-                        >
-                          {submitting ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2" />
-                              Submitting...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4 mr-2" />
-                              Submit Content
-                            </>
-                          )}
-                        </Button>
+                    {postedLinks.map((link, index) => (
+                      <div key={index} className="space-y-2">
+                        <label className={`text-sm ${theme.text}`}>
+                          Content Link {index + 1}
+                        </label>
+                        <Input
+                          placeholder="https://..."
+                          value={link.url}
+                          onChange={(e) => {
+                            const updated = [...postedLinks];
+                            updated[index].url = e.target.value;
+                            setPostedLinks(updated);
+                          }}
+                        />
                       </div>
-                    </div>
-                  )}
+                    ))}
 
-                  {/* CONTENT POSTED */}
-                  {application.status === "content_posted" && (
-                    <div
-                      className={`p-4 rounded-lg bg-purple-500/10 border border-purple-500/20`}
+                    <Button
+                      onClick={submitContent}
+                      disabled={submitting}
+                      className="w-full"
                     >
-                      <p className={`${theme.text} mb-2`}>
-                        ✅ Content submitted successfully!
-                      </p>
-                      <p className={`${theme.muted} text-sm`}>
-                        Waiting for brand approval...
-                      </p>
-                    </div>
-                  )}
+                      {submitting ? (
+                        "Submitting..."
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Submit Content
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
 
-                  {/* COMPLETED */}
-                  {application.status === "completed" && (
-                    <div
-                      className={`p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20`}
-                    >
-                      <p className={`${theme.text} font-medium mb-2`}>
-                        🎉 Campaign Completed!
-                      </p>
-                      <p className={`${theme.muted} text-sm`}>
-                        Congratulations on successfully completing this
-                        campaign. Earnings: ₹{application.final_payout}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
+                {/* CONTENT POSTED */}
+                {application.status === "content_posted" && (
+                  <div className="space-y-3">
+                    <p className={theme.muted}>
+                      Your content has been submitted and is under review.
+                    </p>
+                    {application.posted_link && (
+                      <div className="space-y-2">
+                        <p className={`text-sm ${theme.text} font-medium`}>
+                          Submitted Links:
+                        </p>
+                        {application.posted_link.map((url, i) => (
+                          <a
+                            key={i}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-2 text-sm ${theme.accent} hover:underline`}
+                          >
+                            <LinkIcon className="h-3 w-3" />
+                            {url}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* COMPLETED */}
+                {application.status === "completed" && (
+                  <div className="text-center py-8">
+                    <CheckCircle2 className={`h-16 w-16 ${theme.accent} mx-auto mb-4`} />
+                    <p className={`text-lg font-medium ${theme.text} mb-2`}>
+                      Campaign Completed! 🎉
+                    </p>
+                    <p className={theme.muted}>
+                      Final payout: ₹{application.final_payout}
+                    </p>
+                  </div>
+                )}
+
+                {/* OTHER STATUSES */}
+                {["applied", "influencer_negotiated", "not_shortlisted", "rejected", "content_rejected"].includes(
+                  application.status
+                ) && (
+                  <p className={theme.muted}>
+                    {statusInfo.description}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </>
         )}
       </main>
@@ -897,77 +698,73 @@ const CampaignDetail = () => {
       {/* NEGOTIATION MODAL */}
       <AnimatePresence>
         {showNegotiationModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => setShowNegotiationModal(false)}
-          >
+          <>
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className={`${theme.card} ${theme.radius} p-6 w-full max-w-md space-y-4`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              onClick={() => setShowNegotiationModal(false)}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-md"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <MessageSquare className={`h-6 w-6 ${theme.accent}`} />
-                <h3 className={`text-xl font-bold ${theme.text}`}>
-                  Negotiate Payout
-                </h3>
-              </div>
+              <Card className={`${theme.card} ${theme.radius}`}>
+                <CardHeader>
+                  <CardTitle>Negotiate Payout</CardTitle>
+                  <CardDescription>
+                    Request a different payout amount
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className={`text-sm ${theme.text} mb-2 block`}>
+                      Requested Amount (₹)
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="Enter amount"
+                      value={requestedPayout}
+                      onChange={(e) => setRequestedPayout(e.target.value)}
+                    />
+                  </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className={`block text-sm ${theme.muted} mb-2`}>
-                    Requested Amount (₹)
-                  </label>
-                  <Input
-                    className="h-11 bg-white/10 border-white/20"
-                    type="number"
-                    placeholder="Enter your requested payout"
-                    value={requestedPayout}
-                    onChange={(e) => setRequestedPayout(e.target.value)}
-                  />
-                </div>
+                  <div>
+                    <label className={`text-sm ${theme.text} mb-2 block`}>
+                      Note (Optional)
+                    </label>
+                    <Textarea
+                      placeholder="Explain your request..."
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
 
-                <div>
-                  <label className={`block text-sm ${theme.muted} mb-2`}>
-                    Note (Optional)
-                  </label>
-                  <Textarea
-                    className="min-h-[100px] bg-white/10 border-white/20"
-                    placeholder="Explain why you deserve this payout..."
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNegotiationModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={submitNegotiation}
-                  disabled={!requestedPayout}
-                  className="flex-1"
-                >
-                  Submit Request
-                </Button>
-              </div>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowNegotiationModal(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={submitNegotiation} className="flex-1">
+                      Submit Request
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
   );
 };
 
-export default CampaignDetail;
+export default memo(CampaignDetail);

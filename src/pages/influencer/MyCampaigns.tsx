@@ -1,16 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { useEffect, useState, useCallback, memo } from "react";
+import { useEffect, memo } from "react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
 import AmbientLayer from "@/components/ambient/AmbientLayer";
-import { ThemeKey } from "@/theme/themes";
 import {
   ArrowRight,
   Calendar,
@@ -22,6 +20,8 @@ import {
 } from "lucide-react";
 import { CampaignCardSkeleton } from "@/components/influencer/Skeletons";
 import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
+import { useInfluencerProfile, useMyCampaigns } from "@/hooks/useCampaigns";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Campaign {
   id: string;
@@ -45,6 +45,7 @@ interface Application {
 const MyCampaigns = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const {
     theme,
     themeKey,
@@ -52,58 +53,23 @@ const MyCampaigns = () => {
     loading: themeLoading,
   } = useInfluencerTheme();
 
-  const [loading, setLoading] = useState(true);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [influencerId, setInfluencerId] = useState<string | null>(null);
+  // ⚡ REACT QUERY HOOKS - Automatic caching & refetching
+  const { data: profile, isLoading: profileLoading } = useInfluencerProfile(user?.id || '');
+  const influencerId = profile?.id;
+  
+  // My campaigns - auto-refetches every 30 seconds for real-time feel
+  const { data: applications = [], isLoading: applicationsLoading } = useMyCampaigns(influencerId || '');
 
-  const fetchData = useCallback(async () => {
-    if (!user) return;
+  const loading = profileLoading || applicationsLoading;
 
-    const { data: profile } = await supabase
-      .from("influencer_profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
+  // Get campaign IDs
+  //@ts-ignore
+  const campaignIds = applications.map((a) => a.campaign_id) || [];
 
-    if (!profile) {
-      toast.error("Influencer profile not found");
-      return;
-    }
-    //@ts-ignore
-    setInfluencerId(profile.id);
+  // Fetch full campaign details for the applications
+  const { data: campaigns = [] } = useInfluencerProfile(user?.id || '');
 
-    const { data: applicationsData } = await supabase
-      .from("campaign_influencers")
-      .select(
-        "campaign_id, status, requested_payout, final_payout, posted_link",
-      )
-      //@ts-ignore
-      .eq("influencer_id", profile.id);
-
-    setApplications(applicationsData || []);
-    //@ts-ignore
-    const campaignIds = applicationsData?.map((a) => a.campaign_id) || [];
-
-    if (campaignIds.length > 0) {
-      const { data: campaignsData } = await supabase
-        .from("campaigns")
-        .select("*")
-        .in("id", campaignIds);
-
-      setCampaigns(campaignsData || []);
-    } else {
-      setCampaigns([]);
-    }
-
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Real-time subscription
+  // ⚡ REAL-TIME SUBSCRIPTION - Invalidate cache instead of manual refetch
   useEffect(() => {
     if (!influencerId) return;
 
@@ -119,15 +85,37 @@ const MyCampaigns = () => {
         },
         (payload) => {
           console.log("Real-time update:", payload);
-          fetchData();
-        },
+          // Just invalidate cache - React Query handles the refetch
+          queryClient.invalidateQueries({ 
+            queryKey: ['my-campaigns', influencerId] 
+          });
+        }
       )
       .subscribe();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [influencerId, fetchData]);
+  }, [influencerId, queryClient]);
+
+  // Fetch campaign details when we have campaign IDs
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      if (campaignIds.length === 0) return;
+
+      const { data: campaignsData } = await supabase
+        .from("campaigns")
+        .select("*")
+        .in("id", campaignIds);
+
+      // Store in cache for future use
+      campaignsData?.forEach(campaign => {
+        queryClient.setQueryData(['campaign', campaign.id], campaign);
+      });
+    };
+
+    fetchCampaigns();
+  }, [campaignIds.length, queryClient]);
 
   const getStatusInfo = (status: string) => {
     const statusMap: Record<
@@ -206,6 +194,13 @@ const MyCampaigns = () => {
     );
   };
 
+  // Get campaigns from cache
+  const campaignsWithDetails = applications.map(app => {
+    //@ts-ignore
+    const campaign = queryClient.getQueryData(['campaign', app.campaign_id]);
+    return campaign;
+  }).filter(Boolean);
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated Theme Background */}
@@ -251,7 +246,7 @@ const MyCampaigns = () => {
         ) : (
           <>
             {/* CAMPAIGNS GRID */}
-            {campaigns.length === 0 ? (
+            {campaignsWithDetails.length === 0 ? (
               <div className={`${theme.card} ${theme.radius} p-12 text-center`}>
                 <p className={theme.muted}>
                   You haven't applied to any campaigns yet.
@@ -267,8 +262,9 @@ const MyCampaigns = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-                {campaigns.map((campaign, index) => {
+                {campaignsWithDetails.map((campaign: Campaign, index) => {
                   const application = applications.find(
+                    //@ts-ignore
                     (a) => a.campaign_id === campaign.id,
                   );
                   if (!application) return null;

@@ -62,22 +62,22 @@ const Signup = () => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-md rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 p-8 shadow-2xl text-white"
+        className="relative z-10 w-[90%] md:w-full max-w-md rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl text-white"
       >
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 md:mb-8">
           <Link to="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-white">DotFluence</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">DotFluence</h1>
           </Link>
-          <p className="text-white/70 mt-2">
+          <p className="text-sm md:text-base text-white/70 mt-2">
             Join as a creator & unlock brand campaigns
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-white/80">
+        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+          <div className="space-y-1.5 md:space-y-2">
+            <Label htmlFor="fullName" className="text-sm md:text-base text-white/80">
               Full name
             </Label>
             <Input
@@ -87,12 +87,12 @@ const Signup = () => {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              className="h-11 text-base bg-white/10 border-white/20 text-white placeholder:text-white/40"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-white/80">
+          <div className="space-y-1.5 md:space-y-2">
+            <Label htmlFor="email" className="text-sm md:text-base text-white/80">
               Email
             </Label>
             <Input
@@ -102,12 +102,12 @@ const Signup = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              className="h-11 text-base bg-white/10 border-white/20 text-white placeholder:text-white/40"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-white/80">
+          <div className="space-y-1.5 md:space-y-2">
+            <Label htmlFor="password" className="text-sm md:text-base text-white/80">
               Password
             </Label>
             <div className="relative">
@@ -119,7 +119,7 @@ const Signup = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 pr-10"
+                className="h-11 text-base bg-white/10 border-white/20 text-white placeholder:text-white/40 pr-10"
               />
               <button
                 type="button"
@@ -129,13 +129,13 @@ const Signup = () => {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <p className="text-xs text-white/50">Minimum 6 characters</p>
+            <p className="text-[10px] md:text-xs text-white/50">Minimum 6 characters</p>
           </div>
 
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-orange-500 to-indigo-500 hover:opacity-90 transition"
+            className="w-full h-11 text-sm md:text-base bg-gradient-to-r from-orange-500 to-indigo-500 hover:opacity-90 transition"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -150,8 +150,8 @@ const Signup = () => {
         </form>
 
         {/* Footer */}
-        <div className="mt-6 text-center">
-          <p className="text-white/70">
+        <div className="mt-4 md:mt-6 text-center">
+          <p className="text-sm md:text-base text-white/70">
             Already a creator?{" "}
             <Link to="/login" className="text-orange-400 hover:underline">
               Sign in
@@ -159,7 +159,7 @@ const Signup = () => {
           </p>
         </div>
 
-        <div className="mt-4 text-center">
+        <div className="mt-3 md:mt-4 text-center">
           <button
             onClick={handlesignout}
             className="text-sm text-white/50 hover:text-white"
