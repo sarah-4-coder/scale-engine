@@ -908,7 +908,7 @@ const CampaignDetail = () => {
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
 
       {/* CONTENT */}
-      <main className="relative z-10 px-6 py-10 max-w-5xl mx-auto">
+      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-5xl mx-auto">
         {/* BACK BUTTON */}
         <motion.button
           initial={{ opacity: 0, x: -20 }}
@@ -1074,7 +1074,7 @@ const CampaignDetail = () => {
                         </p>
                       </div>
 
-                      <div className="flex gap-3">
+                      <div className="flex flex-col md:flex-row gap-3">
                         <Button onClick={acceptBasePayout} className="flex-1">
                           Accept Base Payout (₹{campaign.base_payout})
                         </Button>
@@ -1130,7 +1130,7 @@ const CampaignDetail = () => {
                         </p>
                       </div>
 
-                      <div className="flex gap-3">
+                      <div className="flex flex-col md:flex-row gap-3">
                         <Button onClick={acceptCounterOffer} className="flex-1">
                           Accept Counter Offer
                         </Button>
@@ -1208,14 +1208,27 @@ const CampaignDetail = () => {
                           Please submit your content links below to complete the
                           campaign.
                         </p>
-                        <div className={`p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 mt-4`}>
+                        <div
+                          className={`p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 mt-4`}
+                        >
                           <p className={`${theme.text} font-medium mb-2`}>
-                          📋 Submission Process:
+                            📋 Submission Process:
                           </p>
-                          <ol className={`${theme.muted} text-sm space-y-2 list-decimal list-inside`}>
-                          <li>First, submit your content to <span className={`${theme.text} font-semibold`}>+91 8546023170</span> for approval on WhatsApp</li>
-                          <li>After approval, post it on Instagram/YouTube/Twitter, etc.</li>
-                          <li>Submit the posted links below</li>
+                          <ol
+                            className={`${theme.muted} text-sm space-y-2 list-decimal list-inside`}
+                          >
+                            <li>
+                              First, submit your content to{" "}
+                              <span className={`${theme.text} font-semibold`}>
+                                +91 8546023170
+                              </span>{" "}
+                              for approval on WhatsApp
+                            </li>
+                            <li>
+                              After approval, post it on
+                              Instagram/YouTube/Twitter, etc.
+                            </li>
+                            <li>Submit the posted links below</li>
                           </ol>
                         </div>
                       </div>
@@ -1248,6 +1261,7 @@ const CampaignDetail = () => {
                               Deliverable #{index + 1}
                             </p>
                             <Input
+                              className="h-11 bg-white/10 border-white/20"
                               placeholder="Label (e.g., Reel, Story, Post)"
                               value={item.label}
                               onChange={(e) => {
@@ -1256,9 +1270,9 @@ const CampaignDetail = () => {
                                 setPostedLinks(copy);
                               }}
                               disabled={submitting}
-                              className="bg-white/10 border-white/20"
                             />
                             <Input
+                              className="h-11 bg-white/10 border-white/20"
                               placeholder="Instagram link"
                               value={item.url}
                               onChange={(e) => {
@@ -1267,7 +1281,6 @@ const CampaignDetail = () => {
                                 setPostedLinks(copy);
                               }}
                               disabled={submitting}
-                              className="bg-white/10 border-white/20"
                             />
                           </div>
                         ))}
@@ -1363,11 +1376,11 @@ const CampaignDetail = () => {
                     Requested Amount (₹)
                   </label>
                   <Input
+                    className="h-11 bg-white/10 border-white/20"
                     type="number"
                     placeholder="Enter your requested payout"
                     value={requestedPayout}
                     onChange={(e) => setRequestedPayout(e.target.value)}
-                    className="bg-white/10 border-white/20"
                   />
                 </div>
 
@@ -1376,11 +1389,11 @@ const CampaignDetail = () => {
                     Note (Optional)
                   </label>
                   <Textarea
+                    className="min-h-[100px] bg-white/10 border-white/20"
                     placeholder="Explain why you deserve this payout..."
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     rows={4}
-                    className="bg-white/10 border-white/20"
                   />
                 </div>
               </div>

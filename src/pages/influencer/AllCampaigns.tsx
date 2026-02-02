@@ -646,16 +646,16 @@ const AllCampaigns = () => {
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
 
       {/* CONTENT */}
-      <main className="relative z-10 px-6 py-10 max-w-6xl mx-auto">
+      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-6xl mx-auto">
         {/* HEADER */}
-        <div className="mb-10">
+        <div className="mb-6 md:mb-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-3 mb-3"
           >
-            <Sparkles className={`h-8 w-8 ${theme.accent}`} />
-            <h2 className={`text-3xl font-bold ${theme.text}`}>
+            <Sparkles className={`h-6 w-6 md:h-8 md:w-8 ${theme.accent}`} />
+            <h2 className={`text-2xl md:text-3xl font-bold ${theme.text}`}>
               Discover Campaigns
             </h2>
           </motion.div>
@@ -669,9 +669,9 @@ const AllCampaigns = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className={`mt-6 ${theme.card} ${theme.radius} p-4`}
+              className={`mt-4 md:mt-6 ${theme.card} ${theme.radius} p-4`}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                 <div className="flex items-center gap-3">
                   <div
                     className={`p-2 rounded-lg bg-gradient-to-r ${theme.primary} bg-opacity-20`}
@@ -679,8 +679,8 @@ const AllCampaigns = () => {
                     <Target className={`h-5 w-5 ${theme.accent}`} />
                   </div>
                   <div>
-                    <p className={`text-sm ${theme.muted}`}>Available</p>
-                    <p className={`text-xl font-bold ${theme.text}`}>
+                    <p className={`text-xs md:text-sm ${theme.muted}`}>Available</p>
+                    <p className={`text-lg md:text-xl font-bold ${theme.text}`}>
                       {eligibleCampaigns.length}
                     </p>
                   </div>
@@ -693,8 +693,8 @@ const AllCampaigns = () => {
                     <CheckCircle2 className={`h-5 w-5 ${theme.accent}`} />
                   </div>
                   <div>
-                    <p className={`text-sm ${theme.muted}`}>Applied</p>
-                    <p className={`text-xl font-bold ${theme.text}`}>
+                    <p className={`text-xs md:text-sm ${theme.muted}`}>Applied</p>
+                    <p className={`text-lg md:text-xl font-bold ${theme.text}`}>
                       {appliedCampaignIds.length}
                     </p>
                   </div>
@@ -707,7 +707,7 @@ const AllCampaigns = () => {
                     <TrendingUp className={`h-5 w-5 ${theme.accent}`} />
                   </div>
                   <div>
-                    <p className={`text-sm ${theme.muted}`}>Your Niche</p>
+                    <p className={`text-xs md:text-sm ${theme.muted}`}>Your Niche</p>
                     <p className={`text-sm font-medium ${theme.text}`}>
                       {profile?.niches?.[0] || "Not set"}
                     </p>
@@ -720,7 +720,7 @@ const AllCampaigns = () => {
 
         {/* LOADING STATE */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
             {[1, 2, 3, 4].map((i) => (
               <CampaignCardSkeleton key={i} theme={theme} />
             ))}
@@ -756,7 +756,7 @@ const AllCampaigns = () => {
                 </div>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                 {eligibleCampaigns.map((campaign, index) => {
                   const isApplied = appliedCampaignIds.includes(campaign.id);
 
@@ -774,11 +774,11 @@ const AllCampaigns = () => {
                       >
                         {/* Header with gradient overlay */}
                         <div
-                          className={`relative p-6 bg-gradient-to-br ${theme.primary} bg-opacity-10`}
+                          className={`relative p-4 md:p-6 bg-gradient-to-br ${theme.primary} bg-opacity-10`}
                         >
                           <CardHeader className="p-0">
                             <div className="flex items-start justify-between gap-3 mb-2">
-                              <CardTitle className={`text-xl ${theme.text}`}>
+                              <CardTitle className={`text-lg md:text-xl ${theme.text}`}>
                                 {campaign.name}
                               </CardTitle>
                               {isApplied && (
@@ -802,7 +802,7 @@ const AllCampaigns = () => {
                         </div>
 
                         {/* Content */}
-                        <CardContent className="p-6 space-y-4 flex-grow">
+                        <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4 flex-grow">
                           {/* Niches */}
                           <div>
                             <p className={`text-xs ${theme.muted} mb-2`}>
@@ -863,7 +863,7 @@ const AllCampaigns = () => {
                                   Base Payout
                                 </p>
                                 <p
-                                  className={`text-lg ${theme.text} font-bold`}
+                                  className={`text-base md:text-lg ${theme.text} font-bold`}
                                 >
                                   ₹{campaign.base_payout.toLocaleString()}
                                 </p>
@@ -909,12 +909,12 @@ const AllCampaigns = () => {
                         </CardContent>
 
                         {/* Footer Action */}
-                        <div className="p-6 pt-0">
+                        <div className="p-4 pt-0 md:p-6 md:pt-0">
                           {isApplied ? (
                             <Button
                               disabled
                               variant="outline"
-                              className="w-full"
+                              className="w-full h-11 text-sm md:text-base"
                             >
                               <CheckCircle2 className="h-4 w-4 mr-2" />
                               Already Applied
@@ -926,7 +926,7 @@ const AllCampaigns = () => {
                             >
                               <Button
                                 onClick={() => applyToCampaign(campaign.id)}
-                                className={`w-full bg-gradient-to-r ${theme.primary}`}
+                                className={`w-full h-11 text-sm md:text-base bg-gradient-to-r ${theme.primary}`}
                               >
                                 Apply Now
                               </Button>

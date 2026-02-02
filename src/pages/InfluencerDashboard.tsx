@@ -40,19 +40,21 @@ type RecentCampaign = {
   status: "Active" | "Pending" | "Completed";
 };
 
-// ⚡ MEMOIZED STAT CARD
+// ⚡ MEMOIZED STAT CARD (Mobile Optimized)
 const StatCard = memo(({ stat }: { stat: any }) => {
   const { theme } = useInfluencerTheme();
 
   return (
     <Card className={`${theme.card} ${theme.radius}`}>
-      <CardHeader className="flex flex-row justify-between items-center pb-2">
-        <CardTitle className="text-sm opacity-70">{stat.title}</CardTitle>
-        <stat.icon className="h-4 w-4 opacity-70" />
+      <CardHeader className="flex flex-row justify-between items-center pb-2 px-3 pt-3 md:px-6 md:pt-6">
+        <CardTitle className="text-xs md:text-sm opacity-70">
+          {stat.title}
+        </CardTitle>
+        <stat.icon className="h-4 w-4 md:h-4 md:w-4 opacity-70" />
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{stat.value}</div>
-        <p className="text-xs opacity-60 mt-1">{stat.note}</p>
+      <CardContent className="px-3 pb-3 md:px-6 md:pb-6">
+        <div className="text-xl md:text-2xl font-bold">{stat.value}</div>
+        <p className="text-[10px] md:text-xs opacity-60 mt-1">{stat.note}</p>
       </CardContent>
     </Card>
   );
@@ -249,269 +251,335 @@ const ThemedStudioBackground = ({ themeKey }: { themeKey: ThemeKey }) => {
 
           {/* Wardrobe Hangers */}
           <motion.div
-            className="absolute top-10 right-20 w-64 h-80"
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-20 right-32 opacity-10"
+            animate={{ rotate: [0, 5, 0, -5, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           >
-            {/* Hanger 1 */}
-            <svg
-              width="100"
-              height="120"
-              className="absolute left-0"
-              viewBox="0 0 100 120"
-            >
+            <svg width="80" height="120" viewBox="0 0 80 120">
+              <line
+                x1="40"
+                y1="10"
+                x2="40"
+                y2="30"
+                stroke="#000"
+                strokeWidth="2"
+              />
+              <circle cx="40" cy="10" r="5" fill="#000" />
               <path
-                d="M 20 20 Q 50 10 80 20 L 75 25 L 50 100 L 25 25 Z"
+                d="M 20 30 Q 40 40, 60 30"
+                stroke="#000"
+                strokeWidth="3"
                 fill="none"
-                stroke="#404040"
-                strokeWidth="2"
-                opacity="0.3"
               />
-              <circle
-                cx="50"
-                cy="15"
-                r="8"
-                fill="none"
-                stroke="#404040"
-                strokeWidth="2"
-                opacity="0.3"
-              />
+              <rect x="15" y="45" width="50" height="60" fill="#000" />
             </svg>
+          </motion.div>
 
-            {/* Hanger 2 */}
-            <svg
-              width="100"
-              height="120"
-              className="absolute left-20 top-10"
-              viewBox="0 0 100 120"
-            >
-              <path
-                d="M 20 20 Q 50 10 80 20 L 75 25 L 50 100 L 25 25 Z"
+          {/* Magazine Text */}
+          <div className="absolute bottom-32 left-10 font-serif text-black/5 text-8xl font-bold italic transform -rotate-12">
+            VOGUE
+          </div>
+        </div>
+      );
+    //@ts-ignore
+    case "music":
+      return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Vinyl Record */}
+          <motion.div
+            className="absolute bottom-10 right-10 w-80 h-80 opacity-10"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          >
+            <svg viewBox="0 0 200 200">
+              <circle
+                cx="100"
+                cy="100"
+                r="95"
                 fill="none"
-                stroke="#404040"
+                stroke="#8b5cf6"
                 strokeWidth="2"
-                opacity="0.2"
               />
               <circle
-                cx="50"
-                cy="15"
-                r="8"
+                cx="100"
+                cy="100"
+                r="80"
                 fill="none"
-                stroke="#404040"
-                strokeWidth="2"
-                opacity="0.2"
+                stroke="#8b5cf6"
+                strokeWidth="1"
+              />
+              <circle
+                cx="100"
+                cy="100"
+                r="60"
+                fill="none"
+                stroke="#8b5cf6"
+                strokeWidth="1"
+              />
+              <circle
+                cx="100"
+                cy="100"
+                r="40"
+                fill="none"
+                stroke="#8b5cf6"
+                strokeWidth="1"
+              />
+              <circle cx="100" cy="100" r="20" fill="#8b5cf6" />
+            </svg>
+          </motion.div>
+
+          {/* Waveform */}
+          <svg
+            className="absolute top-1/2 left-0 w-full opacity-5"
+            height="100"
+            viewBox="0 0 1000 100"
+          >
+            {Array.from({ length: 50 }).map((_, i) => (
+              <motion.rect
+                key={i}
+                x={i * 20}
+                y={50 - Math.random() * 40}
+                width="10"
+                height={Math.random() * 80}
+                fill="#ec4899"
+                animate={{ height: [Math.random() * 80, Math.random() * 80] }}
+                transition={{
+                  duration: 1 + Math.random(),
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </svg>
+
+          {/* Music Notes */}
+          <div className="absolute inset-0 opacity-10">
+            {Array.from({ length: 15 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute text-purple-400 text-4xl"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                animate={{
+                  y: [0, -20, 0],
+                  rotate: [0, 10, 0],
+                }}
+                transition={{
+                  duration: 3 + i * 0.2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                ♪
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      );
+    //@ts-ignore
+    case "food":
+      return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Chef Hat */}
+          <motion.div
+            className="absolute top-20 left-20 opacity-5"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <svg width="120" height="100" viewBox="0 0 120 100">
+              <ellipse cx="60" cy="80" rx="50" ry="15" fill="#ff6b35" />
+              <path
+                d="M 20 80 Q 20 30, 60 20 Q 100 30, 100 80"
+                fill="#ff6b35"
               />
             </svg>
           </motion.div>
 
-          {/* Geometric Shapes */}
-          {[...Array(6)].map((_, i) => (
+          {/* Fork and Knife */}
+          <div className="absolute bottom-20 right-20 opacity-10">
+            <svg width="100" height="120" viewBox="0 0 100 120">
+              <line
+                x1="30"
+                y1="20"
+                x2="30"
+                y2="100"
+                stroke="#ff6b35"
+                strokeWidth="3"
+              />
+              <line
+                x1="20"
+                y1="20"
+                x2="20"
+                y2="50"
+                stroke="#ff6b35"
+                strokeWidth="3"
+              />
+              <line
+                x1="40"
+                y1="20"
+                x2="40"
+                y2="50"
+                stroke="#ff6b35"
+                strokeWidth="3"
+              />
+              <rect x="65" y="20" width="10" height="80" fill="#ff6b35" />
+              <path d="M 60 20 L 80 20 L 75 50 L 65 50 Z" fill="#ff6b35" />
+            </svg>
+          </div>
+
+          {/* Floating Ingredients */}
+          {[
+            { emoji: "🍕", x: 10, y: 30 },
+            { emoji: "🍔", x: 80, y: 50 },
+            { emoji: "🍜", x: 20, y: 70 },
+            { emoji: "🥗", x: 70, y: 20 },
+          ].map((item, i) => (
             <motion.div
               key={i}
-              className="absolute border border-neutral-700/20"
-              style={{
-                width: `${60 + i * 20}px`,
-                height: `${60 + i * 20}px`,
-                top: `${20 + i * 10}%`,
-                left: `${10 + i * 12}%`,
+              className="absolute text-4xl opacity-5"
+              style={{ left: `${item.x}%`, top: `${item.y}%` }}
+              animate={{
+                y: [0, -15, 0],
+                rotate: [0, 10, -10, 0],
               }}
-              animate={{ rotate: 360 }}
               transition={{
-                duration: 30 + i * 5,
+                duration: 4 + i,
                 repeat: Infinity,
-                ease: "linear",
+                ease: "easeInOut",
               }}
-            />
+            >
+              {item.emoji}
+            </motion.div>
           ))}
+        </div>
+      );
+    //@ts-ignore
+    case "travel":
+      return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* World Map Outline */}
+          <svg
+            className="absolute inset-0 w-full h-full opacity-5"
+            viewBox="0 0 1000 600"
+          >
+            <path
+              d="M 100 200 L 150 180 L 200 190 L 250 170 L 300 180 L 350 160 L 400 170 L 450 150"
+              stroke="#14b8a6"
+              strokeWidth="2"
+              fill="none"
+            />
+            <path
+              d="M 500 300 Q 550 280, 600 300 Q 650 320, 700 300"
+              stroke="#14b8a6"
+              strokeWidth="2"
+              fill="none"
+            />
+          </svg>
 
-          {/* Fashion Text Pattern */}
-          <div className="absolute bottom-10 left-10 text-neutral-800/10 text-8xl font-serif italic">
-            STYLE
-          </div>
+          {/* Airplane */}
+          <motion.div
+            className="absolute opacity-10"
+            animate={{
+              x: [-100, 1200],
+              y: [100, 400],
+            }}
+            transition={{
+              duration: 30,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          >
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <path d="M 30 10 L 50 30 L 30 25 L 10 30 Z" fill="#14b8a6" />
+              <rect x="28" y="25" width="4" height="20" fill="#14b8a6" />
+              <path d="M 20 40 L 30 45 L 40 40" fill="#14b8a6" />
+            </svg>
+          </motion.div>
+
+          {/* Location Pins */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute text-teal-500 opacity-10"
+              style={{
+                left: `${20 + i * 12}%`,
+                top: `${30 + (i % 2) * 30}%`,
+              }}
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{
+                duration: 2,
+                delay: i * 0.3,
+                repeat: Infinity,
+              }}
+            >
+              <svg width="30" height="40" viewBox="0 0 30 40">
+                <path
+                  d="M 15 0 C 7 0, 0 7, 0 15 C 0 25, 15 40, 15 40 C 15 40, 30 25, 30 15 C 30 7, 23 0, 15 0 Z"
+                  fill="currentColor"
+                />
+                <circle cx="15" cy="15" r="5" fill="white" />
+              </svg>
+            </motion.div>
+          ))}
         </div>
       );
 
     case "fitness":
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Energy Grid */}
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(220, 38, 38, 0.3) 2px, transparent 2px),
-                linear-gradient(90deg, rgba(34, 197, 94, 0.3) 2px, transparent 2px)
-              `,
-              backgroundSize: "40px 40px",
-            }}
-          />
-
-          {/* Dumbbell Illustration */}
-          <svg
-            className="absolute bottom-20 left-10 w-96 h-32 opacity-20"
-            viewBox="0 0 400 150"
-          >
-            {/* Left weight */}
-            <rect x="10" y="30" width="60" height="90" rx="5" fill="#dc2626" />
-            <rect x="30" y="20" width="20" height="110" rx="5" fill="#dc2626" />
-
-            {/* Bar */}
-            <rect x="70" y="65" width="260" height="20" rx="10" fill="#666" />
-
-            {/* Right weight */}
-            <rect x="330" y="30" width="60" height="90" rx="5" fill="#22c55e" />
-            <rect
-              x="350"
-              y="20"
-              width="20"
-              height="110"
-              rx="5"
-              fill="#22c55e"
-            />
-          </svg>
-
-          {/* Heart Rate Line */}
-          <svg
-            className="absolute top-1/4 right-20 w-96 h-32 opacity-20"
-            viewBox="0 0 400 100"
-          >
-            <polyline
-              points="0,50 50,50 70,20 90,80 110,50 350,50"
-              fill="none"
-              stroke="#22c55e"
-              strokeWidth="3"
-            />
-          </svg>
-
-          {/* Pulsing Circles */}
-          {[...Array(5)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full border-4"
-              style={{
-                borderColor:
-                  i % 2 === 0
-                    ? "rgba(220, 38, 38, 0.2)"
-                    : "rgba(34, 197, 94, 0.2)",
-                width: `${100 + i * 40}px`,
-                height: `${100 + i * 40}px`,
-                top: `${40 + i * 8}%`,
-                right: `${10 + i * 5}%`,
-              }}
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.2, 0.4, 0.2],
-              }}
-              transition={{
-                duration: 2 + i * 0.3,
-                repeat: Infinity,
-                delay: i * 0.2,
-              }}
-            />
-          ))}
-
-          {/* Flame Effect */}
+          {/* Dumbbells */}
           <motion.div
-            className="absolute top-20 right-1/3"
-            animate={{
-              y: [0, -10, 0],
-              opacity: [0.2, 0.4, 0.2],
-            }}
-            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute top-20 right-20 opacity-10"
+            animate={{ rotate: [0, 45, 0, -45, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           >
-            <svg width="80" height="100" viewBox="0 0 80 100">
-              <path
-                d="M 40 10 Q 50 30 45 50 Q 55 65 40 90 Q 25 65 35 50 Q 30 30 40 10"
-                fill="#dc2626"
-                opacity="0.3"
-              />
+            <svg width="120" height="60" viewBox="0 0 120 60">
+              <rect x="0" y="20" width="20" height="20" fill="#10b981" />
+              <rect x="15" y="27" width="90" height="6" fill="#10b981" />
+              <rect x="100" y="20" width="20" height="20" fill="#10b981" />
             </svg>
           </motion.div>
 
-          {/* Motivational Text */}
-          <div className="absolute bottom-20 right-20 text-red-500/10 text-6xl font-bold transform -rotate-12">
-            POWER
-          </div>
+          {/* Heart Rate Line */}
+          <svg
+            className="absolute bottom-20 left-0 w-full opacity-5"
+            height="100"
+            viewBox="0 0 1000 100"
+          >
+            <motion.path
+              d="M 0 50 L 200 50 L 220 20 L 240 80 L 260 50 L 460 50 L 480 20 L 500 80 L 520 50 L 720 50 L 740 20 L 760 80 L 780 50 L 1000 50"
+              stroke="#10b981"
+              strokeWidth="3"
+              fill="none"
+              animate={{ strokeDashoffset: [0, -100] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              style={{ strokeDasharray: "100 100" }}
+            />
+          </svg>
+
+          {/* Running Silhouette */}
+          <motion.div
+            className="absolute bottom-40 opacity-5"
+            animate={{ x: [-100, 1100] }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          >
+            <svg width="80" height="120" viewBox="0 0 80 120">
+              <circle cx="40" cy="20" r="15" fill="#10b981" />
+              <path
+                d="M 40 35 L 40 70 L 20 110 M 40 70 L 60 110 M 40 45 L 15 55 M 40 45 L 65 35"
+                stroke="#10b981"
+                strokeWidth="4"
+                fill="none"
+              />
+            </svg>
+          </motion.div>
         </div>
       );
 
     default:
-      // Default creative studio
-      return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Dot Grid */}
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `radial-gradient(circle, rgba(124, 58, 237, 0.4) 1px, transparent 1px)`,
-              backgroundSize: "30px 30px",
-            }}
-          />
-
-          {/* Floating Orbs */}
-          {[...Array(8)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: `${60 + i * 30}px`,
-                height: `${60 + i * 30}px`,
-                background:
-                  i % 2 === 0
-                    ? "radial-gradient(circle, rgba(251, 146, 60, 0.2), transparent)"
-                    : "radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent)",
-                top: `${Math.random() * 80}%`,
-                left: `${Math.random() * 80}%`,
-              }}
-              animate={{
-                y: [0, -20, 0],
-                x: [0, 10, 0],
-                scale: [1, 1.1, 1],
-              }}
-              transition={{
-                duration: 5 + i * 0.5,
-                repeat: Infinity,
-                delay: i * 0.3,
-              }}
-            />
-          ))}
-
-          {/* Sparkle Pattern */}
-          {[...Array(15)].map((_, i) => (
-            <motion.div
-              key={`sparkle-${i}`}
-              className="absolute"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                opacity: [0, 1, 0],
-                scale: [0, 1, 0],
-                rotate: [0, 180, 360],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                delay: i * 0.2,
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20">
-                <path
-                  d="M 10 0 L 12 8 L 20 10 L 12 12 L 10 20 L 8 12 L 0 10 L 8 8 Z"
-                  fill={i % 2 === 0 ? "#fb923c" : "#6366f1"}
-                  opacity="0.4"
-                />
-              </svg>
-            </motion.div>
-          ))}
-
-          {/* Creative Text */}
-          <div className="absolute top-1/3 left-10 text-orange-500/10 text-9xl font-bold">
-            CREATE
-          </div>
-        </div>
-      );
+      return null;
   }
 };
 
@@ -529,184 +597,99 @@ const WelcomeModal = ({
   fullName: string;
   themeKey: ThemeKey;
 }) => {
-  const themeMessages: Record<
-    ThemeKey,
-    { title: string; message: string; emoji: string }
-  > = {
-    tech: {
-      title: "Tech Studio Activated! 💻",
-      message:
-        "We've crafted a cyberpunk-inspired workspace just for you, complete with code and circuits.",
-      emoji: "⚡",
-    },
-    fashion: {
-      title: "Fashion Studio Ready! 👗",
-      message:
-        "Your minimalist fashion atelier awaits, designed with elegance and style in mind.",
-      emoji: "✨",
-    },
-    fitness: {
-      title: "Fitness Arena Unlocked! 💪",
-      message:
-        "Your personal training ground is set, powered by energy and determination.",
-      emoji: "🔥",
-    },
-    default: {
-      title: "Creator Studio Launched! 🚀",
-      message:
-        "We've created a vibrant creative space tailored to your influencer journey.",
-      emoji: "🎨",
-    },
-  };
-
-  const currentTheme = themeMessages[themeKey];
+  const { theme } = useInfluencerTheme();
 
   return (
     <AnimatePresence>
       {show && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-          onClick={onClose}
-        >
+        <>
+          {/* Backdrop */}
           <motion.div
-            initial={{ scale: 0.8, opacity: 0, y: 50 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0, y: 50 }}
-            transition={{ type: "spring", duration: 0.7 }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative max-w-lg w-full bg-gradient-to-br from-purple-900/90 to-indigo-900/90 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={onClose}
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-md"
           >
-            {/* Close button */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors"
+            <Card
+              className={`${theme.card} ${theme.radius} border-2 ${theme.primary.includes("cyan") ? "border-cyan-500/30" : theme.primary.includes("purple") ? "border-purple-500/30" : "border-orange-500/30"}`}
             >
-              <X className="h-5 w-5 text-white" />
-            </button>
-
-            {/* Content */}
-            <div className="text-center space-y-6">
-              {/* Animated emoji */}
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
-                transition={{ delay: 0.3, duration: 0.8 }}
-                className="text-7xl"
-              >
-                {currentTheme.emoji}
-              </motion.div>
-
-              {/* Welcome text */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                <h2 className="text-3xl font-bold text-white mb-3">
-                  Welcome, {fullName}! 👋
-                </h2>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 mb-4">
-                  <Sparkles className="h-4 w-4 text-yellow-300" />
-                  <span className="text-sm text-white/90">
-                    {currentTheme.title}
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* Message */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
-                className="text-white/80 text-lg leading-relaxed"
-              >
-                {currentTheme.message}
-              </motion.p>
-
-              {/* Theme switcher hint */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 }}
-                className="pt-4 space-y-3"
-              >
-                <div className="flex items-center justify-center gap-2 text-yellow-300">
-                  <Sparkles className="h-5 w-5" />
-                  <p className="font-medium">Want to see other themes?</p>
-                </div>
-
-                {/* Animated arrow pointing up */}
-                <div className="flex flex-col items-center gap-2">
-                  <motion.div
-                    animate={{ y: [-5, 5, -5] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="text-white/60"
+              <CardHeader className="relative px-4 pt-4 md:px-6 md:pt-6">
+                <button
+                  onClick={onClose}
+                  className="absolute top-3 right-3 md:top-4 md:right-4 p-1.5 md:p-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <X className="h-4 w-4 md:h-5 md:w-5" />
+                </button>
+                <div className="pr-8">
+                  <Sparkles
+                    className={`h-8 w-8 md:h-10 md:w-10 ${theme.accent} mb-3 md:mb-4`}
+                  />
+                  <CardTitle
+                    className={`text-xl md:text-2xl ${theme.text} mb-1.5 md:mb-2`}
                   >
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="12" y1="19" x2="12" y2="5"></line>
-                      <polyline points="5 12 12 5 19 12"></polyline>
-                    </svg>
-                  </motion.div>
-                  <p className="text-sm text-white/60">
-                    Click the{" "}
-                    <span className="text-purple-300 font-semibold">
-                      theme icon
-                    </span>{" "}
-                    in the navbar above
-                  </p>
+                    Welcome {fullName}! 🎉
+                  </CardTitle>
+                  <CardDescription
+                    className={`${theme.muted} text-sm md:text-base`}
+                  >
+                    Your creator dashboard is ready
+                  </CardDescription>
                 </div>
-              </motion.div>
+              </CardHeader>
 
-              {/* Action button */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.1 }}
-              >
+              <CardContent className="space-y-3 md:space-y-4 px-4 pb-4 md:px-6 md:pb-6">
+                <div
+                  className={`p-3 md:p-4 rounded-lg ${theme.card} border border-white/10`}
+                >
+                  <h4
+                    className={`font-semibold text-sm md:text-base ${theme.text} mb-1.5 md:mb-2`}
+                  >
+                    ✨ What's New
+                  </h4>
+                  <ul
+                    className={`space-y-1 md:space-y-1.5 text-xs md:text-sm ${theme.muted}`}
+                  >
+                    <li>• Browse campaigns matched to your profile</li>
+                    <li>• Track your applications in real-time</li>
+                    <li>
+                      • Personalized theme:{" "}
+                      <span className="capitalize">{themeKey}</span>
+                    </li>
+                  </ul>
+                </div>
+
                 <Button
                   onClick={onClose}
-                  className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium py-6 text-lg"
+                  className={`w-full bg-gradient-to-r ${theme.primary} h-10 md:h-11 text-sm md:text-base`}
                 >
-                  Let's Get Started! 🚀
+                  Get Started
                 </Button>
-              </motion.div>
-            </div>
+              </CardContent>
+            </Card>
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
 };
 
+/* --------------------------------
+   MAIN DASHBOARD COMPONENT
+-------------------------------- */
 const InfluencerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { theme, themeKey, setTheme } = useInfluencerTheme();
 
-  /* -------------------------------
-     THEME
-  ------------------------------- */
-  const {
-    theme,
-    themeKey,
-    setTheme,
-    loading: themeLoading,
-  } = useInfluencerTheme();
-
-  /* -------------------------------
-     STATE
-  ------------------------------- */
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState("Creator");
   const [followers, setFollowers] = useState<number | null>(null);
@@ -716,48 +699,36 @@ const InfluencerDashboard = () => {
   const [showWelcome, setShowWelcome] = useState(false);
 
   /* -------------------------------
-     CHECK IF FIRST VISIT
-  ------------------------------- */
-  useEffect(() => {
-    const hasSeenWelcome = localStorage.getItem("dotfluence_welcome_seen");
-    if (!hasSeenWelcome && !themeLoading) {
-      // Show welcome after a short delay
-      setTimeout(() => {
-        setShowWelcome(true);
-        localStorage.setItem("dotfluence_welcome_seen", "true");
-      }, 1000);
-    }
-  }, [themeLoading]);
-
-  /* -------------------------------
      FETCH DASHBOARD DATA
   ------------------------------- */
   useEffect(() => {
-    // REPLACE the entire fetchDashboard function in InfluencerDashboard.tsx (line ~546)
-    const fetchDashboard = async () => {
-      if (!user) return;
+    if (!user) return;
 
+    const fetchDashboard = async () => {
       try {
         setLoading(true);
 
-        // ⚡ PARALLEL QUERIES - Run simultaneously!
+        // ⚡ PARALLEL QUERIES - Fetch profile and influencer data together
         const [profileResult, influencerResult] = await Promise.all([
           supabase
             .from("profiles")
             .select("full_name")
             .eq("user_id", user.id)
-            .single<{ full_name: string }>(),
+            .maybeSingle(),
           supabase
             .from("influencer_profiles")
-            .select("id, followers_count")
+            .select("*")
             .eq("user_id", user.id)
-            .single<{ id: string; followers_count: number }>(),
+            .single(),
         ]);
 
-        const profile = profileResult.data;
-        const influencer = influencerResult.data;
+        const profile = profileResult.data as { full_name: string } | null;
+        const influencer = influencerResult.data as {
+          followers_count: number | null;
+          id: string;
+        } | null;
 
-        setFullName(profile?.full_name || "Creator");
+        setFullName(profile ? profile.full_name : "Creator");
 
         if (!influencer) {
           toast.error("Please complete your profile to unlock campaigns");
@@ -899,33 +870,38 @@ const InfluencerDashboard = () => {
       {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
 
-      {/* CONTENT */}
-      <main className="relative z-10 px-6 py-10 max-w-6xl mx-auto">
-        {/* HEADER */}
-        <div className="mb-10">
-          <h2 className={`text-3xl font-bold ${theme.text}`}>
+      {/* CONTENT - Mobile Optimized Padding */}
+      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-6xl mx-auto">
+        {/* HEADER - Mobile Optimized Typography */}
+        <div className="mb-6 md:mb-10">
+          <h2 className={`text-2xl md:text-3xl font-bold ${theme.text}`}>
             Welcome {fullName} 👋
           </h2>
-          <p className={theme.muted}>Your personalized creator dashboard</p>
+          <p className={`${theme.muted} text-sm md:text-base mt-1`}>
+            Your personalized creator dashboard
+          </p>
         </div>
 
-        {/* STATS */}
-        {/* STATS - with memoized cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        {/* STATS - Mobile: 2x2 Grid, Desktop: 4 Columns */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
           {loading
             ? [1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)
             : stats.map((s, i) => <StatCard key={s.title} stat={s} />)}
         </div>
 
-        {/* RECENT + ACTIONS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* RECENT + ACTIONS - Mobile Optimized */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {/* RECENT CAMPAIGNS */}
           <Card className={`${theme.card} ${theme.radius}`}>
-            <CardHeader>
-              <CardTitle>Recent Campaigns</CardTitle>
-              <CardDescription>Your latest activity</CardDescription>
+            <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
+              <CardTitle className="text-lg md:text-xl">
+                Recent Campaigns
+              </CardTitle>
+              <CardDescription className="text-xs md:text-sm">
+                Your latest activity
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 md:space-y-4 px-4 pb-4 md:px-6 md:pb-6">
               {loading ? (
                 // Show skeleton while loading
                 <div className="space-y-3">
@@ -936,7 +912,7 @@ const InfluencerDashboard = () => {
               ) : (
                 <>
                   {recentCampaigns.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs md:text-sm text-muted-foreground">
                       No campaigns yet — explore new opportunities 🚀
                     </p>
                   )}
@@ -944,11 +920,15 @@ const InfluencerDashboard = () => {
                   {recentCampaigns.map((c, i) => (
                     <div
                       key={i}
-                      className="flex justify-between items-center p-4 rounded-lg bg-white/10"
+                      className="flex justify-between items-center p-3 md:p-4 rounded-lg bg-white/10"
                     >
-                      <span className={theme.text}>{c.name}</span>
                       <span
-                        className={`text-xs px-2 py-1 rounded-full ${
+                        className={`${theme.text} text-sm md:text-base truncate pr-2`}
+                      >
+                        {c.name}
+                      </span>
+                      <span
+                        className={`text-[10px] md:text-xs px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
                           c.status === "Active"
                             ? "bg-green-500/20 text-green-400"
                             : c.status === "Pending"
@@ -967,27 +947,31 @@ const InfluencerDashboard = () => {
 
           {/* QUICK ACTIONS */}
           <Card className={`${theme.card} ${theme.radius}`}>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Move faster</CardDescription>
+            <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
+              <CardTitle className="text-lg md:text-xl">
+                Quick Actions
+              </CardTitle>
+              <CardDescription className="text-xs md:text-sm">
+                Move faster
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 md:space-y-4 px-4 pb-4 md:px-6 md:pb-6">
               <Button
-                className="w-full"
+                className="w-full h-11 text-sm md:text-base"
                 onClick={() => navigate("/dashboard/campaigns/all")}
               >
                 Browse Campaigns
               </Button>
               <Button
                 variant="outline"
-                className="w-full text-foreground"
+                className="w-full text-foreground h-11 text-sm md:text-base"
                 onClick={() => navigate("/dashboard/campaigns/my")}
               >
                 My Campaigns
               </Button>
               <Button
                 variant="outline"
-                className="w-full text-foreground"
+                className="w-full text-foreground h-11 text-sm md:text-base"
                 disabled
               >
                 Analytics (Coming Soon)
