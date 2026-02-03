@@ -22,11 +22,11 @@ export const BrandThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     const initialTheme = savedTheme || "light"; // Default to light
     setThemeState(initialTheme);
     
-    // Apply theme to document
+    // Apply theme to BODY element (not html) since brand-theme class is on body
     if (initialTheme === "dark") {
-      document.documentElement.classList.add("dark");
+      document.body.classList.add("dark");
     } else {
-      document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark");
     }
     
     setMounted(true);
@@ -36,11 +36,11 @@ export const BrandThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     setThemeState(newTheme);
     localStorage.setItem("brand-theme", newTheme);
     
-    // Update document class
+    // Update BODY element class (not html)
     if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
+      document.body.classList.add("dark");
     } else {
-      document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark");
     }
   };
 

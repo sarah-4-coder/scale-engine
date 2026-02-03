@@ -37,7 +37,7 @@ const ThemedStudioBackground = memo(({ themeKey }: { themeKey: ThemeKey }) => {
           />
 
           {/* Circuit Board Pattern - Static SVG */}
-          <svg className="absolute inset-0 w-full h-full opacity-8" xmlns="http://www.w3.org/2000/svg">
+          {/* <svg className="absolute inset-0 w-full h-full opacity-8" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="circuit-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
                 <circle cx="10" cy="10" r="2" fill="#22d3ee"/>
@@ -48,7 +48,7 @@ const ThemedStudioBackground = memo(({ themeKey }: { themeKey: ThemeKey }) => {
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#circuit-pattern)" />
-          </svg>
+          </svg> */}
 
           {/* Only 3 animated orbs instead of 20+ */}
           {[...Array(animatedCount)].map((_, i) => (
@@ -82,7 +82,7 @@ const ThemedStudioBackground = memo(({ themeKey }: { themeKey: ThemeKey }) => {
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-5">
           {/* Minimal static pattern - No heavy animations */}
-          <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          {/* <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <line x1="10%" y1="0" x2="10%" y2="100%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
             <line x1="30%" y1="0" x2="30%" y2="100%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
             <line x1="50%" y1="0" x2="50%" y2="100%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
@@ -91,7 +91,7 @@ const ThemedStudioBackground = memo(({ themeKey }: { themeKey: ThemeKey }) => {
             <line x1="0" y1="20%" x2="100%" y2="20%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
             <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
             <line x1="0" y1="80%" x2="100%" y2="80%" stroke="#000" strokeWidth="0.5" opacity="0.1"/>
-          </svg>
+          </svg> */}
 
           {/* Minimal geometric shapes - only 2 animated */}
           {[...Array(2)].map((_, i) => (
@@ -121,17 +121,6 @@ const ThemedStudioBackground = memo(({ themeKey }: { themeKey: ThemeKey }) => {
     case "fitness":
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Energy Grid - Static */}
-          <div 
-            className="absolute inset-0 opacity-8"
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(220, 38, 38, 0.3) 2px, transparent 2px),
-                linear-gradient(90deg, rgba(34, 197, 94, 0.3) 2px, transparent 2px)
-              `,
-              backgroundSize: '40px 40px',
-            }}
-          />
 
           {/* Minimal energy glows - only 2 */}
           {[...Array(2)].map((_, i) => (
@@ -159,18 +148,6 @@ const ThemedStudioBackground = memo(({ themeKey }: { themeKey: ThemeKey }) => {
             />
           ))}
 
-          {/* Heartbeat line - simplified */}
-          <svg className="absolute bottom-20 left-0 w-full opacity-5" height="100" viewBox="0 0 1000 100">
-            <motion.path
-              d="M 0 50 L 200 50 L 220 20 L 240 80 L 260 50 L 1000 50"
-              stroke="#10b981"
-              strokeWidth="3"
-              fill="none"
-              animate={{ strokeDashoffset: [0, -100] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              style={{ strokeDasharray: "100 100", willChange: 'stroke-dashoffset' }}
-            />
-          </svg>
         </div>
       );
 

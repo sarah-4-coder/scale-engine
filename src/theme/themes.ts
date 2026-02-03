@@ -32,7 +32,7 @@ export const THEMES: Record<ThemeKey, ThemeConfig> = {
     key: "fashion",
     name: "Fashion",
     // Updated to darker gradient for better text contrast
-    background: "linear-gradient(180deg, #4a4439 0%, #2d2d1f 100%)",
+    background: "radial-gradient(circle at 20% 20%, #ebabf3, transparent 40%), radial-gradient(circle at 80% 80%, #e946b8, transparent 40%), #020617",
     // Updated card with darker background and better borders
     card: "bg-neutral-900/80 backdrop-blur-xl border border-neutral-600/30 text-white shadow-2xl",
     // Updated primary gradient

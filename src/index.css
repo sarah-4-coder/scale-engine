@@ -44,10 +44,10 @@
     --glass-border: 0 0% 100% / 0.08;
   }
 
-  /* .dark {
+  .dark {
     --background: 0 0% 2%;
     --foreground: 0 0% 100%;
-  } */
+  }
 }
 
 @layer base {

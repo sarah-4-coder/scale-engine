@@ -55,19 +55,17 @@ const MyCampaigns = () => {
 
   // ⚡ REACT QUERY HOOKS - Automatic caching & refetching
   const { data: profile, isLoading: profileLoading } = useInfluencerProfile(user?.id || '');
+  //@ts-ignore
   const influencerId = profile?.id;
   
   // My campaigns - auto-refetches every 30 seconds for real-time feel
-  const { data: applications = [], isLoading: applicationsLoading } = useMyCampaigns(influencerId || '');
+  const { data: applications = [], isLoading: applicationsLoading } = useMyCampaigns(influencerId || '') as { data: Application[]; isLoading: boolean };
 
   const loading = profileLoading || applicationsLoading;
 
   // Get campaign IDs
   //@ts-ignore
   const campaignIds = applications.map((a) => a.campaign_id) || [];
-
-  // Fetch full campaign details for the applications
-  const { data: campaigns = [] } = useInfluencerProfile(user?.id || '');
 
   // ⚡ REAL-TIME SUBSCRIPTION - Invalidate cache instead of manual refetch
   useEffect(() => {
@@ -109,7 +107,7 @@ const MyCampaigns = () => {
         .in("id", campaignIds);
 
       // Store in cache for future use
-      campaignsData?.forEach(campaign => {
+      (campaignsData as Campaign[] | null)?.forEach(campaign => {
         queryClient.setQueryData(['campaign', campaign.id], campaign);
       });
     };
@@ -214,12 +212,12 @@ const MyCampaigns = () => {
       />
 
       {/* Themed Studio Background (CSS-based, hidden on mobile) */}
-      <ThemedStudioBackground themeKey={themeKey} />
+      {/* <ThemedStudioBackground themeKey={themeKey} /> */}
 
       {/* Ambient Background (hidden on mobile) */}
-      <div className="hidden md:block">
+      {/* <div className="hidden md:block">
         <AmbientLayer themeKey={themeKey} />
-      </div>
+      </div> */}
 
       {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />

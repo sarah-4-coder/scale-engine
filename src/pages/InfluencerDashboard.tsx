@@ -231,19 +231,18 @@ const InfluencerDashboard = () => {
       />
 
       {/* Themed Studio Background */}
-      <ThemedStudioBackground themeKey={themeKey} />
+      {/* <ThemedStudioBackground themeKey={themeKey} /> */}
 
-      {/* Ambient Background */}
-      <div className="hidden md:block">
+      {/* <div className="hidden md:block">
         <AmbientLayer themeKey={themeKey} />
-      </div>
+      </div> */}
 
       {/* Welcome Modal */}
-      <WelcomeModal
+      {/* <WelcomeModal
         show={showWelcome}
         onClose={() => setShowWelcome(false)}
         fullName={fullName}
-      />
+      /> */}
 
       {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
