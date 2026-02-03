@@ -157,6 +157,23 @@ const AllCampaigns = () => {
     });
   };
 
+  /* -------------------------------
+     LOADING STATE - PREVENT FLASH
+  ------------------------------- */
+  if (themeLoading) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: theme.background }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white/50" />
+          <p className="text-white/70 text-sm">Loading campaigns...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated Theme Background */}

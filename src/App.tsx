@@ -24,6 +24,7 @@ import BrandLayout from "./layouts/BrandLayout";
 import BrandLogin from "./pages/brand/BrandLogin";
 import BrandSignup from "./pages/brand/BrandSignup";
 import AdminManageBrands from "./pages/admin/AdminManageBrands";
+import LiveMediaKit from "./pages/influencer/LiveMediaKit";
 
 // ============================================
 // LAZY LOADED COMPONENTS
@@ -108,6 +109,7 @@ const AppRoutes = () => {
     <Routes>
       {/* Landing page */}
       <Route path="/" element={<Index />} />
+      <Route path="/creators/:handle" element={<LiveMediaKit />} />
       
       {/* Influencer Auth routes */}
       <Route

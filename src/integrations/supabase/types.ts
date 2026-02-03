@@ -103,6 +103,53 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      contracts: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          influencer_id: string;
+          contract_text: string;
+          status: "pending_signature" | "signed" | "cancelled";
+          signed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          influencer_id: string;
+          contract_text: string;
+          status?: "pending_signature" | "signed" | "cancelled";
+          signed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          campaign_id?: string;
+          influencer_id?: string;
+          contract_text?: string;
+          status?: "pending_signature" | "signed" | "cancelled";
+          signed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contracts_campaign_id_fkey";
+            columns: ["campaign_id"];
+            referencedRelation: "campaigns";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contracts_influencer_id_fkey";
+            columns: ["influencer_id"];
+            referencedRelation: "influencer_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+
       // NEW: Brand/Agency profiles table
       brand_profiles: {
         Row: {
@@ -242,6 +289,7 @@ export type Database = {
           completed_at: string | null;
           status: string;
           created_at: string;
+          contract_signed: boolean
         };
         Insert: {
           id?: string;
@@ -254,6 +302,7 @@ export type Database = {
           completed_at?: string | null;
           status?: string;
           created_at?: string;
+          contract_signed?: boolean
         };
         Update: {
           id?: string;
@@ -266,6 +315,7 @@ export type Database = {
           completed_at?: string | null;
           status?: string;
           created_at?: string;
+          contract_signed?: boolean
         };
         Relationships: [
           {

@@ -31,6 +31,7 @@ import {
 } from "@/components/influencer/Skeletons";
 import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 import { useDashboardStats } from "@/hooks/useCampaigns";
+import { ProfileLinkCard } from "@/components/influencer/ProfileLinkCard";
 
 /* --------------------------------
    TYPES
@@ -208,15 +209,21 @@ const InfluencerDashboard = () => {
   ];
 
   /* -------------------------------
-     LOADING STATE
+     LOADING STATE - PREVENT FLASH
   ------------------------------- */
-  // if (themeLoading) {
-  //   return (
-  //     <div className="min-h-screen bg-background flex items-center justify-center">
-  //       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
-  //     </div>
-  //   );
-  // }
+  if (themeLoading) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: theme.background }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white/50" />
+          <p className="text-white/70 text-sm">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -264,6 +271,10 @@ const InfluencerDashboard = () => {
           ) : (
             statsConfig.map((s) => <StatCard key={s.title} stat={s} />)
           )}
+        </div>
+        {/* PROFILE LINK CARD - NEW ✅ */}
+        <div className="mb-6 md:mb-10">
+          <ProfileLinkCard userId={user?.id || ''} />
         </div>
 
         {/* RECENT + ACTIONS */}
