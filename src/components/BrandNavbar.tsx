@@ -29,7 +29,7 @@ const BrandNavbar = () => {
           {/* Logo */}
           <div
             className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/brand/dashboard")}
+            onClick={() => navigate("/company/dashboard")}
           >
             <Building2 className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold text-gradient">DotFluence</span>
@@ -42,14 +42,14 @@ const BrandNavbar = () => {
           <div className="hidden md:flex items-center gap-1">
             <Button
               variant="ghost"
-              onClick={() => navigate("/brand/dashboard")}
+              onClick={() => navigate("/company/dashboard")}
               className="text-foreground/70 hover:text-foreground"
             >
               Dashboard
             </Button>
             <Button
               variant="ghost"
-              onClick={() => navigate("/brand/campaigns")}
+              onClick={() => navigate("/company/campaigns")}
               className="text-foreground/70 hover:text-foreground"
             >
               <BarChart3 className="h-4 w-4 mr-2" />
@@ -57,7 +57,7 @@ const BrandNavbar = () => {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => navigate("/brand/influencers")}
+              onClick={() => navigate("/company/influencers")}
               className="text-foreground/70 hover:text-foreground"
             >
               <Users className="h-4 w-4 mr-2" />
@@ -103,11 +103,11 @@ const BrandNavbar = () => {
                   <p className="text-xs text-muted-foreground">Brand Account</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/brand/profile")}>
+                <DropdownMenuItem onClick={() => navigate("/company/profile")}>
                   <Settings className="mr-2 h-4 w-4" />
                   Profile Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/brand/dashboard")}>
+                <DropdownMenuItem onClick={() => navigate("/company/dashboard")}>
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Dashboard
                 </DropdownMenuItem>
