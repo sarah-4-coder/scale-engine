@@ -129,7 +129,7 @@ const AppRoutes = () => {
 
       {/* NEW: Brand Auth routes */}
       <Route
-        path="/brand/login"
+        path="/company/login"
         element={
           <AuthPage>
             <BrandLogin />
@@ -137,7 +137,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/brand/signup"
+        path="/company/signup"
         element={
           <AuthPage>
             <BrandSignup />
