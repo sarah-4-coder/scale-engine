@@ -313,7 +313,7 @@ const BrandDashboard = () => {
               <CardContent className="space-y-3">
                 <Button
                   className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90 h-auto py-4"
-                  onClick={() => navigate("/brand/campaigns/new")}
+                  onClick={() => navigate("/company/campaigns/new")}
                 >
                   <PlusCircle className="mr-2 h-5 w-5" />
                   <div className="text-left">
@@ -327,7 +327,7 @@ const BrandDashboard = () => {
                 <Button
                   className="w-full justify-start h-auto py-4"
                   variant="outline"
-                  onClick={() => navigate("/brand/campaigns")}
+                  onClick={() => navigate("/company/campaigns")}
                 >
                   <BarChart3 className="mr-2 h-5 w-5" />
                   <div className="text-left">
@@ -341,7 +341,7 @@ const BrandDashboard = () => {
                 <Button
                   className="w-full justify-start h-auto py-4"
                   variant="outline"
-                  onClick={() => navigate("/brand/influencers")}
+                  onClick={() => navigate("/company/influencers")}
                 >
                   <Users className="mr-2 h-5 w-5" />
                   <div className="text-left">
