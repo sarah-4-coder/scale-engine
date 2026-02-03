@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -86,6 +87,7 @@ const BrandDashboard = () => {
           .eq("brand_user_id", user.id);
 
         if (campaigns && campaigns.length > 0) {
+          //@ts-ignore
           const campaignIds = campaigns.map((c) => c.id);
 
           const { count: applicants } = await supabase

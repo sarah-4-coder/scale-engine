@@ -17,6 +17,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ProfileCompletionGuard from "./components/ProfileCompletionGuard";
 import BrandProfileCompletionGuard from "./components/Brandprofilecompletionguard ";
 
+// NEW: Brand Theme Layout
+import BrandLayout from "./layouts/BrandLayout";
+
 // NEW: Brand Pages
 import BrandLogin from "./pages/brand/BrandLogin";
 import BrandSignup from "./pages/brand/BrandSignup";
@@ -300,79 +303,91 @@ const AppRoutes = () => {
       />
 
       {/* ========================================
-          NEW: BRAND ROUTES
+          NEW: BRAND ROUTES - WRAPPED WITH BRANDLAYOUT
       ======================================== */}
       <Route
-        path="/brand/dashboard"
+        path="/company/dashboard"
         element={
           <ProtectedRoute allowedRoles={["brand"]}>
             <BrandProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <BrandDashboard />
-              </Suspense>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandDashboard />
+                </Suspense>
+              </BrandLayout>
             </BrandProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/brand/profile-setup"
+        path="/company/profile-setup"
         element={
           <ProtectedRoute allowedRoles={["brand"]}>
-            <Suspense fallback={<PageLoader />}>
-              <BrandProfileSetup />
-            </Suspense>
+            <BrandLayout>
+              <Suspense fallback={<PageLoader />}>
+                <BrandProfileSetup />
+              </Suspense>
+            </BrandLayout>
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/brand/campaigns"
+        path="/company/campaigns"
         element={
           <ProtectedRoute allowedRoles={["brand"]}>
             <BrandProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <BrandAllCampaigns />
-              </Suspense>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandAllCampaigns />
+                </Suspense>
+              </BrandLayout>
             </BrandProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/brand/campaigns/new"
+        path="/company/campaigns/new"
         element={
           <ProtectedRoute allowedRoles={["brand"]}>
             <BrandProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <BrandCreateCampaign />
-              </Suspense>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandCreateCampaign />
+                </Suspense>
+              </BrandLayout>
             </BrandProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/brand/campaigns/:id"
+        path="/company/campaigns/:id"
         element={
           <ProtectedRoute allowedRoles={["brand"]}>
             <BrandProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <BrandCampaignDetails />
-              </Suspense>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandCampaignDetails />
+                </Suspense>
+              </BrandLayout>
             </BrandProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/brand/influencers"
+        path="/company/influencers"
         element={
           <ProtectedRoute allowedRoles={["brand"]}>
             <BrandProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <BrandInfluencers />
-              </Suspense>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandInfluencers />
+                </Suspense>
+              </BrandLayout>
             </BrandProfileCompletionGuard>
           </ProtectedRoute>
         }

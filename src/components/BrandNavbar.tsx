@@ -10,31 +10,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User, Building2, BarChart3, Users, Settings, Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useBrandTheme } from "@/contexts/BrandThemeContext";
 
 const BrandNavbar = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
-  useEffect(() => {
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem("brand-theme") as "light" | "dark" | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle("dark", savedTheme === "dark");
-    } else {
-      // Default to light theme for brand
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("brand-theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
-  };
+  const { theme, toggleTheme } = useBrandTheme();
 
   const handleSignOut = async () => {
     await signOut();
@@ -91,13 +72,11 @@ const BrandNavbar = () => {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="h-9 w-9"
+              className="h-9 w-9 relative"
+              aria-label="Toggle theme"
             >
-              {theme === "light" ? (
-                <Moon className="h-4 w-4" />
-              ) : (
-                <Sun className="h-4 w-4" />
-              )}
+              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
 
             <NotificationBell />
