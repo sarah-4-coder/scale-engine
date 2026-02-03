@@ -238,13 +238,13 @@ const BrandCreateCampaign = () => {
           </div>
 
           {/* Info Alert */}
-          <Alert className="mb-6 bg-blue-500/5 border-blue-500/30">
+          {/* <Alert className="mb-6 bg-blue-500/5 border-blue-500/30">
             <AlertCircle className="h-4 w-4 text-blue-500" />
             <AlertDescription className="text-blue-600 dark:text-blue-400">
               Your campaigns are <strong>fixed-price</strong>. Influencers
               cannot negotiate the payout amount.
             </AlertDescription>
-          </Alert>
+          </Alert> */}
 
           {/* Form */}
           <Card className="glass">
