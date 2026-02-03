@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -48,13 +49,21 @@ const BrandProfileSetup = () => {
       if (data) {
         setExistingProfile(data);
         // Pre-fill existing data
+        //@ts-ignore
         setPhoneNumber(data.phone_number || "");
+        //@ts-ignore
         setCompanyWebsite(data.company_website || "");
+        //@ts-ignore
         setIndustry(data.industry || "");
+        //@ts-ignore
         setCompanySize(data.company_size || "");
+        //@ts-ignore
         setDescription(data.description || "");
+        //@ts-ignore
         setCity(data.city || "");
+        //@ts-ignore
         setState(data.state || "");
+        //@ts-ignore
         setDesignation(data.contact_person_designation || "");
       }
     };
@@ -73,26 +82,29 @@ const BrandProfileSetup = () => {
     }
 
     try {
+      const updates = {
+        phone_number: phoneNumber,
+        company_website: companyWebsite,
+        industry: industry,
+        company_size: companySize,
+        description: description,
+        city: city,
+        state: state,
+        contact_person_designation: designation,
+        profile_completed: true,
+        updated_at: new Date().toISOString(),
+      };
+
       const { error } = await supabase
         .from("brand_profiles")
-        .update({
-          phone_number: phoneNumber,
-          company_website: companyWebsite,
-          industry: industry,
-          company_size: companySize,
-          description: description,
-          city: city,
-          state: state,
-          contact_person_designation: designation,
-          profile_completed: true,
-          updated_at: new Date().toISOString(),
-        })
+        //@ts-ignore
+        .update(updates)
         .eq("user_id", user.id);
 
       if (error) throw error;
 
       toast.success("Profile completed! 🎉");
-      navigate("/brand/dashboard");
+      navigate("/company/dashboard");
     } catch (error: any) {
       console.error("Profile update error:", error);
       toast.error(error.message || "Failed to update profile");

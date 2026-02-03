@@ -59,7 +59,8 @@ const BrandAllCampaigns = () => {
           .from("campaigns")
           .select("*")
           .eq("brand_user_id", user.id)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          .returns<Campaign[]>();
 
         if (error) throw error;
 

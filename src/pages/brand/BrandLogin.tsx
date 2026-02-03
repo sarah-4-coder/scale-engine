@@ -135,7 +135,7 @@ const BrandLogin = () => {
           <p className="text-white/70">
             New brand or agency?{" "}
             <Link
-              to="/brand/signup"
+              to="/company/signup"
               className="text-emerald-400 hover:underline"
             >
               Create account

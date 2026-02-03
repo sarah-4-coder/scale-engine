@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -61,6 +62,7 @@ const BrandSignup = () => {
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Create profile
+        //@ts-ignore
         const { error: profileError } = await supabase.from("profiles").insert({
           user_id: authData.user.id,
           full_name: contactPersonName,
@@ -72,6 +74,7 @@ const BrandSignup = () => {
         }
 
         // Create brand role
+        //@ts-ignore
         const { error: roleError } = await supabase.from("user_roles").insert({
           user_id: authData.user.id,
           role: "brand",
@@ -85,6 +88,8 @@ const BrandSignup = () => {
         // Create brand profile (unverified by default)
         const { error: brandProfileError } = await supabase
           .from("brand_profiles")
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          //@ts-ignore
           .insert({
             user_id: authData.user.id,
             company_name: companyName,
@@ -101,7 +106,7 @@ const BrandSignup = () => {
         
         // Force navigation after a short delay to ensure auth state is updated
         setTimeout(() => {
-          navigate("/brand/profile-setup", { replace: true });
+          navigate("/company/profile-setup", { replace: true });
         }, 500);
       }
     } catch (error: any) {
@@ -260,7 +265,7 @@ const BrandSignup = () => {
           <p className="text-white/70">
             Already have an account?{" "}
             <Link
-              to="/brand/login"
+              to="/company/login"
               className="text-emerald-400 hover:underline"
             >
               Sign in
