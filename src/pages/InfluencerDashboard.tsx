@@ -273,9 +273,9 @@ const InfluencerDashboard = () => {
           )}
         </div>
         {/* PROFILE LINK CARD - NEW ✅ */}
-        <div className="mb-6 md:mb-10">
+        {/* <div className="mb-6 md:mb-10">
           <ProfileLinkCard userId={user?.id || ''} />
-        </div>
+        </div> */}
 
         {/* RECENT + ACTIONS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
