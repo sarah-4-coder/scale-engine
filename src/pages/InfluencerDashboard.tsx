@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
 import {
@@ -32,6 +33,7 @@ import {
 import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 import { useDashboardStats } from "@/hooks/useCampaigns";
 import { ProfileLinkCard } from "@/components/influencer/ProfileLinkCard";
+import BlockedAccountScreen from "@/components/BlockedAccountScreen";
 
 /* --------------------------------
    TYPES
@@ -154,9 +156,11 @@ const InfluencerDashboard = () => {
   } = useInfluencerTheme();
 
   const [showWelcome, setShowWelcome] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [checkingBlockStatus, setCheckingBlockStatus] = useState(true);
 
   // ⚡ USE REACT QUERY HOOK - Automatic caching & refetching
-  const { data: stats, isLoading } = useDashboardStats(user?.id || '');
+  const { data: stats, isLoading } = useDashboardStats(user?.id || "");
 
   // Extract data from hook (with defaults)
   const fullName = stats?.fullName || "Creator";
@@ -164,6 +168,37 @@ const InfluencerDashboard = () => {
   const activeCampaigns = stats?.activeCampaigns || 0;
   const earnings = stats?.earnings || 0;
   const recentCampaigns = stats?.recentCampaigns || [];
+
+  useEffect(() => {
+    const checkBlockStatus = async () => {
+      if (!user?.id) {
+        setCheckingBlockStatus(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("influencer_profiles")
+          .select("is_blocked")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error checking block status:", error);
+          setCheckingBlockStatus(false);
+          return;
+        }
+        //@ts-ignore
+        setIsBlocked(data?.is_blocked || false);
+      } catch (error) {
+        console.error("Error:", error);
+      } finally {
+        setCheckingBlockStatus(false);
+      }
+    };
+
+    checkBlockStatus();
+  }, [user?.id]);
 
   /* -------------------------------
      CHECK IF FIRST VISIT
@@ -213,7 +248,7 @@ const InfluencerDashboard = () => {
   ------------------------------- */
   if (themeLoading) {
     return (
-      <div 
+      <div
         className="min-h-screen flex items-center justify-center"
         style={{ background: theme.background }}
       >
@@ -223,6 +258,13 @@ const InfluencerDashboard = () => {
         </div>
       </div>
     );
+  }
+
+  /* -------------------------------
+     SHOW BLOCKED SCREEN IF BLOCKED
+  ------------------------------- */
+  if (isBlocked) {
+    return <BlockedAccountScreen />;
   }
 
   return (
@@ -266,11 +308,9 @@ const InfluencerDashboard = () => {
 
         {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10">
-          {isLoading ? (
-            [1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)
-          ) : (
-            statsConfig.map((s) => <StatCard key={s.title} stat={s} />)
-          )}
+          {isLoading
+            ? [1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)
+            : statsConfig.map((s) => <StatCard key={s.title} stat={s} />)}
         </div>
         {/* PROFILE LINK CARD - NEW ✅ */}
         {/* <div className="mb-6 md:mb-10">

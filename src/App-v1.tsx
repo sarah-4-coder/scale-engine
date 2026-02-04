@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 
 // ============================================
-// EAGER LOADED COMPONENTS (Small, needed immediately)
+// EAGER LOADED COMPONENTS
 // ============================================
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -15,18 +15,29 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProfileCompletionGuard from "./components/ProfileCompletionGuard";
+import BrandProfileCompletionGuard from "./components/Brandprofilecompletionguard ";
+
+// NEW: Brand Theme Layout
+import BrandLayout from "./layouts/BrandLayout";
+
+// NEW: Brand Pages
+import BrandLogin from "./pages/brand/BrandLogin";
+import BrandSignup from "./pages/brand/BrandSignup";
+import AdminManageBrands from "./pages/admin/AdminManageBrands";
+import LiveMediaKit from "./pages/influencer/LiveMediaKit";
 
 // ============================================
-// LAZY LOADED COMPONENTS (Code splitting)
+// LAZY LOADED COMPONENTS
 // ============================================
+// Influencer routes
 const InfluencerDashboard = lazy(() => import("./pages/InfluencerDashboard"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
 const AllCampaigns = lazy(() => import("./pages/influencer/AllCampaigns"));
 const MyCampaigns = lazy(() => import("./pages/influencer/MyCampaigns"));
 const CampaignDetail = lazy(() => import("./pages/influencer/CampaignDetail"));
 
-// Admin routes (lazy loaded)
+// Admin routes
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const CreateCampaign = lazy(() => import("./pages/admin/CreateCampaign"));
 const AdminNegotiations = lazy(() => import("./pages/admin/Negotiations"));
 const AdminCampaignDetails = lazy(() => import("./pages/admin/AdminCampaignDetails"));
@@ -34,23 +45,31 @@ const AdminAllCampaigns = lazy(() => import("./pages/admin/AdminAllCampaigns"));
 const AdminCampaignAppliedInfluencers = lazy(() => import("./pages/admin/AdminCampaignAppliedInfluencers"));
 const AdminManageInfluencers = lazy(() => import("./pages/admin/AdminManageInfluencers"));
 
+// NEW: Brand routes (lazy loaded)
+const BrandDashboard = lazy(() => import("./pages/brand/BrandDashboard"));
+const BrandProfileSetup = lazy(() => import("./pages/brand/BrandProfileSetup"));
+const BrandAllCampaigns = lazy(() => import("./pages/brand/BrandAllCampaigns"));
+const BrandCreateCampaign = lazy(() => import("./pages/brand/BrandCreateCampaign"));
+const BrandCampaignDetails = lazy(() => import("./pages/brand/Brandcampaigndetails"));
+const BrandInfluencers = lazy(() => import("./pages/brand/Brandinfluencers"));
+
 // ============================================
 // OPTIMIZED QUERY CLIENT
 // ============================================
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes
-      gcTime: 10 * 60 * 1000, // Cache for 10 minutes
-      refetchOnWindowFocus: false, // Don't refetch on window focus
-      refetchOnReconnect: true, // Do refetch on reconnect
-      retry: 1, // Only retry once on failure
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      retry: 1,
     },
   },
 });
 
 // ============================================
-// LOADING FALLBACK COMPONENT
+// LOADING FALLBACK
 // ============================================
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -62,7 +81,7 @@ const PageLoader = () => (
 );
 
 // ============================================
-// AUTH PAGE REDIRECT COMPONENT
+// AUTH PAGE REDIRECT
 // ============================================
 const AuthPage = ({ children }: { children: React.ReactNode }) => {
   const { user, role, loading } = useAuth();
@@ -72,7 +91,11 @@ const AuthPage = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (user && role) {
-    return <Navigate to={role === "admin" ? "/admin" : "/dashboard"} replace />;
+    return <Navigate to={
+      role === "admin" ? "/admin" : 
+      role === "brand" ? "/brand/dashboard" : 
+      "/dashboard"
+    } replace />;
   }
 
   return <>{children}</>;
@@ -84,10 +107,11 @@ const AuthPage = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Landing page - no lazy load */}
+      {/* Landing page */}
       <Route path="/" element={<Index />} />
+      <Route path="/creators/:handle" element={<LiveMediaKit />} />
       
-      {/* Auth routes - redirect if already logged in */}
+      {/* Influencer Auth routes */}
       <Route
         path="/login"
         element={
@@ -105,8 +129,26 @@ const AppRoutes = () => {
         }
       />
 
+      {/* NEW: Brand Auth routes */}
+      <Route
+        path="/company/login"
+        element={
+          <AuthPage>
+            <BrandLogin />
+          </AuthPage>
+        }
+      />
+      <Route
+        path="/company/signup"
+        element={
+          <AuthPage>
+            <BrandSignup />
+          </AuthPage>
+        }
+      />
+
       {/* ========================================
-          INFLUENCER ROUTES (Lazy Loaded)
+          INFLUENCER ROUTES
       ======================================== */}
       <Route
         path="/dashboard"
@@ -172,7 +214,7 @@ const AppRoutes = () => {
       />
 
       {/* ========================================
-          ADMIN ROUTES (Lazy Loaded)
+          ADMIN ROUTES
       ======================================== */}
       <Route
         path="/admin"
@@ -250,15 +292,117 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      
+      <Route
+        path="/admin/brands"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminManageBrands />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Catch-all - no lazy load needed */}
+      {/* ========================================
+          NEW: BRAND ROUTES - WRAPPED WITH BRANDLAYOUT
+      ======================================== */}
+      <Route
+        path="/company/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={["brand"]}>
+            <BrandProfileCompletionGuard>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandDashboard />
+                </Suspense>
+              </BrandLayout>
+            </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/company/profile-setup"
+        element={
+          <ProtectedRoute allowedRoles={["brand"]}>
+            <BrandLayout>
+              <Suspense fallback={<PageLoader />}>
+                <BrandProfileSetup />
+              </Suspense>
+            </BrandLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/company/campaigns"
+        element={
+          <ProtectedRoute allowedRoles={["brand"]}>
+            <BrandProfileCompletionGuard>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandAllCampaigns />
+                </Suspense>
+              </BrandLayout>
+            </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/company/campaigns/new"
+        element={
+          <ProtectedRoute allowedRoles={["brand"]}>
+            <BrandProfileCompletionGuard>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandCreateCampaign />
+                </Suspense>
+              </BrandLayout>
+            </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/company/campaigns/:id"
+        element={
+          <ProtectedRoute allowedRoles={["brand"]}>
+            <BrandProfileCompletionGuard>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandCampaignDetails />
+                </Suspense>
+              </BrandLayout>
+            </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/company/influencers"
+        element={
+          <ProtectedRoute allowedRoles={["brand"]}>
+            <BrandProfileCompletionGuard>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandInfluencers />
+                </Suspense>
+              </BrandLayout>
+            </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Catch-all */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
 
 // ============================================
-// MAIN APP COMPONENT
+// MAIN APP
 // ============================================
 const App = () => (
   <QueryClientProvider client={queryClient}>

@@ -80,6 +80,10 @@ export type Database = {
           full_name: string;
           created_at: string;
           updated_at: string;
+          is_blocked: boolean;
+          blocked_reason: string | null;
+          blocked_at: string | null;
+          blocked_by_user_id: string | null;
         };
         Insert: {
           id?: string;
@@ -99,8 +103,19 @@ export type Database = {
           full_name?: string;
           created_at?: string;
           updated_at?: string;
+          is_blocked?: boolean;
+          blocked_reason?: string | null;
+          blocked_at?: string | null;
+          blocked_by_user_id?: string | null;
         };
-        Update: never;
+        Update: {
+          is_blocked?: boolean;
+          blocked_reason?: string | null;
+          blocked_at?: string | null;
+          blocked_by_user_id?: string | null;
+          updated_at?: string;
+        };
+        // Update: never;
         Relationships: [];
       };
       contracts: {
@@ -289,7 +304,7 @@ export type Database = {
           completed_at: string | null;
           status: string;
           created_at: string;
-          contract_signed: boolean
+          contract_signed: boolean;
         };
         Insert: {
           id?: string;
@@ -302,7 +317,7 @@ export type Database = {
           completed_at?: string | null;
           status?: string;
           created_at?: string;
-          contract_signed?: boolean
+          contract_signed?: boolean;
         };
         Update: {
           id?: string;
@@ -315,7 +330,7 @@ export type Database = {
           completed_at?: string | null;
           status?: string;
           created_at?: string;
-          contract_signed?: boolean
+          contract_signed?: boolean;
         };
         Relationships: [
           {

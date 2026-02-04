@@ -25,6 +25,7 @@ import BrandLogin from "./pages/brand/BrandLogin";
 import BrandSignup from "./pages/brand/BrandSignup";
 import AdminManageBrands from "./pages/admin/AdminManageBrands";
 import LiveMediaKit from "./pages/influencer/LiveMediaKit";
+import AdminBlockedInfluencers from "./pages/admin/AdminBlockedInfluencers";
 
 // ============================================
 // LAZY LOADED COMPONENTS
@@ -40,17 +41,27 @@ const CampaignDetail = lazy(() => import("./pages/influencer/CampaignDetail"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const CreateCampaign = lazy(() => import("./pages/admin/CreateCampaign"));
 const AdminNegotiations = lazy(() => import("./pages/admin/Negotiations"));
-const AdminCampaignDetails = lazy(() => import("./pages/admin/AdminCampaignDetails"));
+const AdminCampaignDetails = lazy(
+  () => import("./pages/admin/AdminCampaignDetails"),
+);
 const AdminAllCampaigns = lazy(() => import("./pages/admin/AdminAllCampaigns"));
-const AdminCampaignAppliedInfluencers = lazy(() => import("./pages/admin/AdminCampaignAppliedInfluencers"));
-const AdminManageInfluencers = lazy(() => import("./pages/admin/AdminManageInfluencers"));
+const AdminCampaignAppliedInfluencers = lazy(
+  () => import("./pages/admin/AdminCampaignAppliedInfluencers"),
+);
+const AdminManageInfluencers = lazy(
+  () => import("./pages/admin/AdminManageInfluencers"),
+);
 
 // NEW: Brand routes (lazy loaded)
 const BrandDashboard = lazy(() => import("./pages/brand/BrandDashboard"));
 const BrandProfileSetup = lazy(() => import("./pages/brand/BrandProfileSetup"));
 const BrandAllCampaigns = lazy(() => import("./pages/brand/BrandAllCampaigns"));
-const BrandCreateCampaign = lazy(() => import("./pages/brand/BrandCreateCampaign"));
-const BrandCampaignDetails = lazy(() => import("./pages/brand/Brandcampaigndetails"));
+const BrandCreateCampaign = lazy(
+  () => import("./pages/brand/BrandCreateCampaign"),
+);
+const BrandCampaignDetails = lazy(
+  () => import("./pages/brand/Brandcampaigndetails"),
+);
 const BrandInfluencers = lazy(() => import("./pages/brand/Brandinfluencers"));
 
 // ============================================
@@ -91,11 +102,18 @@ const AuthPage = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (user && role) {
-    return <Navigate to={
-      role === "admin" ? "/admin" : 
-      role === "brand" ? "/brand/dashboard" : 
-      "/dashboard"
-    } replace />;
+    return (
+      <Navigate
+        to={
+          role === "admin"
+            ? "/admin"
+            : role === "brand"
+              ? "/brand/dashboard"
+              : "/dashboard"
+        }
+        replace
+      />
+    );
   }
 
   return <>{children}</>;
@@ -110,7 +128,7 @@ const AppRoutes = () => {
       {/* Landing page */}
       <Route path="/" element={<Index />} />
       <Route path="/creators/:handle" element={<LiveMediaKit />} />
-      
+
       {/* Influencer Auth routes */}
       <Route
         path="/login"
@@ -144,163 +162,6 @@ const AppRoutes = () => {
           <AuthPage>
             <BrandSignup />
           </AuthPage>
-        }
-      />
-
-      {/* ========================================
-          INFLUENCER ROUTES
-      ======================================== */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={["influencer"]}>
-            <ProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <InfluencerDashboard />
-              </Suspense>
-            </ProfileCompletionGuard>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/profile-setup"
-        element={
-          <ProtectedRoute allowedRoles={["influencer"]}>
-            <Suspense fallback={<PageLoader />}>
-              <ProfileSetup />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/dashboard/campaigns/all"
-        element={
-          <ProtectedRoute allowedRoles={["influencer"]}>
-            <ProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <AllCampaigns />
-              </Suspense>
-            </ProfileCompletionGuard>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/dashboard/campaigns/my"
-        element={
-          <ProtectedRoute allowedRoles={["influencer"]}>
-            <ProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <MyCampaigns />
-              </Suspense>
-            </ProfileCompletionGuard>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/dashboard/campaigns/my/:campaignId"
-        element={
-          <ProtectedRoute allowedRoles={["influencer"]}>
-            <ProfileCompletionGuard>
-              <Suspense fallback={<PageLoader />}>
-                <CampaignDetail />
-              </Suspense>
-            </ProfileCompletionGuard>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* ========================================
-          ADMIN ROUTES
-      ======================================== */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminDashboard />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/admin/campaigns/new"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Suspense fallback={<PageLoader />}>
-              <CreateCampaign />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/admin/negotiations"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminNegotiations />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/admin/campaigns"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminAllCampaigns />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/admin/campaigns/:id"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminCampaignDetails />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/admin/campaigns/:id/applied"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminCampaignAppliedInfluencers />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/admin/influencers"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminManageInfluencers />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/admin/brands"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Suspense fallback={<PageLoader />}>
-              <AdminManageBrands />
-            </Suspense>
-          </ProtectedRoute>
         }
       />
 
@@ -391,6 +252,173 @@ const AppRoutes = () => {
                 </Suspense>
               </BrandLayout>
             </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========================================
+          INFLUENCER ROUTES
+      ======================================== */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <ProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <InfluencerDashboard />
+              </Suspense>
+            </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile-setup"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <Suspense fallback={<PageLoader />}>
+              <ProfileSetup />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/campaigns/all"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <ProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <AllCampaigns />
+              </Suspense>
+            </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/campaigns/my"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <ProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <MyCampaigns />
+              </Suspense>
+            </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/campaigns/my/:campaignId"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <ProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <CampaignDetail />
+              </Suspense>
+            </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========================================
+          ADMIN ROUTES
+      ======================================== */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/campaigns/new"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <CreateCampaign />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/negotiations"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminNegotiations />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/campaigns"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminAllCampaigns />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/campaigns/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminCampaignDetails />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/campaigns/:id/applied"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminCampaignAppliedInfluencers />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/influencers"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminManageInfluencers />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/brands"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminManageBrands />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/blocked-influencers"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminBlockedInfluencers/>
+            </Suspense>
           </ProtectedRoute>
         }
       />
