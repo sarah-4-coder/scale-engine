@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
-import MobileBottomNav from "@/components/influencer/MobileBottomNav";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
+import AmbientLayer from "@/components/ambient/AmbientLayer";
 import {
   ArrowRight,
   Calendar,
@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { CampaignCardSkeleton } from "@/components/influencer/Skeletons";
+import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 import { useInfluencerProfile, useMyCampaigns } from "@/hooks/useCampaigns";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -52,12 +53,12 @@ const MyCampaigns = () => {
     loading: themeLoading,
   } = useInfluencerTheme();
 
-  // ⚡ REACT QUERY HOOKS - Automatic caching & refetching with real-time
+  // ⚡ REACT QUERY HOOKS - Automatic caching & refetching
   const { data: profile, isLoading: profileLoading } = useInfluencerProfile(user?.id || '');
   //@ts-ignore
   const influencerId = profile?.id;
   
-  // My campaigns - auto-refetches + real-time subscription built-in
+  // My campaigns - auto-refetches every 30 seconds for real-time feel
   const { data: applications = [], isLoading: applicationsLoading } = useMyCampaigns(influencerId || '') as { data: Application[]; isLoading: boolean };
 
   const loading = profileLoading || applicationsLoading;
@@ -65,6 +66,35 @@ const MyCampaigns = () => {
   // Get campaign IDs
   //@ts-ignore
   const campaignIds = applications.map((a) => a.campaign_id) || [];
+
+  // ⚡ REAL-TIME SUBSCRIPTION - Invalidate cache instead of manual refetch
+  useEffect(() => {
+    if (!influencerId) return;
+
+    const subscription = supabase
+      .channel(`my_campaigns_${influencerId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "campaign_influencers",
+          filter: `influencer_id=eq.${influencerId}`,
+        },
+        (payload) => {
+          console.log("Real-time update:", payload);
+          // Just invalidate cache - React Query handles the refetch
+          queryClient.invalidateQueries({ 
+            queryKey: ['my-campaigns', influencerId] 
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [influencerId, queryClient]);
 
   // Fetch campaign details when we have campaign IDs
   useEffect(() => {
@@ -187,7 +217,7 @@ const MyCampaigns = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Animated Theme Background */}
       <motion.div
         className="absolute inset-0"
@@ -198,11 +228,16 @@ const MyCampaigns = () => {
         style={{ background: theme.background }}
       />
 
+      {/* Themed Studio Background (CSS-based, hidden on mobile) */}
+      {/* <ThemedStudioBackground themeKey={themeKey} /> */}
+
+      {/* Ambient Background (hidden on mobile) */}
+      {/* <div className="hidden md:block">
+        <AmbientLayer themeKey={themeKey} />
+      </div> */}
+
       {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
 
       {/* CONTENT */}
       <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-6xl mx-auto">

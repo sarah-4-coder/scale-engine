@@ -15,7 +15,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
-import MobileBottomNav from "@/components/influencer/MobileBottomNav";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
 import {
   Card,
@@ -204,15 +203,15 @@ const InfluencerDashboard = () => {
   /* -------------------------------
      CHECK IF FIRST VISIT
   ------------------------------- */
-  //   useEffect(() => {
-  //     const hasSeenWelcome = localStorage.getItem("dotfluence_welcome_seen");
-  //     if (!hasSeenWelcome && !themeLoading && !isLoading) {
-  //       setTimeout(() => {
-  //         setShowWelcome(true);
-  //         localStorage.setItem("dotfluence_welcome_seen", "true");
-  //       }, 1000);
-  //     }
-  //   }, [themeLoading, isLoading]);
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem("dotfluence_welcome_seen");
+    if (!hasSeenWelcome && !themeLoading && !isLoading) {
+      setTimeout(() => {
+        setShowWelcome(true);
+        localStorage.setItem("dotfluence_welcome_seen", "true");
+      }, 1000);
+    }
+  }, [themeLoading, isLoading]);
 
   /* -------------------------------
      STATS CONFIG
@@ -247,7 +246,7 @@ const InfluencerDashboard = () => {
   /* -------------------------------
      LOADING STATE - PREVENT FLASH
   ------------------------------- */
-  if (themeLoading || checkingBlockStatus) {
+  if (themeLoading) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -269,7 +268,7 @@ const InfluencerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Animated Theme Background */}
       <motion.div
         className="absolute inset-0"
@@ -280,134 +279,126 @@ const InfluencerDashboard = () => {
         style={{ background: theme.background }}
       />
 
+      {/* Themed Studio Background */}
+      {/* <ThemedStudioBackground themeKey={themeKey} /> */}
+
+      {/* <div className="hidden md:block">
+        <AmbientLayer themeKey={themeKey} />
+      </div> */}
+
+      {/* Welcome Modal */}
+      {/* <WelcomeModal
+        show={showWelcome}
+        onClose={() => setShowWelcome(false)}
+        fullName={fullName}
+      /> */}
+
       {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
 
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
+      {/* CONTENT */}
+      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-6xl mx-auto">
+        {/* HEADER */}
+        <div className="mb-6 md:mb-10">
+          <h2 className={`text-2xl md:text-3xl font-bold ${theme.text}`}>
+            Welcome {fullName} 👋
+          </h2>
+          <p className={theme.muted}>Your personalized creator dashboard</p>
+        </div>
 
-      {/* CONTENT - 2 COLUMN LAYOUT ON DESKTOP */}
-      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* MAIN CONTENT - LEFT SIDE */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* HEADER */}
-              <div>
-                <h2 className={`text-2xl md:text-3xl font-bold ${theme.text}`}>
-                  Welcome {fullName} 👋
-                </h2>
-                <p className={theme.muted}>
-                  Your personalized creator dashboard
-                </p>
-              </div>
+        {/* STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10">
+          {isLoading
+            ? [1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)
+            : statsConfig.map((s) => <StatCard key={s.title} stat={s} />)}
+        </div>
+        {/* PROFILE LINK CARD - NEW ✅ */}
+        <div className="mb-6 md:mb-10">
+          <ProfileLinkCard userId={user?.id || ''} />
+        </div>
 
-              {/* STATS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                {isLoading
-                  ? [1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)
-                  : statsConfig.map((s) => <StatCard key={s.title} stat={s} />)}
-              </div>
-
-              {/* RECENT + ACTIONS */}
-              <div className="grid grid-cols-1 gap-4 md:gap-6 hidden md:block">
-                {/* QUICK ACTIONS */}
-                <Card className={`${theme.card} ${theme.radius}`}>
-                  <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
-                    <CardTitle className="text-lg md:text-xl">
-                      Quick Actions
-                    </CardTitle>
-                    <CardDescription>Move faster</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
-                    <Button
-                      className="w-full"
-                      onClick={() => navigate("/dashboard/campaigns/all")}
-                    >
-                      Browse Campaigns
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full text-foreground"
-                      onClick={() => navigate("/dashboard/campaigns/my")}
-                    >
-                      My Campaigns
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full text-foreground"
-                      disabled
-                    >
-                      Analytics (Coming Soon)
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            {/* SIDEBAR - MEDIA KIT (DESKTOP ONLY, STICKY) */}
-
-            <div className="">
-              <div className="sticky top-24  space-y-6 hidden md:block lg:mt-[85px]">
-                <ProfileLinkCard userId={user?.id || ""} />
-              </div>
-              {/* RECENT CAMPAIGNS */}
-              <Card className={`${theme.card} ${theme.radius} md:mt-5 `}>
-                <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
-                  <CardTitle className="text-lg md:text-xl">
-                    Recent Campaigns
-                  </CardTitle>
-                  <CardDescription>Your latest activity</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
-                  {isLoading ? (
-                    <div className="space-y-3">
-                      <CardSkeleton />
-                      <CardSkeleton />
-                      <CardSkeleton />
-                    </div>
-                  ) : (
-                    <>
-                      {recentCampaigns.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                          No campaigns yet — explore new opportunities 🚀
-                        </p>
-                      )}
-
-                      {recentCampaigns.map((c, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between items-center p-3 md:p-4 rounded-lg bg-white/10"
-                        >
-                          <span
-                            className={`${theme.text} text-sm md:text-base`}
-                          >
-                            {c.name}
-                          </span>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              c.status === "Active"
-                                ? "bg-green-500/20 text-green-400"
-                                : c.status === "Pending"
-                                  ? "bg-yellow-500/20 text-yellow-400"
-                                  : "bg-gray-500/20 text-gray-400"
-                            }`}
-                          >
-                            {c.status}
-                          </span>
-                        </div>
-                      ))}
-                    </>
+        {/* RECENT + ACTIONS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          {/* RECENT CAMPAIGNS */}
+          <Card className={`${theme.card} ${theme.radius}`}>
+            <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
+              <CardTitle className="text-lg md:text-xl">
+                Recent Campaigns
+              </CardTitle>
+              <CardDescription>Your latest activity</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <CardSkeleton />
+                  <CardSkeleton />
+                  <CardSkeleton />
+                </div>
+              ) : (
+                <>
+                  {recentCampaigns.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No campaigns yet — explore new opportunities 🚀
+                    </p>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
 
-          {/* MOBILE: PROFILE LINK CARD */}
-          {/* <div className="lg:hidden mt-6">
-            <ProfileLinkCard userId={user?.id || ""} />
-          </div> */}
+                  {recentCampaigns.map((c, i) => (
+                    <div
+                      key={i}
+                      className="flex justify-between items-center p-3 md:p-4 rounded-lg bg-white/10"
+                    >
+                      <span className={`${theme.text} text-sm md:text-base`}>
+                        {c.name}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          c.status === "Active"
+                            ? "bg-green-500/20 text-green-400"
+                            : c.status === "Pending"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-gray-500/20 text-gray-400"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* QUICK ACTIONS */}
+          <Card className={`${theme.card} ${theme.radius}`}>
+            <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
+              <CardTitle className="text-lg md:text-xl">
+                Quick Actions
+              </CardTitle>
+              <CardDescription>Move faster</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
+              <Button
+                className="w-full"
+                onClick={() => navigate("/dashboard/campaigns/all")}
+              >
+                Browse Campaigns
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full text-foreground"
+                onClick={() => navigate("/dashboard/campaigns/my")}
+              >
+                My Campaigns
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full text-foreground"
+                disabled
+              >
+                Analytics (Coming Soon)
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>

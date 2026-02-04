@@ -1,16 +1,13 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
 
 /**
  * Optimized React Query hooks for influencer data
  * - Caches data to prevent unnecessary refetches
  * - Automatic invalidation on mutations
  * - Parallel queries where beneficial
- * - Real-time subscriptions for campaign_influencers
  */
 
 // ============================================
@@ -97,13 +94,11 @@ export const useUserProfile = (userId: string) => {
 };
 
 // ============================================
-// MY CAMPAIGNS (Campaign Influencers) WITH REAL-TIME
+// MY CAMPAIGNS (Campaign Influencers)
 // ============================================
 
 export const useMyCampaigns = (influencerId: string) => {
-  const queryClient = useQueryClient();
-
-  const query = useQuery({
+  return useQuery({
     queryKey: ['my-campaigns', influencerId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -115,50 +110,15 @@ export const useMyCampaigns = (influencerId: string) => {
       if (error) throw error;
       return data;
     },
-    staleTime: 1 * 60 * 1000, // Cache for 1 minute (updates frequently)
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes (updates more frequently)
     gcTime: 5 * 60 * 1000,
     enabled: !!influencerId,
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchInterval: 30000, // Refetch every 30 seconds for real-time feel
   });
-
-  // ⚡ REAL-TIME SUBSCRIPTION
-  useEffect(() => {
-    if (!influencerId) return;
-
-    const subscription = supabase
-      .channel(`campaign_influencers_${influencerId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'campaign_influencers',
-          filter: `influencer_id=eq.${influencerId}`,
-        },
-        (payload) => {
-          console.log('Real-time update for campaign_influencers:', payload);
-          
-          // Invalidate and refetch immediately
-          queryClient.invalidateQueries({ 
-            queryKey: ['my-campaigns', influencerId],
-            refetchType: 'active' 
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [influencerId, queryClient]);
-
-  return query;
 };
 
 export const useCampaignApplication = (campaignId: string, influencerId: string) => {
-  const queryClient = useQueryClient();
-
-  const query = useQuery({
+  return useQuery({
     queryKey: ['campaign-application', campaignId, influencerId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -171,44 +131,11 @@ export const useCampaignApplication = (campaignId: string, influencerId: string)
       if (error) throw error;
       return data;
     },
-    staleTime: 30 * 1000, // Cache for 30 seconds
+    staleTime: 1 * 60 * 1000, // Cache for 1 minute
     gcTime: 5 * 60 * 1000,
     enabled: !!campaignId && !!influencerId,
-    refetchOnWindowFocus: true,
+    refetchInterval: 10000, // Refetch every 10 seconds for status updates
   });
-
-  // ⚡ REAL-TIME SUBSCRIPTION for specific application
-  useEffect(() => {
-    if (!campaignId || !influencerId) return;
-
-    const subscription = supabase
-      .channel(`campaign_app_${campaignId}_${influencerId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'campaign_influencers',
-          filter: `campaign_id=eq.${campaignId},influencer_id=eq.${influencerId}`,
-        },
-        (payload) => {
-          console.log('Real-time update for application:', payload);
-          
-          // Invalidate and refetch immediately
-          queryClient.invalidateQueries({ 
-            queryKey: ['campaign-application', campaignId, influencerId],
-            refetchType: 'active'
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [campaignId, influencerId, queryClient]);
-
-  return query;
 };
 
 // ============================================
@@ -220,10 +147,8 @@ export const useDashboardStats = (userId: string) => {
   const { data: influencer } = useInfluencerProfile(userId);
   
   return useQuery({
-    //@ts-ignore
     queryKey: ['dashboard-stats', influencer?.id],
     queryFn: async () => {
-        //@ts-ignore
       if (!influencer?.id) return null;
 
       // Parallel queries for dashboard data
@@ -231,8 +156,7 @@ export const useDashboardStats = (userId: string) => {
         supabase
           .from('campaign_influencers')
           .select('campaign_id, status, final_payout, created_at')
-          //@ts-ignore
-          .eq('influencer_id', influencer?.id ?? '')
+          .eq('influencer_id', influencer.id)
           .order('created_at', { ascending: false }),
         supabase
           .from('campaigns')
@@ -242,8 +166,8 @@ export const useDashboardStats = (userId: string) => {
       if (relationsResult.error) throw relationsResult.error;
       if (campaignsResult.error) throw campaignsResult.error;
 
-      const relations = (relationsResult.data || []) as Array<{ campaign_id: string; status: string; final_payout: number | null; created_at: string }>;
-      const campaigns = (campaignsResult.data || []) as Array<{ id: string; name: string }>;
+      const relations = relationsResult.data || [];
+      const campaigns = campaignsResult.data || [];
 
       // Calculate stats
       const activeCampaigns = relations.filter(r => r.status === 'accepted').length;
@@ -259,9 +183,7 @@ export const useDashboardStats = (userId: string) => {
       });
 
       return {
-        //@ts-expect-error
         fullName: profile?.full_name || 'Creator',
-        //@ts-expect-error
         followers: influencer.followers_count,
         activeCampaigns,
         earnings,
@@ -270,7 +192,6 @@ export const useDashboardStats = (userId: string) => {
     },
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
     gcTime: 5 * 60 * 1000,
-    //@ts-expect-error
     enabled: !!influencer?.id,
   });
 };
@@ -286,7 +207,6 @@ export const useApplyToCampaign = () => {
     mutationFn: async ({ campaignId, influencerId }: { campaignId: string; influencerId: string }) => {
       const { data, error } = await supabase
         .from('campaign_influencers')
-        //@ts-expect-error
         .insert({
           campaign_id: campaignId,
           influencer_id: influencerId,
@@ -299,7 +219,7 @@ export const useApplyToCampaign = () => {
       return data;
     },
     onSuccess: (_, variables) => {
-      // Invalidate relevant queries - real-time subscription will handle the refetch
+      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['my-campaigns', variables.influencerId] });
       toast.success('Applied successfully! Check My Campaigns to track progress.');
     },
@@ -324,7 +244,6 @@ export const useUpdateCampaignStatus = () => {
     }) => {
       const { data, error } = await supabase
         .from('campaign_influencers')
-        //@ts-expect-error
         .update(updates)
         .eq('campaign_id', campaignId)
         .eq('influencer_id', influencerId)
@@ -335,7 +254,7 @@ export const useUpdateCampaignStatus = () => {
       return data;
     },
     onSuccess: (_, variables) => {
-      // Invalidate all related queries - real-time subscription will handle the refetch
+      // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ['my-campaigns', variables.influencerId] });
       queryClient.invalidateQueries({ queryKey: ['campaign-application', variables.campaignId, variables.influencerId] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });

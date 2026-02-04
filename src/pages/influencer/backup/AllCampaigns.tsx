@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
-import MobileBottomNav from "@/components/influencer/MobileBottomNav";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
+import AmbientLayer from "@/components/ambient/AmbientLayer";
 import {
   Calendar,
   DollarSign,
@@ -21,9 +21,11 @@ import {
   CheckCircle2,
   Users,
   Sparkles,
+  TrendingUp,
   MapPin,
 } from "lucide-react";
 import { CampaignCardSkeleton } from "@/components/influencer/Skeletons";
+import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 import { useCampaigns, useInfluencerProfile, useApplyToCampaign, useMyCampaigns } from "@/hooks/useCampaigns";
 
 interface Campaign {
@@ -173,7 +175,7 @@ const AllCampaigns = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Animated Theme Background */}
       <motion.div
         className="absolute inset-0"
@@ -184,11 +186,16 @@ const AllCampaigns = () => {
         style={{ background: theme.background }}
       />
 
+      {/* Themed Studio Background */}
+      {/* <ThemedStudioBackground themeKey={themeKey} /> */}
+
+      {/* Ambient Background */}
+      {/* <div className="hidden md:block">
+        <AmbientLayer themeKey={themeKey} />
+      </div> */}
+
       {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
-
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
 
       {/* CONTENT */}
       <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-6xl mx-auto">

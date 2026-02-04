@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { THEMES, ThemeConfig, ThemeKey } from "./themes";
 
+const THEME_STORAGE_KEY = 'dotfluence_influencer_theme';
+
 export const useInfluencerTheme = () => {
   const [themeKey, setThemeKey] = useState<ThemeKey>("default");
   const [theme, setTheme] = useState<ThemeConfig>(THEMES.default);
@@ -14,6 +16,16 @@ export const useInfluencerTheme = () => {
   useEffect(() => {
     const loadTheme = async () => {
       try {
+        // 1️⃣ FIRST: Check localStorage (instant, no DB call)
+        const cachedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        if (cachedTheme && THEMES[cachedTheme as ThemeKey]) {
+          const selectedTheme = cachedTheme as ThemeKey;
+          setThemeKey(selectedTheme);
+          setTheme(THEMES[selectedTheme]);
+          setLoading(false);
+          return;
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -23,7 +35,7 @@ export const useInfluencerTheme = () => {
           return;
         }
 
-        // 1️⃣ Try user preference FIRST
+        // 2️⃣ Try user preference from DB
         const { data: pref } = await supabase
           .from("user_preferences")
           .select("ui_theme")
@@ -34,11 +46,13 @@ export const useInfluencerTheme = () => {
           const selectedTheme = pref.ui_theme as ThemeKey;
           setThemeKey(selectedTheme);
           setTheme(THEMES[selectedTheme]);
+          // Cache in localStorage
+          localStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
           setLoading(false);
           return;
         }
 
-        // 2️⃣ Fallback → infer from niche (soft)
+        // 3️⃣ Fallback → infer from niche (soft)
         const { data: profile } = await supabase
           .from("influencer_profiles")
           .select("niches")
@@ -61,11 +75,14 @@ export const useInfluencerTheme = () => {
 
         setThemeKey(inferred);
         setTheme(THEMES[inferred]);
+        // Cache in localStorage
+        localStorage.setItem(THEME_STORAGE_KEY, inferred);
       } catch (error) {
         console.error("Error loading theme:", error);
         // Fallback to default theme on error
         setThemeKey("default");
         setTheme(THEMES.default);
+        localStorage.setItem(THEME_STORAGE_KEY, "default");
       } finally {
         setLoading(false);
       }
@@ -79,24 +96,34 @@ export const useInfluencerTheme = () => {
   ----------------------------- */
   const changeTheme = async (key: ThemeKey) => {
     try {
+      // Update UI immediately for instant feedback
+      setThemeKey(key);
+      setTheme(THEMES[key]);
+      // Cache in localStorage immediately
+      localStorage.setItem(THEME_STORAGE_KEY, key);
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
       
       if (!user) return;
 
-      // Update UI immediately for instant feedback
-      setThemeKey(key);
-      setTheme(THEMES[key]);
-
-      // UPSERT preference in background
-      await supabase
-        .from("user_preferences")
-        .upsert({
-          user_id: user.id,
-          ui_theme: key,
-          updated_at: new Date().toISOString(),
-        } as any);
+      // UPSERT preference in background (non-blocking)
+      Promise.resolve(
+        supabase
+          .from("user_preferences")
+          .upsert({
+            user_id: user.id,
+            ui_theme: key,
+            updated_at: new Date().toISOString(),
+          } as any)
+      )
+        .then(() => {
+          console.log('Theme saved to database');
+        })
+        .catch((error) => {
+          console.error("Error saving theme to DB:", error);
+        });
     } catch (error) {
       console.error("Error changing theme:", error);
     }

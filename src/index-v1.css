@@ -6,67 +6,47 @@
 
 @layer base {
   :root {
-    /* Light theme (default for brand pages) */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 2%;
+    --foreground: 0 0% 100%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 142 76% 36%;
-    --primary-foreground: 355.7 100% 97.3%;
+    --primary: 72 100% 50%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 168 76% 50%;
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 72 100% 50%;
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142 76% 36%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 72 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
+
+    /* Custom tokens */
+    --neon: 72 100% 50%;
+    --neon-glow: 0 0 30px hsl(72 100% 50% / 0.3);
+    --teal: 168 76% 50%;
+    --glass-bg: 0 0% 100% / 0.03;
+    --glass-border: 0 0% 100% / 0.08;
   }
 
   .dark {
-    /* Dark theme */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 142 76% 36%;
-    --primary-foreground: 355.7 100% 97.3%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142 76% 36%;
+    --background: 0 0% 2%;
+    --foreground: 0 0% 100%;
   }
 }
 
@@ -82,7 +62,6 @@
   body {
     @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
     font-family: "Plus Jakarta Sans", sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -94,16 +73,15 @@
     );
     background-size: 30px 30px;
   }
-
   .glass {
-    @apply bg-card/50 backdrop-blur-xl border border-border/50;
+    @apply bg-[hsl(var(--glass-bg))] backdrop-blur-xl border border-[hsl(var(--glass-border))];
   }
 
   .text-gradient {
     background: linear-gradient(
       90deg,
-      hsl(var(--primary)) 0%,
-      hsl(var(--primary) / 0.7) 100%
+      hsl(var(--neon)) 0%,
+      hsl(var(--teal)) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -115,7 +93,8 @@
   }
 
   .btn-protocol:hover {
-    @apply opacity-90 -translate-y-0.5;
+    @apply bg-white -translate-y-0.5;
+    /* box-shadow: 0 10px 30px hsl(var(--primary) / 0.4); */
   }
 
   .btn-primary {
@@ -123,7 +102,8 @@
   }
 
   .btn-primary:hover {
-    @apply opacity-90 scale-105;
+    @apply bg-white scale-105;
+    box-shadow: var(--neon-glow);
   }
 
   .reveal {
@@ -139,11 +119,12 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-muted;
+    background: hsl(0 0% 100% / 0.02);
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-primary rounded-full;
+    background: hsl(var(--neon));
+    border-radius: 10px;
   }
 }
 

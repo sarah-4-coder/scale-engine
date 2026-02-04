@@ -26,6 +26,7 @@ import BrandSignup from "./pages/brand/BrandSignup";
 import AdminManageBrands from "./pages/admin/AdminManageBrands";
 import LiveMediaKit from "./pages/influencer/LiveMediaKit";
 import AdminBlockedInfluencers from "./pages/admin/AdminBlockedInfluencers";
+import MediaKitSetup from "./pages/influencer/Mediakitsetup";
 
 // ============================================
 // LAZY LOADED COMPONENTS
@@ -303,6 +304,18 @@ const AppRoutes = () => {
             <ProfileCompletionGuard>
               <Suspense fallback={<PageLoader />}>
                 <MyCampaigns />
+              </Suspense>
+            </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/media-kit/setup"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <ProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <MediaKitSetup/>
               </Suspense>
             </ProfileCompletionGuard>
           </ProtectedRoute>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, LogOut, Check, Home, User } from "lucide-react";
+import { Palette, LogOut, Check, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,13 +17,8 @@ type Props = {
 
 /**
  * Optimized InfluencerNavbar
- * 
- * Optimizations:
- * - Memoized to prevent unnecessary re-renders
- * - Uses React Query to cache user profile data
- * - Smooth animations with GPU acceleration
- * - Efficient theme switching
- * - Proper accessibility
+ * Mobile: Compact design with only essentials (brand, bell, theme, logout)
+ * Desktop: Full features with user greeting
  */
 const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
   const { user } = useAuth();
@@ -44,16 +39,16 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
   };
 
   return (
-    <div className="sticky top-0 z-50 backdrop-blur-xl bg-black/40 border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+    <div className="sticky top-0 z-40 backdrop-blur-xl bg-black/40 border-b border-white/10">
+      <div className="max-w-7xl mx-auto px-3 md:px-6 py-2.5 md:py-4 flex items-center justify-between">
         {/* LEFT - Logo/Brand */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-3 md:gap-4"
+          className="flex items-center gap-2 md:gap-4"
         >
           <h1
-            className="text-lg md:text-xl font-bold text-white tracking-wide cursor-pointer hover:text-white/80 transition-colors"
+            className="text-base md:text-xl font-bold text-white tracking-wide cursor-pointer hover:text-white/80 transition-colors"
             onClick={() => navigate("/dashboard")}
           >
             DotFluence
@@ -61,7 +56,6 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
           
           {/* User greeting - only on desktop */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5">
-            <User className="h-3.5 w-3.5 text-white/60" />
             <span className="text-sm text-white/60">
               {userName}
             </span>
@@ -70,28 +64,40 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
 
         {/* RIGHT - Actions */}
         <div className="flex items-center gap-1 md:gap-2 relative">
-          {/* DASHBOARD BUTTON */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.05 }}
+            className="hidden md:block"
           >
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate("/dashboard")}
-              title="Dashboard"
-              className="hover:bg-white/10 h-9 w-9 md:h-10 md:w-10"
+              title="Home"
+              className="hover:bg-white/10 h-8 w-8 md:h-10 md:w-10"
             >
-              <Home className="h-4 w-4 md:h-5 md:w-5 text-white" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 md:h-5 md:w-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-6 0h6"
+                />
+              </svg>
             </Button>
           </motion.div>
-
           {/* NOTIFICATIONS */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
           >
             <NotificationBell />
           </motion.div>
@@ -100,7 +106,7 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2 }}
             className="relative"
           >
             <Button
@@ -108,7 +114,7 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
               size="icon"
               onClick={() => setOpen((p) => !p)}
               title="Change Theme"
-              className="hover:bg-white/10 h-9 w-9 md:h-10 md:w-10"
+              className="hover:bg-white/10 h-8 w-8 md:h-10 md:w-10"
             >
               <Palette className="h-4 w-4 md:h-5 md:w-5 text-white" />
             </Button>
@@ -186,14 +192,14 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.3 }}
           >
             <Button
               variant="ghost"
               size="icon"
               onClick={handleLogout}
               title="Logout"
-              className="hover:bg-white/10 hover:text-red-400 transition-colors h-9 w-9 md:h-10 md:w-10"
+              className="hover:bg-white/10 hover:text-red-400 transition-colors h-8 w-8 md:h-10 md:w-10"
             >
               <LogOut className="h-4 w-4 md:h-5 md:w-5 text-white" />
             </Button>

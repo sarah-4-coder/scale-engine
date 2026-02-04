@@ -2,28 +2,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink, Copy, Share2, Sparkles } from "lucide-react";
+import { ExternalLink, Copy, Share2, Sparkles, Settings, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface ProfileLinkCardProps {
   userId: string;
 }
 
 /**
- * Profile Link Card Component
+ * Profile Link Card Component (Updated)
  * 
- * Shows influencers their public media kit URL
- * Encourages them to add it to their Instagram bio
- * Creates the viral loop effect
+ * Shows:
+ * - Media kit status (complete/incomplete)
+ * - Shareable link (if complete)
+ * - Setup CTA (if incomplete)
  */
 export const ProfileLinkCard = ({ userId }: ProfileLinkCardProps) => {
   const { theme } = useInfluencerTheme();
+  const navigate = useNavigate();
+  
   const [instagramHandle, setInstagramHandle] = useState<string | null>(null);
   const [profileUrl, setProfileUrl] = useState<string>("");
+  const [isMediaKitComplete, setIsMediaKitComplete] = useState(false);
+  const [portfolioCount, setPortfolioCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProfile();
@@ -31,20 +38,29 @@ export const ProfileLinkCard = ({ userId }: ProfileLinkCardProps) => {
 
   const loadProfile = async () => {
     try {
-      const { data } = await supabase
+      const { data: influencerData } = await supabase
         .from("influencer_profiles")
-        .select("instagram_handle")
+        .select("id, instagram_handle, media_kit_completed, media_kit_enabled, profile_image_url, media_kit_bio")
         .eq("user_id", userId)
-        .single();
-        //@ts-ignore
-      if (data && data.instagram_handle) {
-        //@ts-ignore
-        setInstagramHandle(data.instagram_handle);
-        //@ts-ignore
-        setProfileUrl(`${window.location.origin}/creators/${data.instagram_handle}`);
+        .single() as { data: { id: string; instagram_handle: string; media_kit_completed: boolean; media_kit_enabled: boolean; profile_image_url: string; media_kit_bio: string } | null };
+
+      if (influencerData && influencerData.instagram_handle) {
+        setInstagramHandle(influencerData.instagram_handle);
+        setProfileUrl(`${window.location.origin}/creators/${influencerData.instagram_handle}`);
+        setIsMediaKitComplete(influencerData.media_kit_completed || false);
+
+        // Count portfolio items
+        const { data: portfolioData } = await supabase
+          .from("portfolio_content")
+          .select("id")
+          .eq("influencer_id", influencerData.id);
+
+        setPortfolioCount(portfolioData?.length || 0);
       }
     } catch (error) {
       console.error("Error loading profile:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,8 +73,8 @@ export const ProfileLinkCard = ({ userId }: ProfileLinkCardProps) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "My Dotfluence Media Kit",
-          text: "Check out my professional creator portfolio!",
+          title: "My Professional Media Kit",
+          text: "Check out my creator portfolio!",
           url: profileUrl,
         });
       } catch (error) {
@@ -73,10 +89,84 @@ export const ProfileLinkCard = ({ userId }: ProfileLinkCardProps) => {
     window.open(profileUrl, "_blank");
   };
 
+  if (loading) {
+    return (
+      <Card className={`${theme.card} ${theme.radius}`}>
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-3">
+            <div className="h-4 bg-white/10 rounded w-1/3" />
+            <div className="h-10 bg-white/10 rounded" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!instagramHandle) {
     return null;
   }
 
+  // If media kit is NOT complete, show setup CTA
+  if (!isMediaKitComplete) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Card className={`${theme.card} ${theme.radius} border-2 border-yellow-500/30`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              <CardTitle className="text-lg">Create Your Media Kit</CardTitle>
+            </div>
+            <CardDescription>
+              Get a professional portfolio link to share with brands
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {/* Progress Checklist */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`h-2 w-2 rounded-full ${portfolioCount >= 1 ? 'bg-green-500' : 'bg-white/20'}`} />
+                <span className="text-white/70">Upload profile image</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`h-2 w-2 rounded-full ${portfolioCount >= 1 ? 'bg-green-500' : 'bg-white/20'}`} />
+                <span className="text-white/70">Write your bio</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`h-2 w-2 rounded-full ${portfolioCount >= 3 ? 'bg-green-500' : 'bg-white/20'}`} />
+                <span className="text-white/70">Add 3+ portfolio items ({portfolioCount}/3)</span>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <Button
+              onClick={() => navigate("/dashboard/media-kit/setup")}
+              className="w-full bg-gradient-to-r from-yellow-500 to-orange-500"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              Setup Media Kit (2 min)
+            </Button>
+
+            {/* Info */}
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+              <p className="text-xs text-yellow-200">
+                💡 Get a shareable link like: <br />
+                <span className="font-mono text-yellow-100">
+                  dotfluence.com/creators/{instagramHandle}
+                </span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  // If media kit IS complete, show shareable link
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -85,12 +175,21 @@ export const ProfileLinkCard = ({ userId }: ProfileLinkCardProps) => {
     >
       <Card className={`${theme.card} ${theme.radius} border-2 border-purple-500/30`}>
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className={`h-5 w-5 ${theme.accent}`} />
-            <CardTitle className="text-lg">Your Live Media Kit</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className={`h-5 w-5 ${theme.accent}`} />
+              <CardTitle className="text-lg">Your Media Kit</CardTitle>
+            </div>
+            <Button
+              onClick={() => navigate("/dashboard/media-kit/setup")}
+              variant="ghost"
+              size="sm"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
           <CardDescription>
-            Share this link in your Instagram bio to attract more brands!
+            Share this link in your Instagram bio to attract brands
           </CardDescription>
         </CardHeader>
 

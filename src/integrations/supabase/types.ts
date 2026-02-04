@@ -84,6 +84,12 @@ export type Database = {
           blocked_reason: string | null;
           blocked_at: string | null;
           blocked_by_user_id: string | null;
+          profile_image_url: string | null;
+          media_kit_bio: string | null;
+          media_kit_enabled: boolean;
+          media_kit_completed: boolean;
+          portfolio_theme: string | null
+
         };
         Insert: {
           id?: string;
@@ -107,6 +113,11 @@ export type Database = {
           blocked_reason?: string | null;
           blocked_at?: string | null;
           blocked_by_user_id?: string | null;
+          profile_image_url?: string | null;
+          media_kit_bio?: string | null;
+          media_kit_enabled?: boolean;
+          media_kit_completed?: boolean;
+          portfolio_theme?: string | null;
         };
         Update: {
           is_blocked?: boolean;
@@ -114,9 +125,69 @@ export type Database = {
           blocked_at?: string | null;
           blocked_by_user_id?: string | null;
           updated_at?: string;
+          profile_image_url?: string | null;
+          media_kit_bio?: string | null;
+          media_kit_enabled?: boolean;
+          media_kit_completed?: boolean;
+          portfolio_theme?: string | null;
         };
         // Update: never;
         Relationships: [];
+      };
+      portfolio_content: {
+        Row: {
+          id: string;
+          influencer_id: string;
+          content_type: "image" | "video";
+          content_url: string;
+          thumbnail_url: string | null;
+          caption: string | null;
+          reach_count: number | null;
+          engagement_count: number | null;
+          posted_date: string | null;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+           instagram_post_url: string | null;
+        };
+        Insert: {
+          id?: string;
+          influencer_id: string;
+          content_type: "image" | "video";
+          content_url: string;
+          thumbnail_url?: string | null;
+          caption?: string | null;
+          reach_count?: number | null;
+          engagement_count?: number | null;
+          posted_date?: string | null;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+            instagram_post_url?: string | null;
+        };
+        Update: {
+          id?: string;
+          influencer_id?: string;
+          content_type?: "image" | "video";
+          content_url?: string;
+          thumbnail_url?: string | null;
+          caption?: string | null;
+          reach_count?: number | null;
+          engagement_count?: number | null;
+          posted_date?: string | null;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+            instagram_post_url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_content_influencer_id_fkey";
+            columns: ["influencer_id"];
+            referencedRelation: "influencer_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       contracts: {
         Row: {

@@ -48,6 +48,17 @@
     --background: 0 0% 2%;
     --foreground: 0 0% 100%;
   }
+
+  /* ⚡ Mobile Safe Areas - iOS notch, Android navigation */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .pt-safe {
+      padding-top: env(safe-area-inset-top);
+    }
+  }
 }
 
 @layer base {
@@ -57,11 +68,21 @@
 
   html {
     scroll-behavior: smooth;
+    /* Prevent overscroll bounce on mobile */
+    overscroll-behavior-y: none;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
     font-family: "Plus Jakarta Sans", sans-serif;
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior-y: none;
+  }
+
+  /* ⚡ Performance optimizations */
+  img, video {
+    /* Lazy loading hint for browsers */
+    content-visibility: auto;
   }
 }
 
@@ -73,8 +94,12 @@
     );
     background-size: 30px 30px;
   }
+  
   .glass {
     @apply bg-[hsl(var(--glass-bg))] backdrop-blur-xl border border-[hsl(var(--glass-border))];
+    /* GPU acceleration for better performance */
+    transform: translateZ(0);
+    will-change: transform;
   }
 
   .text-gradient {
@@ -114,8 +139,15 @@
     @apply opacity-100 translate-y-0;
   }
 
+  /* ⚡ Optimized scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--neon)) hsl(0 0% 100% / 0.02);
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
+    height: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -125,6 +157,15 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: hsl(var(--neon));
     border-radius: 10px;
+  }
+
+  /* ⚡ Mobile touch optimization */
+  @media (hover: none) and (pointer: coarse) {
+    /* Improve tap targets on mobile */
+    button, a {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 }
 
@@ -141,6 +182,13 @@
     transition-duration: 400ms;
   }
 
+  /* ⚡ GPU-accelerated animations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /* ⚡ Improved marquee animation */
   @keyframes marquee {
     0% {
       transform: translateX(0);
@@ -152,9 +200,28 @@
 
   .animate-marquee {
     animation: marquee 40s linear infinite;
+    /* GPU acceleration */
+    transform: translateZ(0);
+    will-change: transform;
   }
 
   .animate-marquee:hover {
     animation-play-state: paused;
+  }
+
+  /* ⚡ Smooth scroll for mobile */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ⚡ Performance: Reduce animations on slower devices */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
