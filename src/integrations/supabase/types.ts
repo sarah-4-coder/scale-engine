@@ -7,6 +7,12 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+export type InfluencerService = {
+  name: string;
+  description: string;
+  price: string;
+};
+
 export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1";
@@ -88,8 +94,8 @@ export type Database = {
           media_kit_bio: string | null;
           media_kit_enabled: boolean;
           media_kit_completed: boolean;
-          portfolio_theme: string | null
-
+          portfolio_theme: string | null;
+          services: InfluencerService[] | null;
         };
         Insert: {
           id?: string;
@@ -118,6 +124,7 @@ export type Database = {
           media_kit_enabled?: boolean;
           media_kit_completed?: boolean;
           portfolio_theme?: string | null;
+          services?: InfluencerService[] | null;
         };
         Update: {
           is_blocked?: boolean;
@@ -130,6 +137,7 @@ export type Database = {
           media_kit_enabled?: boolean;
           media_kit_completed?: boolean;
           portfolio_theme?: string | null;
+          services?: InfluencerService[] | null;
         };
         // Update: never;
         Relationships: [];
@@ -148,7 +156,7 @@ export type Database = {
           display_order: number;
           created_at: string;
           updated_at: string;
-           instagram_post_url: string | null;
+          instagram_post_url: string | null;
         };
         Insert: {
           id?: string;
@@ -163,7 +171,7 @@ export type Database = {
           display_order?: number;
           created_at?: string;
           updated_at?: string;
-            instagram_post_url?: string | null;
+          instagram_post_url?: string | null;
         };
         Update: {
           id?: string;
@@ -178,7 +186,7 @@ export type Database = {
           display_order?: number;
           created_at?: string;
           updated_at?: string;
-            instagram_post_url?: string | null;
+          instagram_post_url?: string | null;
         };
         Relationships: [
           {
