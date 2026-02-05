@@ -567,7 +567,7 @@ const LiveMediaKit = () => {
       <footer className="relative z-10 border-t border-white/5 py-8 md:py-12 px-4 md:px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6">
           <div className="text-white/30 text-xs md:text-sm text-center md:text-left">
-            © 2024 {profile.full_name}. Verified by{" "}
+            © 2026 {profile.full_name}. Verified by{" "}
             <a href="https://dotfluence.in" className="text-white/60 hover:text-white">
               Dotfluence
             </a>
