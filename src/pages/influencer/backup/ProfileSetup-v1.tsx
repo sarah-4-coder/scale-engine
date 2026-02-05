@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import AuthBackground from "@/components/auth/AuthBackground";
-import "@/styles/auth-pages.css";
 
 /* ------------------------
    HELPERS
@@ -151,8 +149,18 @@ const ProfileSetup = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* ANIMATED INFLUENCER BACKGROUND */}
-      <AuthBackground />
+      {/* ANIMATED BACKGROUND */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        style={{
+          background:
+            "radial-gradient(circle at 20% 20%, #ff7a18, transparent 40%), radial-gradient(circle at 80% 80%, #6366f1, transparent 40%), #020617",
+        }}
+      />
 
       {/* CARD */}
       <div className="relative z-10 w-[90%] md:w-full max-w-lg rounded-2xl bg-black/40 backdrop-blur-xl p-6 md:p-8 shadow-2xl text-white">

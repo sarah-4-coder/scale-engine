@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import AuthBackground from "@/components/auth/AuthBackground";
+import "@/styles/auth-pages.css";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -44,18 +46,8 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Animated background */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        style={{
-          background:
-            "radial-gradient(circle at 20% 20%, #ff7a18, transparent 40%), radial-gradient(circle at 80% 80%, #6366f1, transparent 40%), #020617",
-        }}
-      />
+      {/* Animated influencer background */}
+      <AuthBackground />
 
       {/* Glass card */}
       <motion.div

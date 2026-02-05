@@ -6,30 +6,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import AuthBackground from "@/components/auth/AuthBackground";
-import "@/styles/auth-pages.css";
 
-const Login = () => {
+const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(email, password);
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await signUp(email, password, fullName);
 
     if (error) {
-      toast.error(error.message || "Failed to sign in");
+      toast.error(error.message || "Failed to sign up");
       setIsLoading(false);
     } else {
-      toast.success("Welcome back 👋");
+      toast.success("🎉 Account created! Let’s build your profile");
     }
   };
   const handlesignout = async () => {
@@ -39,8 +44,18 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Animated influencer background */}
-      <AuthBackground />
+      {/* Animated background */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        style={{
+          background:
+            "radial-gradient(circle at 20% 20%, #ff7a18, transparent 40%), radial-gradient(circle at 80% 80%, #6366f1, transparent 40%), #020617",
+        }}
+      />
 
       {/* Glass card */}
       <motion.div
@@ -55,12 +70,27 @@ const Login = () => {
             <h1 className="text-2xl md:text-3xl font-bold text-white">DotFluence</h1>
           </Link>
           <p className="text-sm md:text-base text-white/70 mt-2">
-            Sign in to continue your creator journey
+            Join as a creator & unlock brand campaigns
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+          <div className="space-y-1.5 md:space-y-2">
+            <Label htmlFor="fullName" className="text-sm md:text-base text-white/80">
+              Full name
+            </Label>
+            <Input
+              id="fullName"
+              type="text"
+              placeholder="John Doe"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              className="h-11 text-base bg-white/10 border-white/20 text-white placeholder:text-white/40"
+            />
+          </div>
+
           <div className="space-y-1.5 md:space-y-2">
             <Label htmlFor="email" className="text-sm md:text-base text-white/80">
               Email
@@ -88,6 +118,7 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 className="h-11 text-base bg-white/10 border-white/20 text-white placeholder:text-white/40 pr-10"
               />
               <button
@@ -98,6 +129,7 @@ const Login = () => {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <p className="text-[10px] md:text-xs text-white/50">Minimum 6 characters</p>
           </div>
 
           <Button
@@ -107,11 +139,11 @@ const Login = () => {
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
-                <span className="animate-spin">⏳</span> Signing in...
+                <span className="animate-spin">⏳</span> Creating account...
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <LogIn size={18} /> Sign In
+                <UserPlus size={18} /> Create account
               </span>
             )}
           </Button>
@@ -120,9 +152,9 @@ const Login = () => {
         {/* Footer */}
         <div className="mt-4 md:mt-6 text-center">
           <p className="text-sm md:text-base text-white/70">
-            New here?{" "}
-            <Link to="/signup" className="text-orange-400 hover:underline">
-              Join as a creator
+            Already a creator?{" "}
+            <Link to="/login" className="text-orange-400 hover:underline">
+              Sign in
             </Link>
           </p>
         </div>
@@ -140,4 +172,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Signup;
