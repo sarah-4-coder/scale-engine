@@ -134,6 +134,7 @@ const CampaignDetail = () => {
   >([]);
   const [submitting, setSubmitting] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   /* -------------------------------
      INITIALIZE CONTENT FIELDS
@@ -577,9 +578,17 @@ const CampaignDetail = () => {
                   {campaign.name}
                 </CardTitle>
                 {campaign.description && (
-                  <CardDescription className="text-xs md:text-base line-clamp-2">
-                    {campaign.description}
-                  </CardDescription>
+                    <div>
+                    <CardDescription className={`text-xs md:text-base ${!showFullDescription ? 'line-clamp-2' : ''}`}>
+                      {campaign.description}
+                    </CardDescription>
+                    <button
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                      className={`text-xs md:text-sm font-semibold mt-1 ${theme.accent} hover:underline`}
+                    >
+                      {showFullDescription ? 'Show Less' : 'View More'}
+                    </button>
+                    </div>
                 )}
               </div>
 
@@ -610,7 +619,7 @@ const CampaignDetail = () => {
                 <Calendar className={`h-4 w-4 md:h-5 md:w-5 ${theme.accent} flex-shrink-0`} />
                 <div className="min-w-0">
                   <p className="text-[10px] md:text-xs opacity-60">Timeline</p>
-                  <p className={`${theme.text} text-xs md:text-base truncate`}>
+                  <p className={`${theme.text} text-xs md:text-base `}>
                     {campaign.timeline}
                   </p>
                 </div>
@@ -620,7 +629,7 @@ const CampaignDetail = () => {
                 <Target className={`h-4 w-4 md:h-5 md:w-5 ${theme.accent} flex-shrink-0`} />
                 <div className="min-w-0">
                   <p className="text-[10px] md:text-xs opacity-60">Deliverables</p>
-                  <p className={`${theme.text} text-xs md:text-base line-clamp-2`}>
+                  <p className={`${theme.text} text-xs md:text-base`}>
                     {campaign.deliverables}
                   </p>
                 </div>

@@ -294,13 +294,14 @@ const MyCampaigns = () => {
 
                         <CardContent className="space-y-4">
                           {/* Description */}
-                          {campaign.description && (
+                            {campaign.description && (
                             <p
-                              className={`${theme.muted} text-sm line-clamp-2`}
+                              className={`${theme.muted} text-sm`}
                             >
                               {campaign.description}
                             </p>
-                          )}
+                            )}
+                          
 
                           {/* Quick Info */}
                           <div className="space-y-2">
