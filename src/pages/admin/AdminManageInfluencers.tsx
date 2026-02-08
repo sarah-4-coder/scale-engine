@@ -304,7 +304,7 @@ const AdminManageInfluencers = () => {
       if (min && (!r.followers_count || r.followers_count < min)) return false;
       if (max && (!r.followers_count || r.followers_count > max)) return false;
 
-      if (showBlockedOnly && !r.is_blocked) return false;
+      if (showBlockedOnly && r.is_blocked) return false;
 
       if (
         selectedNiches.length &&
@@ -436,7 +436,7 @@ const AdminManageInfluencers = () => {
               checked={showBlockedOnly}
               onCheckedChange={(checked) => setShowBlockedOnly(!!checked)}
             />
-            <span className="text-sm">Blocked Only</span>
+            <span className="text-sm">Active Only</span>
           </label>
         </div>
 
