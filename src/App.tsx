@@ -109,7 +109,7 @@ const AuthPage = ({ children }: { children: React.ReactNode }) => {
           role === "admin"
             ? "/admin"
             : role === "brand"
-              ? "/brand/dashboard"
+              ? "/company/dashboard"
               : "/dashboard"
         }
         replace

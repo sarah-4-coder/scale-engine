@@ -44,13 +44,16 @@ const BrandSignup = () => {
 
     try {
       // Sign up user with brand role in metadata
+      // The database trigger will automatically create:
+      // - profiles entry
+      // - user_roles entry with role='brand'
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: contactPersonName,
-            role: "brand",
+            role: "brand",  // This is read by the database trigger
           },
         },
       });
@@ -58,56 +61,35 @@ const BrandSignup = () => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Wait a bit for the database trigger to create the profile
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for the database trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Create profile
-        //@ts-ignore
-        const { error: profileError } = await supabase.from("profiles").insert({
-          user_id: authData.user.id,
-          full_name: contactPersonName,
-        });
-
-        if (profileError) {
-          console.error("Profile error:", profileError);
-          // Don't throw - the trigger might have already created it
-        }
-
-        // Create brand role
-        //@ts-ignore
-        const { error: roleError } = await supabase.from("user_roles").insert({
-          user_id: authData.user.id,
-          role: "brand",
-        });
-
-        if (roleError) {
-          console.error("Role error:", roleError);
-          // Don't throw - the trigger might have already created it
-        }
-
-        // Create brand profile (unverified by default)
+        // Only create the brand_profiles entry (trigger handles the rest)
         const { error: brandProfileError } = await supabase
           .from("brand_profiles")
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           //@ts-ignore
           .insert({
             user_id: authData.user.id,
             company_name: companyName,
             work_email: email,
             contact_person_name: contactPersonName,
-            phone_number: "", // Will be completed in profile setup
+            phone_number: "",
             is_verified: false,
             profile_completed: false,
           });
 
-        if (brandProfileError) throw brandProfileError;
+        if (brandProfileError) {
+          console.error("Brand profile error:", brandProfileError);
+          throw brandProfileError;
+        }
 
-        toast.success("🎉 Account created! Complete your profile to get started");
+        toast.success("🎉 Account created! Redirecting to profile setup...");
         
-        // Force navigation after a short delay to ensure auth state is updated
-        setTimeout(() => {
-          navigate("/company/profile-setup", { replace: true });
-        }, 500);
+        // Wait a bit more for auth state to update
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Navigate to brand profile setup
+        navigate("/company/profile-setup", { replace: true });
       }
     } catch (error: any) {
       console.error("Signup error:", error);
