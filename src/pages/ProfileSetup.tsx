@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import AuthBackground from "@/components/auth/AuthBackground";
+import { Upload, Camera, X } from "lucide-react";
 import "@/styles/auth-pages.css";
 
 /* ------------------------
@@ -70,6 +71,11 @@ const ProfileSetup = () => {
   const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
   const [newNiche, setNewNiche] = useState("");
 
+  // Profile image state
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string>("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   useEffect(() => {
     const checkSession = async () => {
       const {
@@ -94,13 +100,81 @@ const ProfileSetup = () => {
       });
   }, []);
 
-  const progress = step * 25;
+  const progress = step * 20; // Changed to 20% per step (5 steps total)
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    setProfileImage(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfileImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setProfileImage(null);
+    setProfileImagePreview("");
+  };
+
+  const uploadProfileImage = async (userId: string): Promise<string | null> => {
+    if (!profileImage) return null;
+
+    try {
+      setUploadingImage(true);
+
+      // Generate unique filename
+      const fileExt = profileImage.name.split('.').pop();
+      const fileName = `${userId}_${Date.now()}.${fileExt}`;
+      const filePath = `profile-images/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('influencer-assets')
+        .upload(filePath, profileImage, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('influencer-assets')
+        .getPublicUrl(filePath);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload profile image");
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const canProceed = () => {
     if (step === 1) return fullName && instagramHandle && phone;
-    if (step === 2) return parseFollowers(followersInput);
-    if (step === 3) return city && state;
-    if (step === 4) return selectedNiches.length > 0;
+    if (step === 2) return profileImage !== null; // Profile image is required
+    if (step === 3) return parseFollowers(followersInput);
+    if (step === 4) return city && state;
+    if (step === 5) return selectedNiches.length > 0;
     return false;
   };
 
@@ -117,31 +191,46 @@ const ProfileSetup = () => {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-    //@ts-ignore
-    const { error } = await supabase.from("influencer_profiles").insert({
-      user_id: user.id,
-      full_name: fullName.trim(),
-      instagram_handle: instagramHandle.replace("@", ""),
-      instagram_profile_url: `https://instagram.com/${instagramHandle.replace(
-        "@",
-        "",
-      )}`,
-      phone_number: phone,
-      followers_count: followers,
-      city,
-      state,
-      niches: selectedNiches,
-      profile_completed: true,
-    });
 
-    if (error) {
-      toast.error("Failed to save profile");
-      return;
+    try {
+      // Upload profile image first
+      const profileImageUrl = await uploadProfileImage(user.id);
+
+      if (!profileImageUrl) {
+        toast.error("Please upload a profile image");
+        return;
+      }
+
+      //@ts-ignore
+      const { error } = await supabase.from("influencer_profiles").insert({
+        user_id: user.id,
+        full_name: fullName.trim(),
+        instagram_handle: instagramHandle.replace("@", ""),
+        instagram_profile_url: `https://instagram.com/${instagramHandle.replace(
+          "@",
+          "",
+        )}`,
+        phone_number: phone,
+        followers_count: followers,
+        city,
+        state,
+        niches: selectedNiches,
+        profile_image_url: profileImageUrl,
+        profile_completed: true,
+      });
+
+      if (error) {
+        toast.error("Failed to save profile");
+        return;
+      }
+
+      fireConfetti(true);
+      toast.success("🎉 Campaigns unlocked!");
+      setTimeout(() => navigate("/dashboard"), 1200);
+    } catch (error) {
+      console.error("Error submitting profile:", error);
+      toast.error("Failed to create profile");
     }
-
-    fireConfetti(true);
-    toast.success("🎉 Campaigns unlocked!");
-    setTimeout(() => navigate("/dashboard/campaigns/all"), 1200);
   };
 
   const handlesignout = async () => {
@@ -210,6 +299,54 @@ const ProfileSetup = () => {
             )}
 
             {step === 2 && (
+              <>
+                <p className="text-sm md:text-base font-medium mb-4">Upload your profile picture</p>
+                
+                {/* Image Upload Area */}
+                {!profileImagePreview ? (
+                  <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-white/20 rounded-lg cursor-pointer hover:border-white/40 transition-colors bg-white/5">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Camera className="w-12 h-12 mb-3 text-white/60" />
+                      <p className="mb-2 text-sm text-white/80">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-white/60">PNG, JPG or JPEG (MAX. 5MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                    />
+                  </label>
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={profileImagePreview}
+                      alt="Preview"
+                      className="w-full h-64 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg p-2">
+                      <p className="text-xs text-white/80 text-center">
+                        ✓ Image ready to upload
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-xs text-white/60 text-center mt-2">
+                  This photo will be visible to brands on your profile
+                </p>
+              </>
+            )}
+
+            {step === 3 && (
               <Input
                 placeholder="Your reach (100k, 1M)" className="h-11 text-base"
                 value={followersInput}
@@ -217,7 +354,7 @@ const ProfileSetup = () => {
               />
             )}
 
-            {step === 3 && (
+            {step === 4 && (
               <>
                 <p className="text-sm md:text-base font-medium">Where are you based?</p>
 
@@ -297,7 +434,7 @@ const ProfileSetup = () => {
               </>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <>
                 <p className="text-sm md:text-base font-medium">
                   What should brands contact you for?
@@ -349,13 +486,17 @@ const ProfileSetup = () => {
             </Button>
           )}
 
-          {step < 4 ? (
+          {step < 5 ? (
             <Button disabled={!canProceed()} onClick={nextStep} className="h-11 text-sm md:text-base">
               Next
             </Button>
           ) : (
-            <Button disabled={!canProceed()} onClick={submitProfile} className="h-11 text-sm md:text-base">
-              Finish & Unlock
+            <Button 
+              disabled={!canProceed() || uploadingImage} 
+              onClick={submitProfile} 
+              className="h-11 text-sm md:text-base"
+            >
+              {uploadingImage ? "Uploading..." : "Finish & Unlock"}
             </Button>
           )}
         </div>

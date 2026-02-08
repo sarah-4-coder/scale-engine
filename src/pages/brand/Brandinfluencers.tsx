@@ -38,6 +38,7 @@ interface InfluencerProfile {
   city: string | null;
   state: string | null;
   bio: string | null;
+  profile_image_url: string | null;
 }
 
 const BrandInfluencers = () => {
@@ -53,36 +54,37 @@ const BrandInfluencers = () => {
   useEffect(() => {
     const fetchInfluencers = async () => {
       try {
-        setLoading(true);
+      setLoading(true);
 
-        // Fetch all influencers from the platform
-        const { data, error } = await supabase
-          .from("influencer_profiles")
-          .select("*")
-          .order("followers_count", { ascending: false });
+      // Fetch all influencers from the platform with profile_image_url where is_blocked is false
+      const { data, error } = await supabase
+        .from("influencer_profiles")
+        .select("*")
+        .eq("is_blocked", false)
+        .order("followers_count", { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setInfluencers(data || []);
+      setInfluencers(data || []);
 
-        // Extract unique niches and cities for filters
-        const niches = new Set<string>();
-        const cities = new Set<string>();
+      // Extract unique niches and cities for filters
+      const niches = new Set<string>();
+      const cities = new Set<string>();
 
-        data?.forEach((inf) => {
-          //@ts-ignore
-          inf.niches?.forEach((niche) => niches.add(niche));
-          //@ts-ignore
-          if (inf.city) cities.add(inf.city);
-        });
+      data?.forEach((inf) => {
+        //@ts-expect-error
+        inf.niches?.forEach((niche: string) => niches.add(niche));
+        //@ts-expect-error
+        if (inf.city) cities.add(inf.city);
+      });
 
-        setAvailableNiches(Array.from(niches).sort());
-        setAvailableCities(Array.from(cities).sort());
+      setAvailableNiches(Array.from(niches).sort());
+      setAvailableCities(Array.from(cities).sort());
       } catch (error: any) {
-        console.error("Error fetching influencers:", error);
-        toast.error("Failed to load influencers");
+      console.error("Error fetching influencers:", error);
+      toast.error("Failed to load influencers");
       } finally {
-        setLoading(false);
+      setLoading(false);
       }
     };
 
@@ -275,12 +277,21 @@ const BrandInfluencers = () => {
                     <CardContent className="p-6">
                       {/* Profile Header */}
                       <div className="flex items-start gap-4 mb-4">
-                        <Avatar className="h-16 w-16">
-                          <AvatarImage
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              influencer.full_name
-                            )}&background=random`}
-                          />
+                        <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+                          {influencer.profile_image_url ? (
+                            <AvatarImage
+                              src={influencer.profile_image_url}
+                              alt={influencer.full_name}
+                              className="object-cover"
+                            />
+                          ) : (
+                            <AvatarImage
+                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                influencer.full_name
+                              )}&background=random`}
+                              alt={influencer.full_name}
+                            />
+                          )}
                           <AvatarFallback>
                             {influencer.full_name
                               .split(" ")
