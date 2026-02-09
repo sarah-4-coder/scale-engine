@@ -156,7 +156,7 @@ export const ProfileLinkCard = ({ userId }: ProfileLinkCardProps) => {
               <p className="text-xs text-yellow-200">
                 💡 Get a shareable link like: <br />
                 <span className="font-mono text-yellow-100">
-                  dotfluence.com/creators/{instagramHandle}
+                  platform.dotfluence.in/creators/{instagramHandle}
                 </span>
               </p>
             </div>

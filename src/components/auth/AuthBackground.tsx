@@ -45,7 +45,7 @@ const AuthBackground = () => {
       />
 
       {/* Floating influencer cards */}
-      <FloatingInfluencerCards />
+      {/* <FloatingInfluencerCards /> */}
 
       {/* Vignette effect */}
       <div 
