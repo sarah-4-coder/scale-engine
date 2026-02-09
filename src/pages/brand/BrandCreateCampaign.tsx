@@ -187,7 +187,7 @@ const BrandCreateCampaign = () => {
       }
 
       toast.success("Campaign created successfully! 🎉");
-      navigate(`/brand/campaigns/${data.id}`);
+      navigate(`/company/campaigns/${data.id}`);
     } catch (error: any) {
       console.error("Campaign creation error:", error);
       toast.error(error.message || "Failed to create campaign");
@@ -396,7 +396,7 @@ const BrandCreateCampaign = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate("/brand/campaigns")}
+                    onClick={() => navigate("/company/campaigns")}
                     className="flex-1"
                   >
                     Cancel

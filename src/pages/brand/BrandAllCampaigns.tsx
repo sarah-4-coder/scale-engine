@@ -235,7 +235,7 @@ const BrandAllCampaigns = () => {
                   influencers
                 </p>
                 <Button
-                  onClick={() => navigate("/brand/campaigns/new")}
+                  onClick={() => navigate("/company/campaigns/new")}
                   className="bg-primary hover:bg-primary/90"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
@@ -358,7 +358,7 @@ const BrandAllCampaigns = () => {
 
                       <Button
                         onClick={() =>
-                          navigate(`/brand/campaigns/${campaign.id}`)
+                          navigate(`/company/campaigns/${campaign.id}`)
                         }
                         variant="outline"
                         className="w-full"

@@ -227,7 +227,7 @@ const BrandCampaignDetails = () => {
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">Campaign not found</p>
               <Button
-                onClick={() => navigate("/brand/campaigns")}
+                onClick={() => navigate("/company/campaigns")}
                 className="mt-4"
               >
                 Back to Campaigns
@@ -252,7 +252,7 @@ const BrandCampaignDetails = () => {
           {/* Back Button */}
           <Button
             variant="ghost"
-            onClick={() => navigate("/brand/campaigns")}
+            onClick={() => navigate("/company/campaigns")}
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

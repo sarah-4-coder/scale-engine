@@ -10,7 +10,14 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import AuthBackground from "@/components/auth/AuthBackground";
-import { Upload, Camera, X, Loader2, Instagram, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  Camera,
+  X,
+  Loader2,
+  Instagram,
+  AlertCircle,
+} from "lucide-react";
 import "@/styles/auth-pages.css";
 
 /* ------------------------
@@ -61,7 +68,7 @@ const ProfileSetup = () => {
   const [fullName, setFullName] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
   const [phone, setPhone] = useState("");
-  
+
   // Follower fetching states
   const [fetchingFollowers, setFetchingFollowers] = useState(false);
   const [followersCount, setFollowersCount] = useState<number | null>(null);
@@ -125,7 +132,7 @@ const ProfileSetup = () => {
         "fetch-instagram-followers",
         {
           body: { instagram_handle: cleanHandle },
-        }
+        },
       );
 
       if (error) {
@@ -135,14 +142,16 @@ const ProfileSetup = () => {
 
       if (data?.followers_count) {
         setFollowersCount(data.followers_count);
-        toast.success(`✓ Fetched ${data.followers_count.toLocaleString()} followers`);
+        toast.success(
+          `✓ Fetched ${data.followers_count.toLocaleString()} followers`,
+        );
       } else if (data?.error) {
         // Check if manual entry is allowed
         if (data.can_proceed_manually) {
           setShowManualEntry(true);
           setFollowersFetchError(data.error);
           toast.warning(data.error, {
-            description: "You can enter your follower count manually below"
+            description: "You can enter your follower count manually below",
           });
         } else {
           throw new Error(data.error);
@@ -150,14 +159,14 @@ const ProfileSetup = () => {
       }
     } catch (error: any) {
       console.error("Error fetching followers:", error);
-      
+
       // Always allow manual entry on error
       setShowManualEntry(true);
       setFollowersFetchError(
-        error.message || "Unable to fetch followers automatically"
+        error.message || "Unable to fetch followers automatically",
       );
       toast.error("Could not fetch followers automatically", {
-        description: "You can enter manually below"
+        description: "You can enter manually below",
       });
     } finally {
       setFetchingFollowers(false);
@@ -190,7 +199,7 @@ const ProfileSetup = () => {
     }
 
     setProfileImage(file);
-    
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setProfileImagePreview(reader.result as string);
@@ -209,21 +218,21 @@ const ProfileSetup = () => {
     try {
       setUploadingImage(true);
 
-      const fileExt = profileImage.name.split('.').pop();
+      const fileExt = profileImage.name.split(".").pop();
       const fileName = `${userId}_${Date.now()}.${fileExt}`;
       const filePath = `profile-images/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('influencer-assets')
+        .from("influencer-assets")
         .upload(filePath, profileImage, {
-          cacheControl: '3600',
-          upsert: false
+          cacheControl: "3600",
+          upsert: false,
         });
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from('influencer-assets')
+        .from("influencer-assets")
         .getPublicUrl(filePath);
 
       return urlData.publicUrl;
@@ -237,7 +246,8 @@ const ProfileSetup = () => {
   };
 
   const canProceed = () => {
-    if (step === 1) return fullName && instagramHandle && phone && followersCount;
+    if (step === 1)
+      return fullName && instagramHandle && phone && followersCount;
     if (step === 2) return profileImage !== null;
     if (step === 3) return city && state;
     if (step === 4) return selectedNiches.length > 0;
@@ -250,7 +260,7 @@ const ProfileSetup = () => {
       fetchInstagramFollowers(instagramHandle);
       return;
     }
-    
+
     fireConfetti();
     setStep((s) => s + 1);
   };
@@ -306,7 +316,7 @@ const ProfileSetup = () => {
 
   const handlesignout = async () => {
     await supabase.auth.signOut();
-    window.location.replace("https://platform.dotfluent.in/login");
+    window.location.replace("https://platform.dotfluence.in/login");
   };
 
   return (
@@ -347,15 +357,16 @@ const ProfileSetup = () => {
             {step === 1 && (
               <>
                 <Input
-                  placeholder="Full name" className="h-11 text-base"
+                  placeholder="Full name"
+                  className="h-11 text-base"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
-                
+
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Instagram handle (e.g., @username)" 
+                      placeholder="Instagram handle (e.g., @username)"
                       className="h-11 text-base flex-1"
                       value={instagramHandle}
                       onChange={(e) => {
@@ -378,7 +389,10 @@ const ProfileSetup = () => {
                       )}
                     </Button>
                   </div>
-                  
+                  <div className="text-xs text-white/60 md:hidden text-right">
+                    Tap to fetch followers from Instagram
+                  </div>
+
                   {/* Auto-fetched followers */}
                   {followersCount && !showManualEntry && (
                     <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
@@ -388,7 +402,7 @@ const ProfileSetup = () => {
                       </span>
                     </div>
                   )}
-                  
+
                   {/* Manual entry fallback */}
                   {showManualEntry && (
                     <div className="space-y-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
@@ -396,14 +410,16 @@ const ProfileSetup = () => {
                         <AlertCircle className="h-4 w-4 text-yellow-400 mt-0.5" />
                         <div className="flex-1">
                           <p className="text-xs text-yellow-400 mb-2">
-                            {followersFetchError}
+                            Fetching is in Progress, you can enter it manually in the meantime
                           </p>
                           <div className="flex gap-2">
                             <Input
                               placeholder="Enter followers (e.g., 10k, 1M)"
                               className="h-9 text-sm"
                               value={manualFollowersInput}
-                              onChange={(e) => setManualFollowersInput(e.target.value)}
+                              onChange={(e) =>
+                                setManualFollowersInput(e.target.value)
+                              }
                             />
                             <Button
                               type="button"
@@ -418,7 +434,7 @@ const ProfileSetup = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {fetchingFollowers && (
                     <p className="text-xs text-white/60 flex items-center gap-2">
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -426,9 +442,10 @@ const ProfileSetup = () => {
                     </p>
                   )}
                 </div>
-                
+
                 <Input
-                  placeholder="Phone number" className="h-11 text-base"
+                  placeholder="Phone number"
+                  className="h-11 text-base"
                   value={phone}
                   onChange={(e) =>
                     setPhone(e.target.value.replace(/[^0-9]/g, ""))
@@ -439,16 +456,21 @@ const ProfileSetup = () => {
 
             {step === 2 && (
               <>
-                <p className="text-sm md:text-base font-medium mb-4">Upload your profile picture</p>
-                
+                <p className="text-sm md:text-base font-medium mb-4">
+                  Upload your profile picture
+                </p>
+
                 {!profileImagePreview ? (
                   <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-white/20 rounded-lg cursor-pointer hover:border-white/40 transition-colors bg-white/5">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Camera className="w-12 h-12 mb-3 text-white/60" />
                       <p className="mb-2 text-sm text-white/80">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
+                        <span className="font-semibold">Click to upload</span>{" "}
+                        or drag and drop
                       </p>
-                      <p className="text-xs text-white/60">PNG, JPG or JPEG (MAX. 5MB)</p>
+                      <p className="text-xs text-white/60">
+                        PNG, JPG or JPEG (MAX. 5MB)
+                      </p>
                     </div>
                     <input
                       type="file"
@@ -477,7 +499,7 @@ const ProfileSetup = () => {
                     </div>
                   </div>
                 )}
-                
+
                 <p className="text-xs text-white/60 text-center mt-2">
                   This photo will be visible to brands on your profile
                 </p>
@@ -486,7 +508,9 @@ const ProfileSetup = () => {
 
             {step === 3 && (
               <>
-                <p className="text-sm md:text-base font-medium">Where are you based?</p>
+                <p className="text-sm md:text-base font-medium">
+                  Where are you based?
+                </p>
 
                 <p className="text-xs md:text-sm mt-2">City</p>
                 {DEFAULT_CITIES.map((c) => (
@@ -500,12 +524,14 @@ const ProfileSetup = () => {
                 ))}
                 <div className="flex gap-2 text-sm md:text-base">
                   <Input
-                    placeholder="Add city" className="h-11 text-base"
+                    placeholder="Add city"
+                    className="h-11 text-base"
                     value={customCity}
                     onChange={(e) => setCustomCity(e.target.value)}
                   />
                   <Button
-                    type="button" className="h-11 text-sm md:text-base"
+                    type="button"
+                    className="h-11 text-sm md:text-base"
                     onClick={() => {
                       const clean = normalizeLabel(customCity);
                       if (clean) {
@@ -520,7 +546,9 @@ const ProfileSetup = () => {
                 {city && !DEFAULT_CITIES.includes(city) && (
                   <p className="text-[10px] md:text-xs text-green-400 mt-1">
                     ✅ Selected city:{" "}
-                    <span className="text-sm md:text-base font-medium">{city}</span>
+                    <span className="text-sm md:text-base font-medium">
+                      {city}
+                    </span>
                   </p>
                 )}
 
@@ -536,12 +564,14 @@ const ProfileSetup = () => {
                 ))}
                 <div className="flex gap-2 text-sm md:text-base">
                   <Input
-                    placeholder="Add state" className="h-11 text-base"
+                    placeholder="Add state"
+                    className="h-11 text-base"
                     value={customState}
                     onChange={(e) => setCustomState(e.target.value)}
                   />
                   <Button
-                    type="button" className="h-11 text-sm md:text-base"
+                    type="button"
+                    className="h-11 text-sm md:text-base"
                     onClick={() => {
                       const clean = normalizeLabel(customState);
                       if (clean) {
@@ -556,7 +586,9 @@ const ProfileSetup = () => {
                 {state && !DEFAULT_STATES.includes(state) && (
                   <p className="text-[10px] md:text-xs text-green-400 mt-1">
                     ✅ Selected state:{" "}
-                    <span className="text-sm md:text-base font-medium">{state}</span>
+                    <span className="text-sm md:text-base font-medium">
+                      {state}
+                    </span>
                   </p>
                 )}
               </>
@@ -582,7 +614,8 @@ const ProfileSetup = () => {
                 ))}
 
                 <Input
-                  placeholder="Add niche" className="h-11 text-base"
+                  placeholder="Add niche"
+                  className="h-11 text-base"
                   value={newNiche}
                   onChange={(e) => setNewNiche(e.target.value)}
                 />
@@ -609,23 +642,27 @@ const ProfileSetup = () => {
         {/* ACTIONS */}
         <div className="flex justify-between mt-4 md:mt-6">
           {step > 1 && (
-            <Button variant="ghost" onClick={() => setStep(step - 1)} className="h-11 text-sm md:text-base">
+            <Button
+              variant="ghost"
+              onClick={() => setStep(step - 1)}
+              className="h-11 text-sm md:text-base"
+            >
               Back
             </Button>
           )}
 
           {step < 4 ? (
-            <Button 
-              disabled={!canProceed() || fetchingFollowers} 
-              onClick={nextStep} 
+            <Button
+              disabled={!canProceed() || fetchingFollowers}
+              onClick={nextStep}
               className="h-11 text-sm md:text-base"
             >
               {fetchingFollowers ? "Fetching..." : "Next"}
             </Button>
           ) : (
-            <Button 
-              disabled={!canProceed() || uploadingImage} 
-              onClick={submitProfile} 
+            <Button
+              disabled={!canProceed() || uploadingImage}
+              onClick={submitProfile}
               className="h-11 text-sm md:text-base"
             >
               {uploadingImage ? "Uploading..." : "Finish & Unlock"}
