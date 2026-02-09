@@ -68,7 +68,9 @@ const LiveMediaKit = () => {
   const [profile, setProfile] = useState<CreatorProfile | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"portfolio" | "audience" | "services">("portfolio");
+  const [activeTab, setActiveTab] = useState<
+    "portfolio" | "audience" | "services"
+  >("portfolio");
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -120,23 +122,43 @@ const LiveMediaKit = () => {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center px-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Creator Not Found</h1>
-          <p className="text-white/60">This profile doesn't exist or is not public yet</p>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Creator Not Found
+          </h1>
+          <p className="text-white/60">
+            This profile doesn't exist or is not public yet
+          </p>
         </div>
       </div>
     );
   }
 
-  // Calculate average engagement rate
-  const avgEngagement = profile.avg_engagement_rate || 
-    (portfolio.length > 0 
-      ? (portfolio.reduce((sum, item) => sum + ((item.engagement_count || 0) / (item.reach_count || 1)) * 100, 0) / portfolio.length)
-      : 4.8);
+  // ===============================
+  // ENGAGEMENT & REACH CALCULATION
+  // ===============================
 
-  // Calculate average reach
-  const avgReach = portfolio.length > 0
-    ? portfolio.reduce((sum, item) => sum + (item.reach_count || 0), 0) / portfolio.length
-    : profile.followers_count * 0.36;
+  // Total engagement across all contents
+  const totalEngagement = portfolio.reduce(
+    (sum, item) => sum + (item.engagement_count || 0),
+    0,
+  );
+
+  // Total views / reach across all contents
+  const totalViews = portfolio.reduce(
+    (sum, item) => sum + (item.reach_count || 0),
+    0,
+  );
+
+  // ✅ FINAL: Weighted Average Engagement Rate (%)
+  const avgEngagement =
+    profile.avg_engagement_rate ||
+    (totalViews > 0 ? (totalEngagement / totalViews) * 100 : 4.8); // safe fallback
+
+  // ✅ FINAL: Average Reach per Content
+  const avgReach =
+    portfolio.length > 0
+      ? totalViews / portfolio.length
+      : profile.followers_count * 0.36; // realistic IG reach assumption
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-purple-500/30">
@@ -149,7 +171,9 @@ const LiveMediaKit = () => {
       {/* Navigation */}
       <nav
         className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          scrolled ? "bg-black/80 backdrop-blur-md py-3" : "bg-transparent py-4 md:py-6"
+          scrolled
+            ? "bg-black/80 backdrop-blur-md py-3"
+            : "bg-transparent py-4 md:py-6"
         }`}
       >
         <div className="max-w-6xl mx-auto px-4 md:px-6 flex justify-between items-center">
@@ -157,7 +181,9 @@ const LiveMediaKit = () => {
             <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-tr from-purple-600 to-pink-500 rounded-lg flex items-center justify-center font-bold text-sm md:text-base">
               D
             </div>
-            <span className="font-bold tracking-tight text-lg md:text-xl">DOTFLUENCE</span>
+            <span className="font-bold tracking-tight text-lg md:text-xl">
+              DOTFLUENCE
+            </span>
           </div>
           <a
             href={`https://instagram.com/${profile.instagram_handle}`}
@@ -198,12 +224,18 @@ const LiveMediaKit = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
                   <div>
-                    <p className="text-white/60 text-xs uppercase tracking-widest mb-1">Handle</p>
-                    <p className="text-lg font-bold break-all">@{profile.instagram_handle}</p>
+                    <p className="text-white/60 text-xs uppercase tracking-widest mb-1">
+                      Handle
+                    </p>
+                    <p className="text-lg font-bold break-all">
+                      @{profile.instagram_handle}
+                    </p>
                   </div>
                   {profile.city && profile.state && (
                     <div className="text-right">
-                      <p className="text-white/60 text-xs uppercase tracking-widest mb-1">Location</p>
+                      <p className="text-white/60 text-xs uppercase tracking-widest mb-1">
+                        Location
+                      </p>
                       <p className="text-xs font-medium flex items-center gap-1 justify-end">
                         <MapPin size={14} /> {profile.city}
                       </p>
@@ -322,12 +354,18 @@ const LiveMediaKit = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
                   <div className="max-w-[60%]">
-                    <p className="text-white/60 text-xs uppercase tracking-widest mb-1">Handle</p>
-                    <p className="text-xl font-bold break-all">@{profile.instagram_handle}</p>
+                    <p className="text-white/60 text-xs uppercase tracking-widest mb-1">
+                      Handle
+                    </p>
+                    <p className="text-xl font-bold break-all">
+                      @{profile.instagram_handle}
+                    </p>
                   </div>
                   {profile.city && profile.state && (
                     <div className="text-right">
-                      <p className="text-white/60 text-xs uppercase tracking-widest mb-1">Location</p>
+                      <p className="text-white/60 text-xs uppercase tracking-widest mb-1">
+                        Location
+                      </p>
                       <p className="text-sm font-medium flex items-center gap-1 justify-end">
                         <MapPin size={14} /> {profile.city}
                       </p>
@@ -346,9 +384,21 @@ const LiveMediaKit = () => {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
-              { label: "Followers", value: formatNumber(profile.followers_count), icon: Users },
-              { label: "Avg Engagement", value: `${avgEngagement.toFixed(1)}%`, icon: Heart },
-              { label: "Avg Reach", value: formatNumber(Math.round(avgReach)), icon: TrendingUp },
+              {
+                label: "Followers",
+                value: formatNumber(profile.followers_count),
+                icon: Users,
+              },
+              {
+                label: "Avg Engagement",
+                value: `${avgEngagement.toFixed(1)}%`,
+                icon: Heart,
+              },
+              {
+                label: "Avg Reach",
+                value: formatNumber(Math.round(avgReach)),
+                icon: TrendingUp,
+              },
               { label: "Content Types", value: portfolio.length, icon: Camera },
             ].map((stat, i) => (
               <motion.div
@@ -357,8 +407,12 @@ const LiveMediaKit = () => {
                 className="p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm"
               >
                 <stat.icon className="text-purple-400 mb-2 md:mb-3" size={18} />
-                <p className="text-2xl md:text-3xl font-bold tracking-tight">{stat.value}</p>
-                <p className="text-white/40 text-xs md:text-sm mt-1">{stat.label}</p>
+                <p className="text-2xl md:text-3xl font-bold tracking-tight">
+                  {stat.value}
+                </p>
+                <p className="text-white/40 text-xs md:text-sm mt-1">
+                  {stat.label}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -412,20 +466,29 @@ const LiveMediaKit = () => {
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity p-6 md:p-8 flex flex-col justify-end">
                       <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
-                          <Eye size={16} className="text-purple-400 md:w-[18px] md:h-[18px]" />
+                          <Eye
+                            size={16}
+                            className="text-purple-400 md:w-[18px] md:h-[18px]"
+                          />
                           <span className="font-bold text-sm md:text-base">
                             {formatNumber(item.reach_count)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Heart size={16} className="text-pink-400 md:w-[18px] md:h-[18px]" />
+                          <Heart
+                            size={16}
+                            className="text-pink-400 md:w-[18px] md:h-[18px]"
+                          />
                           <span className="font-bold text-sm md:text-base">
                             {formatNumber(item.engagement_count)}
                           </span>
                         </div>
                       </div>
                       <a
-                        href={item.instagram_post_url || `https://instagram.com/${profile.instagram_handle}`}
+                        href={
+                          item.instagram_post_url ||
+                          `https://instagram.com/${profile.instagram_handle}`
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full py-2.5 md:py-3 bg-white text-black rounded-xl text-center font-bold text-sm flex items-center justify-center gap-2 hover:bg-white/90 transition-colors"
@@ -440,7 +503,11 @@ const LiveMediaKit = () => {
                     </div>
                     {item.content_type === "video" && (
                       <div className="absolute top-3 md:top-4 right-3 md:right-4 p-2 bg-black/40 backdrop-blur-md rounded-full">
-                        <Play size={14} className="text-white md:w-4 md:h-4" fill="white" />
+                        <Play
+                          size={14}
+                          className="text-white md:w-4 md:h-4"
+                          fill="white"
+                        />
                       </div>
                     )}
                   </div>
@@ -457,11 +524,18 @@ const LiveMediaKit = () => {
               >
                 <div className="p-6 md:p-8 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10">
                   <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
-                    <Globe size={18} className="text-purple-400 md:w-5 md:h-5" /> Audience Insights
+                    <Globe
+                      size={18}
+                      className="text-purple-400 md:w-5 md:h-5"
+                    />{" "}
+                    Audience Insights
                   </h3>
                   <div className="space-y-4">
                     <div className="text-center py-6">
-                      <BarChart3 className="mx-auto mb-4 text-purple-400" size={48} />
+                      <BarChart3
+                        className="mx-auto mb-4 text-purple-400"
+                        size={48}
+                      />
                       <p className="text-white/60 text-sm">
                         Detailed audience demographics available on request
                       </p>
@@ -470,7 +544,8 @@ const LiveMediaKit = () => {
                 </div>
                 <div className="p-6 md:p-8 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10">
                   <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
-                    <Users size={18} className="text-pink-400 md:w-5 md:h-5" /> Engagement Quality
+                    <Users size={18} className="text-pink-400 md:w-5 md:h-5" />{" "}
+                    Engagement Quality
                   </h3>
                   <div className="text-center py-6">
                     <div className="text-4xl md:text-5xl font-black text-purple-400 mb-2">
@@ -500,12 +575,16 @@ const LiveMediaKit = () => {
                       key={i}
                       className="p-6 md:p-8 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-colors"
                     >
-                      <h4 className="text-lg md:text-xl font-bold mb-2">{service.name}</h4>
+                      <h4 className="text-lg md:text-xl font-bold mb-2">
+                        {service.name}
+                      </h4>
                       <p className="text-white/40 text-xs md:text-sm mb-4 md:mb-6 leading-relaxed">
                         {service.description}
                       </p>
                       <div className="flex justify-between items-center">
-                        <span className="text-purple-400 font-bold text-sm md:text-base">{service.price}</span>
+                        <span className="text-purple-400 font-bold text-sm md:text-base">
+                          {service.price}
+                        </span>
                         <a
                           href={`https://instagram.com/${profile.instagram_handle}`}
                           target="_blank"
@@ -536,7 +615,10 @@ const LiveMediaKit = () => {
         <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
           <h2 className="text-3xl md:text-4xl lg:text-6xl font-black leading-tight break-words px-2">
             Let's create something{" "}
-            <span className="italic font-serif text-purple-400">extraordinary</span> together.
+            <span className="italic font-serif text-purple-400">
+              extraordinary
+            </span>{" "}
+            together.
           </h2>
           <div className="flex flex-col md:flex-row justify-center gap-3 md:gap-4">
             <a
@@ -568,7 +650,10 @@ const LiveMediaKit = () => {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6">
           <div className="text-white/30 text-xs md:text-sm text-center md:text-left">
             © 2026 {profile.full_name}. Verified by{" "}
-            <a href="https://dotfluence.in" className="text-white/60 hover:text-white">
+            <a
+              href="https://dotfluence.in"
+              className="text-white/60 hover:text-white"
+            >
               Dotfluence
             </a>
             .
