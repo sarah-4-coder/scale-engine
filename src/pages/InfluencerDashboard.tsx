@@ -336,6 +336,13 @@ const InfluencerDashboard = () => {
                     <Button
                       variant="outline"
                       className="w-full text-foreground"
+                      onClick={() => navigate("/dashboard/settings/payment")}
+                    >
+                      Payment Settings
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full text-foreground"
                       disabled
                     >
                       Analytics (Coming Soon)

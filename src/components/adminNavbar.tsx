@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 const AdminNavbar = () => {
   const { user, signOut } = useAuth();
@@ -58,6 +59,14 @@ const AdminNavbar = () => {
             >
               Dashboard
             </Link>
+            {role === "admin" && (
+              <Link
+                to={"/admin/financials"}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Financials
+              </Link>
+            )}
             <NotificationBell />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <User size={16} />

@@ -43,22 +43,26 @@ interface Campaign {
   };
 }
 
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+
 const BrandAllCampaigns = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { activeBrandId, isLoading: workspaceLoading } = useWorkspace();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
-      if (!user) return;
+      if (!user || !activeBrandId) return;
 
       try {
+        setLoading(true);
         // Fetch campaigns created by THIS brand only
         const { data: campaignsData, error } = await supabase
           .from("campaigns")
           .select("*")
-          .eq("brand_user_id", user.id)
+          .eq("brand_id", activeBrandId)
           .order("created_at", { ascending: false })
           .returns<Campaign[]>();
 
@@ -107,8 +111,10 @@ const BrandAllCampaigns = () => {
       }
     };
 
-    fetchCampaigns();
-  }, [user]);
+    if (!workspaceLoading) {
+      fetchCampaigns();
+    }
+  }, [user, activeBrandId, workspaceLoading]);
 
   const getStatusColor = (status: string | null) => {
     switch (status) {

@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: ("admin" | "brand" | "influencer")[];
+  allowedRoles?: ("admin" | "brand" | "influencer" | "agency")[];
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
@@ -25,13 +25,15 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  // In ProtectedRoute.tsx, update the redirect logic:
   if (allowedRoles && role && !allowedRoles.includes(role)) {
     if (role === "admin") {
       return <Navigate to="/admin" replace />;
     }
+    if (role === "agency") {
+      return <Navigate to="/agency/dashboard" replace />;
+    }
     if (role === "brand") {
-      return <Navigate to="/brand/dashboard" replace />;
+      return <Navigate to="/company/dashboard" replace />;
     }
     return <Navigate to="/dashboard" replace />;
   }

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, LogOut, Check, Bell } from "lucide-react";
+import { Palette, LogOut, Check, Bell, Landmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,6 +64,23 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
 
         {/* RIGHT - Actions */}
         <div className="flex items-center gap-1 md:gap-2 relative">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.05 }}
+            className="hidden md:block"
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/dashboard/settings/payment")}
+              title="Payout Settings"
+              className="hover:bg-white/10 h-8 w-8 md:h-10 md:w-10"
+            >
+              <Landmark className="h-4 w-4 md:h-5 md:w-5 text-white" />
+            </Button>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

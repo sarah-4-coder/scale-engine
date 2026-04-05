@@ -22,10 +22,20 @@ import BrandNavbar from "@/components/BrandNavbar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { sendNotification } from "@/lib/notifications";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 const BrandCreateCampaign = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { activeBrandId, brands, isLoading: workspaceLoading } = useWorkspace();
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
@@ -37,39 +47,63 @@ const BrandCreateCampaign = () => {
   const [basePayout, setBasePayout] = useState("");
   const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
   const [availableNiches, setAvailableNiches] = useState<string[]>([]);
+  const [contractAuthorized, setContractAuthorized] = useState(false);
 
   // Eligibility criteria
   const [minFollowers, setMinFollowers] = useState("");
   const [maxFollowers, setMaxFollowers] = useState("");
   const [requiredCities, setRequiredCities] = useState("");
 
+  // Management Style
+  const [managedByDotfluence, setManagedByDotfluence] = useState(false);
+  const [payoutDelayDays, setPayoutDelayDays] = useState("7");
+  const [completedCampaignsCount, setCompletedCampaignsCount] = useState(0);
+
   useEffect(() => {
     const checkVerification = async () => {
-      if (!user) return;
+      if (!user || !activeBrandId) return;
 
-      const { data: profile } = await supabase
-        .from("brand_profiles")
-        .select("is_verified")
-        .eq("user_id", user.id)
-        .single();
+      const brand = brands.find(b => b.id === activeBrandId);
+      if (brand) {
+        setIsVerified(brand.is_verified);
+      } else {
+        // Fallback fetch if not in context
+        const { data: profile } = await supabase
+          .from("brand_profiles")
+          .select("is_verified")
+          .eq("id", activeBrandId)
+          .single();
 
-      if (profile) {
-        //@ts-ignore
-        setIsVerified(profile.is_verified);
+        if (profile) {
+          setIsVerified((profile as any).is_verified);
+        }
       }
     };
 
     const fetchNiches = async () => {
       const { data } = await supabase.from("niches").select("name");
       if (data) {
-        //@ts-ignore
-        setAvailableNiches(data.map((n) => n.name));
+        setAvailableNiches((data as any).map((n: any) => n.name));
       }
     };
 
-    checkVerification();
-    fetchNiches();
-  }, [user]);
+    const fetchCampaignCount = async () => {
+      if (!user || !activeBrandId) return;
+      const { count } = await supabase
+        .from("campaigns")
+        .select("*", { count: "exact", head: true })
+        .eq("brand_id", activeBrandId)
+        .eq("managed_by_dotfluence", false);
+      
+      setCompletedCampaignsCount(count || 0);
+    };
+
+    if (!workspaceLoading) {
+      checkVerification();
+      fetchNiches();
+      fetchCampaignCount();
+    }
+  }, [user, activeBrandId, brands, workspaceLoading]);
 
   const handleNicheToggle = (niche: string) => {
     setSelectedNiches((prev) =>
@@ -85,6 +119,12 @@ const BrandCreateCampaign = () => {
 
     if (!user) {
       toast.error("Not authenticated");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!activeBrandId) {
+      toast.error("No active brand selected");
       setIsLoading(false);
       return;
     }
@@ -109,9 +149,14 @@ const BrandCreateCampaign = () => {
         eligibility.allowed_niches = selectedNiches;
       }
 
+      const platformFeePercent = managedByDotfluence 
+        ? 17 
+        : (completedCampaignsCount < 1 ? 0 : 7);
+      
+      const executionModel = managedByDotfluence ? 'brand_managed' : 'brand_self';
+
       const { data, error } = await supabase
         .from("campaigns")
-        //@ts-ignore
         .insert({
           name: campaignName,
           description: description,
@@ -120,10 +165,14 @@ const BrandCreateCampaign = () => {
           timeline: timeline,
           base_payout: parseFloat(basePayout),
           brand_user_id: user.id,
-          can_negotiate: false, // Brand campaigns are fixed-price
+          brand_id: activeBrandId, // Associated with the active workspace
+          managed_by_dotfluence: managedByDotfluence,
+          platform_fee_percent: platformFeePercent,
+          execution_model: executionModel,
+          payout_delay_days: parseInt(payoutDelayDays),
           eligibility: Object.keys(eligibility).length > 0 ? eligibility : null,
           status: "active",
-        })
+        } as any)
         .select()
         .single() as { data: { id: string } | null; error: any };
 
@@ -330,22 +379,105 @@ const BrandCreateCampaign = () => {
                   </div>
                 </div>
 
-                {/* Payout */}
-                <div className="space-y-2">
-                  <Label htmlFor="basePayout">Fixed Payout (₹) *</Label>
-                  <Input
-                    id="basePayout"
-                    type="number"
-                    placeholder="10000"
-                    value={basePayout}
-                    onChange={(e) => setBasePayout(e.target.value)}
-                    required
-                    min="0"
-                    step="100"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    This is a fixed amount. Influencers cannot negotiate.
-                  </p>
+                {/* Payout & Timeline */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="basePayout">Fixed Payout (₹) *</Label>
+                    <Input
+                      id="basePayout"
+                      type="number"
+                      placeholder="10000"
+                      value={basePayout}
+                      onChange={(e) => setBasePayout(e.target.value)}
+                      required
+                      min="0"
+                      step="100"
+                    />
+                    <p className="text-[10px] text-muted-foreground italic">Influencers receive 100% of this value.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="payoutDelay">Payout Timeline *</Label>
+                    <Select value={payoutDelayDays} onValueChange={setPayoutDelayDays}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select timeline" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Immediate upon approval</SelectItem>
+                        <SelectItem value="7">7 Days after approval</SelectItem>
+                        <SelectItem value="15">15 Days after approval</SelectItem>
+                        <SelectItem value="30">30 Days (Net-30)</SelectItem>
+                        <SelectItem value="60">60 Days (Net-60)</SelectItem>
+                        <SelectItem value="90">90 Days (Net-90)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground italic">Standard industry terms apply.</p>
+                  </div>
+                </div>
+
+                {/* Management Style */}
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    Campaign Management Style <span className="text-red-500">*</span>
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div 
+                      onClick={() => setManagedByDotfluence(false)}
+                      className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${!managedByDotfluence ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/20'}`}
+                    >
+                      <h4 className="font-medium mb-1 flex justify-between">
+                        Self-Managed
+                        {!managedByDotfluence && <span className="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-[10px] text-primary-foreground">✓</span>}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-2">You handle all communications, negotiations, and draft approvals.</p>
+                      <span className="text-xs font-semibold text-green-400">Platform Fee applies</span>
+                    </div>
+
+                    <div 
+                      onClick={() => setManagedByDotfluence(true)}
+                      className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${managedByDotfluence ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:border-white/20'}`}
+                    >
+                      <h4 className="font-medium mb-1 flex justify-between">
+                        DotFluence Managed Service
+                        {managedByDotfluence && <span className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white">✓</span>}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-2">Our team executes and handles everything end-to-end for you.</p>
+                      <span className="text-xs font-semibold text-blue-400">17% Agency Fee applies</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fee Summary */}
+                <div className="p-4 bg-muted/20 border border-white/10 rounded-xl space-y-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Est. Cost Per Influencer</h3>
+                  <div className="flex justify-between text-sm">
+                    <span>Influencer Payout:</span>
+                    <span>₹{basePayout || "0"}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>
+                      {managedByDotfluence ? "Agency Fee (17%):" : "Platform Fee (7%):"}
+                      {!managedByDotfluence && completedCampaignsCount < 1 && (
+                        <span className="ml-2 text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">FREE (Trial)</span>
+                      )}
+                    </span>
+                    <span className={!managedByDotfluence && completedCampaignsCount < 1 ? "line-through opacity-50" : ""}>
+                      ₹{managedByDotfluence 
+                         ? (parseFloat(basePayout || "0") * 0.17).toFixed(2) 
+                         : (parseFloat(basePayout || "0") * 0.07).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-white/10 flex justify-between font-bold">
+                    <span>Total Cost:</span>
+                    <span className="text-primary text-lg">
+                      ₹{managedByDotfluence 
+                         ? (parseFloat(basePayout || "0") * 1.17).toFixed(2) 
+                         : (!managedByDotfluence && completedCampaignsCount < 1)
+                           ? parseFloat(basePayout || "0").toFixed(2)
+                           : (parseFloat(basePayout || "0") * 1.07).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Eligibility Criteria */}
@@ -391,29 +523,49 @@ const BrandCreateCampaign = () => {
                   </div>
                 </div>
 
+                {/* Contract Authorization */}
+                <div className="space-y-4 border-t pt-6 bg-primary/5 p-6 rounded-2xl border border-primary/10 mb-6">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox 
+                      id="contractAuth" 
+                      checked={contractAuthorized}
+                      onCheckedChange={(checked) => setContractAuthorized(checked as boolean)}
+                      className="mt-1 border-primary/50 text-primary"
+                    />
+                    <div className="space-y-1.5">
+                      <Label htmlFor="contractAuth" className="text-sm font-extrabold leading-none tracking-tight text-foreground uppercase">
+                        Authorize AI Smart Contract Generation
+                      </Label>
+                      <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+                        By launching this campaign, you formally authorize Dotfluence to automatically generate tailored, legally-binding partnership agreements for every creator you collaborate with. These contracts are dynamically orchestrated via Gemini AI based on your specific deliverables, brand identity, and payout terms. 
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Submit */}
                 <div className="flex gap-4">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => navigate("/company/campaigns")}
-                    className="flex-1"
+                    className="flex-1 h-12 rounded-xl font-bold"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isLoading}
-                    className="flex-1 bg-primary hover:bg-primary/90"
+                    disabled={isLoading || !contractAuthorized}
+                    className="flex-1 h-12 bg-primary hover:bg-primary/90 rounded-xl font-extrabold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
-                        <span className="animate-spin">⏳</span> Creating...
+                        <span className="animate-spin text-lg">⚙️</span> Orchestrating...
                       </span>
                     ) : (
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center gap-2 uppercase tracking-widest text-[11px]">
                         <PlusCircle className="h-4 w-4" />
-                        Create Campaign
+                        Launch Campaign
                       </span>
                     )}
                   </Button>

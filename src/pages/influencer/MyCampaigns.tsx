@@ -31,7 +31,17 @@ interface Campaign {
   timeline: string;
   base_payout: number;
   admin_user_id: string;
-}
+    brand_profiles?: {
+      company_name: string;
+      is_verified: boolean;
+      industry: string;
+      description: string;
+      city: string;
+      state: string;
+      company_website: string;
+      company_size: string;
+    };
+  }
 
 interface Application {
   campaign_id: string;
@@ -73,7 +83,19 @@ const MyCampaigns = () => {
 
       const { data: campaignsData } = await supabase
         .from("campaigns")
-        .select("*")
+        .select(`
+          *,
+          brand_profiles!fk_campaigns_brand_id_v1 (
+            company_name,
+            is_verified,
+            industry,
+            description,
+            city,
+            state,
+            company_website,
+            company_size
+          )
+        `)
         .in("id", campaignIds);
 
       // Store in cache for future use
@@ -277,6 +299,21 @@ const MyCampaigns = () => {
                             />
                           </div>
 
+                          {/* Brand Info */}
+                          {campaign.brand_profiles && (
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <p className={`text-[10px] font-bold tracking-tight text-white/60`}>
+                                {campaign.brand_profiles.company_name}
+                              </p>
+                              {campaign.brand_profiles.is_verified && (
+                                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                                  <CheckCircle2 className="h-2 w-2 text-blue-400" />
+                                  <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter">Verified</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {/* Status Badge */}
                           <div
                             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${statusInfo.bg} w-fit`}
@@ -322,8 +359,10 @@ const MyCampaigns = () => {
                                 className={`text-xs md:text-sm ${theme.text} font-medium`}
                               >
                                 {application.final_payout
-                                  ? `₹${application.final_payout} (Final)`
-                                  : `₹${campaign.base_payout} (Base)`}
+                                  ? `₹${application.final_payout} (Agreed)`
+                                  : application.requested_payout
+                                    ? `₹${application.requested_payout} (Negotiating)`
+                                    : `₹${campaign.base_payout} (Base)`}
                               </span>
                             </div>
                           </div>

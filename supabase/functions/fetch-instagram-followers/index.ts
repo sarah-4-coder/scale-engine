@@ -2,7 +2,7 @@
 // PRODUCTION VERSION - With improved rate limiting and manual fallback
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -106,7 +106,7 @@ async function scrapeFromHTML(username: string): Promise<InstagramData | null> {
  * - Per-user: 1 request per 2 minutes
  * - Global: Max 10 requests per minute (to avoid Instagram rate limits)
  */
-async function checkRateLimit(supabase: any, userId: string): Promise<{ allowed: boolean; reason?: string }> {
+async function checkRateLimit(supabase: SupabaseClient, userId: string): Promise<{ allowed: boolean; reason?: string }> {
   // Check per-user rate limit (2 minutes)
   const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
   

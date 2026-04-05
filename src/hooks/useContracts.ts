@@ -21,9 +21,9 @@ export const useContract = (campaignId: string, influencerId: string) => {
         .select('*')
         .eq('campaign_id', campaignId)
         .eq('influencer_id', influencerId)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       return data;
     },
     staleTime: 1 * 60 * 1000,

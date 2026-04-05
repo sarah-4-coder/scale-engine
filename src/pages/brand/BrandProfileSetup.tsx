@@ -20,13 +20,18 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, Globe, Users, MapPin, Briefcase } from "lucide-react";
 
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+
 const BrandProfileSetup = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { activeBrandId, brands, fetchWorkspaces } = useWorkspace();
   const [isLoading, setIsLoading] = useState(false);
-  const [existingProfile, setExistingProfile] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Form state
+  const [companyName, setCompanyName] = useState("");
+  const [workEmail, setWorkEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [industry, setIndustry] = useState("");
@@ -34,42 +39,49 @@ const BrandProfileSetup = () => {
   const [description, setDescription] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  const [contactPersonName, setContactPersonName] = useState("");
   const [designation, setDesignation] = useState("");
 
   useEffect(() => {
     const fetchExistingProfile = async () => {
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from("brand_profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (data) {
-        setExistingProfile(data);
-        // Pre-fill existing data
-        //@ts-ignore
-        setPhoneNumber(data.phone_number || "");
-        //@ts-ignore
-        setCompanyWebsite(data.company_website || "");
-        //@ts-ignore
-        setIndustry(data.industry || "");
-        //@ts-ignore
-        setCompanySize(data.company_size || "");
-        //@ts-ignore
-        setDescription(data.description || "");
-        //@ts-ignore
-        setCity(data.city || "");
-        //@ts-ignore
-        setState(data.state || "");
-        //@ts-ignore
-        setDesignation(data.contact_person_designation || "");
+      if (activeBrandId) {
+        setIsEditMode(true);
+        const brand = brands.find(b => b.id === activeBrandId);
+        
+        if (brand) {
+          setCompanyName(brand.company_name || "");
+          setWorkEmail(brand.work_email || "");
+          setPhoneNumber(brand.phone_number || "");
+          setCompanyWebsite(brand.company_website || "");
+          setIndustry(brand.industry || "");
+          setCompanySize(brand.company_size || "");
+          setDescription(brand.description || "");
+          setCity(brand.city || "");
+          setState(brand.state || "");
+          setContactPersonName(brand.contact_person_name || "");
+          setDesignation(brand.contact_person_designation || "");
+        }
+      } else {
+        setIsEditMode(false);
+        // Reset form for new brand
+        setCompanyName("");
+        setWorkEmail("");
+        setPhoneNumber("");
+        setCompanyWebsite("");
+        setIndustry("");
+        setCompanySize("");
+        setDescription("");
+        setCity("");
+        setState("");
+        setContactPersonName("");
+        setDesignation("");
       }
     };
 
     fetchExistingProfile();
-  }, [user]);
+  }, [user, activeBrandId, brands]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +94,16 @@ const BrandProfileSetup = () => {
     }
 
     try {
-      const updates = {
+      // Get agency ID if it exists
+      const { data: agency } = await supabase
+        .from("agency_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const profileData = {
+        company_name: companyName,
+        work_email: workEmail,
         phone_number: phoneNumber,
         company_website: companyWebsite,
         industry: industry,
@@ -90,24 +111,35 @@ const BrandProfileSetup = () => {
         description: description,
         city: city,
         state: state,
+        contact_person_name: contactPersonName,
         contact_person_designation: designation,
         profile_completed: true,
+        agency_id: agency?.id || null, // Link to agency if applicable
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from("brand_profiles")
-        //@ts-ignore
-        .update(updates)
-        .eq("user_id", user.id);
+      if (isEditMode && activeBrandId) {
+        const { error } = await supabase
+          .from("brand_profiles")
+          .update(profileData)
+          .eq("id", activeBrandId);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Profile updated! 🎉");
+      } else {
+        const { error } = await supabase
+          .from("brand_profiles")
+          .insert([{ ...profileData, user_id: user.id }]);
 
-      toast.success("Profile completed! 🎉");
+        if (error) throw error;
+        toast.success("New brand workspace created! 🎉");
+      }
+
+      await fetchWorkspaces(); // Refresh workspace list
       navigate("/company/dashboard");
     } catch (error: any) {
-      console.error("Profile update error:", error);
-      toast.error(error.message || "Failed to update profile");
+      console.error("Profile setup error:", error);
+      toast.error(error.message || "Failed to save profile");
     } finally {
       setIsLoading(false);
     }
@@ -182,17 +214,14 @@ const BrandProfileSetup = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <Building2 className="h-12 w-12 mx-auto text-primary mb-4" />
-            <h1 className="text-3xl font-bold">Complete Your Brand Profile</h1>
+            <h1 className="text-3xl font-bold">
+              {isEditMode ? "Edit Brand Profile" : "Onboard New Client Brand"}
+            </h1>
             <p className="text-muted-foreground mt-2">
-              Help us understand your company better
+              {isEditMode 
+                ? "Update your company information" 
+                : "Create a new workspace for your client"}
             </p>
-            {existingProfile && !existingProfile.is_verified && (
-              <div className="mt-4 inline-block px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                  ⏳ Your account is pending verification by our admin team
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Form */}
@@ -202,6 +231,39 @@ const BrandProfileSetup = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold">Basic Identification</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="companyName">Company Name *</Label>
+                      <Input
+                        id="companyName"
+                        placeholder="Acme Corp"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="workEmail">Work Email *</Label>
+                      <Input
+                        id="workEmail"
+                        type="email"
+                        placeholder="contact@acme.com"
+                        value={workEmail}
+                        onChange={(e) => setWorkEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Contact Information */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-3">
@@ -210,6 +272,18 @@ const BrandProfileSetup = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <Label htmlFor="contactPersonName">Contact Person Name *</Label>
+                       <Input
+                         id="contactPersonName"
+                         type="text"
+                         placeholder="John Doe"
+                         value={contactPersonName}
+                         onChange={(e) => setContactPersonName(e.target.value)}
+                         required
+                       />
+                     </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="phoneNumber">Phone Number *</Label>
                       <Input
@@ -221,9 +295,11 @@ const BrandProfileSetup = () => {
                         required
                       />
                     </div>
+                  </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="designation">Your Designation</Label>
+                      <Label htmlFor="designation">Contact Person Designation</Label>
                       <Input
                         id="designation"
                         type="text"

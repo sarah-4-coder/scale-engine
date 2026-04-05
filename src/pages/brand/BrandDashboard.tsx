@@ -35,12 +35,15 @@ type ActivityItem = {
   timestamp?: number;
 };
 
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+
 const BrandDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { activeBrandId, brands, isLoading: workspaceLoading } = useWorkspace();
 
   const [loading, setLoading] = useState(true);
-  const [brandProfile, setBrandProfile] = useState<any>(null);
+  const [activeBrand, setActiveBrand] = useState<any>(null);
   const [campaignCount, setCampaignCount] = useState(0);
   const [activeCampaigns, setActiveCampaigns] = useState(0);
   const [totalApplicants, setTotalApplicants] = useState(0);
@@ -49,45 +52,38 @@ const BrandDashboard = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!user) return;
+      if (!user || !activeBrandId) return;
 
       try {
         setLoading(true);
 
-        // Fetch brand profile
-        const { data: profile, error: profileError } = await supabase
-          .from("brand_profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
+        // Get the active brand profile from our context list
+        const brand = brands.find(b => b.id === activeBrandId);
+        setActiveBrand(brand);
 
-        if (profileError) throw profileError;
-        setBrandProfile(profile);
-
-        // Fetch campaign stats for THIS BRAND only
+        // Fetch campaign stats for THIS BRAND
         const { count: totalCampaigns } = await supabase
           .from("campaigns")
           .select("*", { count: "exact", head: true })
-          .eq("brand_user_id", user.id);
+          .eq("brand_id", activeBrandId);
 
         setCampaignCount(totalCampaigns || 0);
 
         const { count: active } = await supabase
           .from("campaigns")
           .select("*", { count: "exact", head: true })
-          .eq("brand_user_id", user.id)
+          .eq("brand_id", activeBrandId)
           .eq("status", "active");
 
         setActiveCampaigns(active || 0);
 
-        // Fetch applicant stats for THIS BRAND's campaigns only
+        // Fetch applicant stats for THIS BRAND's campaigns
         const { data: campaigns } = await supabase
           .from("campaigns")
           .select("id")
-          .eq("brand_user_id", user.id);
+          .eq("brand_id", activeBrandId);
 
         if (campaigns && campaigns.length > 0) {
-          //@ts-ignore
           const campaignIds = campaigns.map((c) => c.id);
 
           const { count: applicants } = await supabase
@@ -109,7 +105,7 @@ const BrandDashboard = () => {
           const { data: recentCampaigns } = await supabase
             .from("campaigns")
             .select("name, created_at")
-            .eq("brand_user_id", user.id)
+            .eq("brand_id", activeBrandId)
             .order("created_at", { ascending: false })
             .limit(3);
 
@@ -134,7 +130,7 @@ const BrandDashboard = () => {
           recentApplicants?.forEach((a: any) => {
             activities.push({
               action: "New applicant",
-              details: a.campaigns?.name,
+              details: (a.campaigns as any)?.name,
               time: timeAgo(a.created_at),
               timestamp: new Date(a.created_at).getTime(),
             });
@@ -142,17 +138,23 @@ const BrandDashboard = () => {
 
           activities.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
           setRecentActivities(activities.slice(0, 6));
+        } else {
+          setTotalApplicants(0);
+          setAcceptedInfluencers(0);
+          setRecentActivities([]);
         }
       } catch (error) {
-        console.error(error);
+        console.error("Dashboard data fetch error:", error);
         toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, [user]);
+    if (!workspaceLoading) {
+      fetchDashboardData();
+    }
+  }, [user, activeBrandId, brands, workspaceLoading]);
 
   const stats = [
     {
@@ -194,7 +196,7 @@ const BrandDashboard = () => {
   }
 
   // Show pending verification message
-  if (!brandProfile?.is_verified) {
+  if (!activeBrand?.is_verified) {
     return (
       <div className="min-h-screen bg-background">
         <BrandNavbar />
@@ -261,7 +263,7 @@ const BrandDashboard = () => {
           {/* Welcome */}
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-foreground">
-              Welcome back, {brandProfile?.company_name}! 🚀
+              Welcome back, {activeBrand?.company_name}! 🚀
             </h2>
             <p className="text-muted-foreground mt-2">
               Manage your influencer campaigns and collaborations

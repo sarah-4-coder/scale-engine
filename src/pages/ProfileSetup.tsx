@@ -68,6 +68,10 @@ const ProfileSetup = () => {
   const [fullName, setFullName] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
   const [phone, setPhone] = useState("");
+  const [upiId, setUpiId] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [ifscCode, setIfscCode] = useState("");
 
   // Follower fetching states
   const [fetchingFollowers, setFetchingFollowers] = useState(false);
@@ -102,6 +106,38 @@ const ProfileSetup = () => {
     };
 
     checkSession();
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('influencer_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile) {
+        setFullName(profile.full_name || "");
+        setInstagramHandle(profile.instagram_handle || "");
+        setPhone(profile.phone_number || "");
+        setCity(profile.city || "");
+        setState(profile.state || "");
+        setSelectedNiches(profile.niches || []);
+        setProfileImagePreview(profile.profile_image_url || "");
+        setUpiId(profile.upi_id || "");
+        setBankName(profile.bank_name || "");
+        setAccountNumber(profile.account_number || "");
+        setIfscCode(profile.ifsc_code || "");
+        
+        // If it's an update, maybe skip to step 5? 
+        // No, let's keep it as is for now, but pre-filled.
+      }
+    };
+
+    fetchProfile();
   }, []);
 
   useEffect(() => {
@@ -251,6 +287,7 @@ const ProfileSetup = () => {
     if (step === 2) return profileImage !== null;
     if (step === 3) return city && state;
     if (step === 4) return selectedNiches.length > 0;
+    if (step === 5) return upiId || (bankName && accountNumber && ifscCode);
     return false;
   };
 
@@ -285,7 +322,7 @@ const ProfileSetup = () => {
       }
 
       //@ts-ignore
-      const { error } = await supabase.from("influencer_profiles").insert({
+      const { error } = await supabase.from("influencer_profiles").upsert({
         user_id: user.id,
         full_name: fullName.trim(),
         instagram_handle: instagramHandle.replace("@", ""),
@@ -298,7 +335,11 @@ const ProfileSetup = () => {
         profile_image_url: profileImageUrl,
         profile_completed: true,
         last_followers_fetch: new Date().toISOString(),
-      });
+        upi_id: upiId,
+        bank_name: bankName,
+        account_number: accountNumber,
+        ifsc_code: ifscCode,
+      }, { onConflict: 'user_id' });
 
       if (error) {
         toast.error("Failed to save profile");
@@ -336,13 +377,14 @@ const ProfileSetup = () => {
 
         {/* STEP INDICATOR */}
         <h1 className="text-2xl md:text-3xl font-bold mb-1 text-center">
-          Step {step} of 4
+          Step {step} of 5
         </h1>
         <p className="text-white/60 text-center mb-6 md:mb-8 text-sm md:text-base">
           {step === 1 && "Let's get to know you"}
           {step === 2 && "Add your profile picture"}
           {step === 3 && "Your location"}
           {step === 4 && "Your content niches"}
+          {step === 5 && "Payout Details (Optional)"}
         </p>
 
         {/* INPUTS */}
@@ -594,47 +636,54 @@ const ProfileSetup = () => {
               </>
             )}
 
-            {step === 4 && (
-              <>
-                <p className="text-sm md:text-base font-medium">
-                  What should brands contact you for?
-                </p>
-                {allNiches.map((n) => (
-                  <label key={n} className="flex gap-2 text-sm md:text-base">
-                    <Checkbox
-                      checked={selectedNiches.includes(n)}
-                      onCheckedChange={() =>
-                        setSelectedNiches((p) =>
-                          p.includes(n) ? p.filter((x) => x !== n) : [...p, n],
-                        )
-                      }
-                    />
-                    {n}
-                  </label>
-                ))}
+            {step === 5 && (
+              <div className="space-y-4">
+                <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                  <p className="text-sm text-purple-200">
+                    Enter your payment details to receive lightning-fast payouts after campaign completion.
+                  </p>
+                </div>
+                
+                <div className="space-y-1">
+                  <label className="text-xs text-white/60 ml-1">UPI ID (Recommended)</label>
+                  <Input
+                    placeholder="username@okaxis"
+                    className="h-11 text-base"
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                  />
+                </div>
 
-                <Input
-                  placeholder="Add niche"
-                  className="h-11 text-base"
-                  value={newNiche}
-                  onChange={(e) => setNewNiche(e.target.value)}
-                />
-                <Button
-                  className="h-11 text-sm md:text-base"
-                  onClick={() => {
-                    const clean = normalizeLabel(newNiche);
-                    if (clean) {
-                      setAllNiches((p) => [...p, clean]);
-                      setSelectedNiches((p) => [...p, clean]);
-                      //@ts-ignore
-                      supabase.from("niches").insert({ name: clean });
-                      setNewNiche("");
-                    }
-                  }}
-                >
-                  Add niche
-                </Button>
-              </>
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-white/10" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-transparent px-2 text-white/40">OR BANK TRANSFER</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Bank Name"
+                    className="h-11 text-base"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Account Number"
+                    className="h-11 text-base"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                  />
+                  <Input
+                    placeholder="IFSC Code"
+                    className="h-11 text-base uppercase"
+                    value={ifscCode}
+                    onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
+                  />
+                </div>
+              </div>
             )}
           </motion.div>
         </AnimatePresence>
@@ -651,7 +700,7 @@ const ProfileSetup = () => {
             </Button>
           )}
 
-          {step < 4 ? (
+          {step < 5 ? (
             <Button
               disabled={!canProceed() || fetchingFollowers}
               onClick={nextStep}

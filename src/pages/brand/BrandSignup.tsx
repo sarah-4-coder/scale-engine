@@ -255,11 +255,19 @@ const BrandSignup = () => {
           </p>
         </div>
 
-        <div className="mt-4 text-center border-t border-white/10 pt-4">
-          <p className="text-white/60 text-sm mb-2">Are you an influencer?</p>
-          <Link to="/signup" className="text-blue-400 hover:underline text-sm">
-            Sign up as Influencer
-          </Link>
+        <div className="mt-4 text-center border-t border-white/10 pt-4 space-y-2">
+          <div>
+            <p className="text-white/60 text-sm mb-1">Are you a marketing agency?</p>
+            <Link to="/agency/signup" className="text-purple-400 hover:underline text-sm font-bold">
+              Sign up for Agency SaaS
+            </Link>
+          </div>
+          <div>
+            <p className="text-white/60 text-sm mb-1">Are you an influencer?</p>
+            <Link to="/signup" className="text-blue-400 hover:underline text-sm">
+              Sign up as Influencer
+            </Link>
+          </div>
         </div>
 
         <div className="mt-4 text-center">

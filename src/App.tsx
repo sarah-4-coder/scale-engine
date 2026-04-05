@@ -37,6 +37,7 @@ const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
 const AllCampaigns = lazy(() => import("./pages/influencer/AllCampaigns"));
 const MyCampaigns = lazy(() => import("./pages/influencer/MyCampaigns"));
 const CampaignDetail = lazy(() => import("./pages/influencer/CampaignDetail"));
+const PaymentSettings = lazy(() => import("./pages/influencer/PaymentSettings"));
 
 // Admin routes
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -52,8 +53,8 @@ const AdminCampaignAppliedInfluencers = lazy(
 const AdminManageInfluencers = lazy(
   () => import("./pages/admin/AdminManageInfluencers"),
 );
+const AdminFinancials = lazy(() => import("./pages/admin/AdminFinancials"));
 
-// NEW: Brand routes (lazy loaded)
 const BrandDashboard = lazy(() => import("./pages/brand/BrandDashboard"));
 const BrandProfileSetup = lazy(() => import("./pages/brand/BrandProfileSetup"));
 const BrandAllCampaigns = lazy(() => import("./pages/brand/BrandAllCampaigns"));
@@ -64,6 +65,13 @@ const BrandCampaignDetails = lazy(
   () => import("./pages/brand/Brandcampaigndetails"),
 );
 const BrandInfluencers = lazy(() => import("./pages/brand/Brandinfluencers"));
+const BrandProfile = lazy(() => import("./pages/brand/BrandProfile"));
+
+// NEW: Agency routes (lazy loaded)
+const AgencyDashboard = lazy(() => import("./pages/agency/AgencyDashboard"));
+const AgencyProfileSetup = lazy(() => import("./pages/agency/AgencyProfileSetup"));
+const AgencyProfile = lazy(() => import("./pages/agency/AgencyProfile"));
+const AgencySignup = lazy(() => import("./pages/agency/AgencySignup"));
 
 // ============================================
 // OPTIMIZED QUERY CLIENT
@@ -108,9 +116,11 @@ const AuthPage = ({ children }: { children: React.ReactNode }) => {
         to={
           role === "admin"
             ? "/admin"
-            : role === "brand"
-              ? "/company/dashboard"
-              : "/dashboard"
+            : role === "agency"
+              ? "/agency/dashboard"
+              : role === "brand"
+                ? "/company/dashboard"
+                : "/dashboard"
         }
         replace
       />
@@ -166,13 +176,23 @@ const AppRoutes = () => {
         }
       />
 
+      {/* NEW: Agency Auth routes */}
+      <Route
+        path="/agency/signup"
+        element={
+          <AuthPage>
+            <AgencySignup />
+          </AuthPage>
+        }
+      />
+
       {/* ========================================
           NEW: BRAND ROUTES - WRAPPED WITH BRANDLAYOUT
       ======================================== */}
       <Route
         path="/company/dashboard"
         element={
-          <ProtectedRoute allowedRoles={["brand"]}>
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
             <BrandProfileCompletionGuard>
               <BrandLayout>
                 <Suspense fallback={<PageLoader />}>
@@ -187,7 +207,7 @@ const AppRoutes = () => {
       <Route
         path="/company/profile-setup"
         element={
-          <ProtectedRoute allowedRoles={["brand"]}>
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
             <BrandLayout>
               <Suspense fallback={<PageLoader />}>
                 <BrandProfileSetup />
@@ -200,7 +220,7 @@ const AppRoutes = () => {
       <Route
         path="/company/campaigns"
         element={
-          <ProtectedRoute allowedRoles={["brand"]}>
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
             <BrandProfileCompletionGuard>
               <BrandLayout>
                 <Suspense fallback={<PageLoader />}>
@@ -215,7 +235,7 @@ const AppRoutes = () => {
       <Route
         path="/company/campaigns/new"
         element={
-          <ProtectedRoute allowedRoles={["brand"]}>
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
             <BrandProfileCompletionGuard>
               <BrandLayout>
                 <Suspense fallback={<PageLoader />}>
@@ -230,7 +250,7 @@ const AppRoutes = () => {
       <Route
         path="/company/campaigns/:id"
         element={
-          <ProtectedRoute allowedRoles={["brand"]}>
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
             <BrandProfileCompletionGuard>
               <BrandLayout>
                 <Suspense fallback={<PageLoader />}>
@@ -243,9 +263,24 @@ const AppRoutes = () => {
       />
 
       <Route
+        path="/company/profile"
+        element={
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
+            <BrandProfileCompletionGuard>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandProfile />
+                </Suspense>
+              </BrandLayout>
+            </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/company/influencers"
         element={
-          <ProtectedRoute allowedRoles={["brand"]}>
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
             <BrandProfileCompletionGuard>
               <BrandLayout>
                 <Suspense fallback={<PageLoader />}>
@@ -253,6 +288,41 @@ const AppRoutes = () => {
                 </Suspense>
               </BrandLayout>
             </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========================================
+          NEW: AGENCY ROUTES
+      ======================================== */}
+      <Route
+        path="/agency/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={["agency"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AgencyDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/agency/profile"
+        element={
+          <ProtectedRoute allowedRoles={["agency"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AgencyProfile />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/agency/onboarding"
+        element={
+          <ProtectedRoute allowedRoles={["agency"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AgencyProfileSetup />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -329,6 +399,19 @@ const AppRoutes = () => {
             <ProfileCompletionGuard>
               <Suspense fallback={<PageLoader />}>
                 <CampaignDetail />
+              </Suspense>
+            </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/settings/payment"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <ProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <PaymentSettings />
               </Suspense>
             </ProfileCompletionGuard>
           </ProtectedRoute>
@@ -426,6 +509,16 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/admin/financials"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AdminFinancials />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/blocked-influencers"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
@@ -442,6 +535,8 @@ const AppRoutes = () => {
   );
 };
 
+import { WorkspaceProvider } from "./contexts/WorkspaceContext";
+
 // ============================================
 // MAIN APP
 // ============================================
@@ -452,7 +547,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <WorkspaceProvider>
+            <AppRoutes />
+          </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

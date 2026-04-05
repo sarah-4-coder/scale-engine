@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,15 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
 import MobileBottomNav from "@/components/influencer/MobileBottomNav";
@@ -22,6 +31,7 @@ import {
   Users,
   Sparkles,
   MapPin,
+  MessageSquare,
 } from "lucide-react";
 import { CampaignCardSkeleton } from "@/components/influencer/Skeletons";
 import { useCampaigns, useInfluencerProfile, useApplyToCampaign, useMyCampaigns } from "@/hooks/useCampaigns";
@@ -34,6 +44,16 @@ interface Campaign {
   deliverables: string;
   timeline: string;
   base_payout: number;
+  brand_profiles?: {
+    company_name: string;
+    industry: string;
+    is_verified: boolean;
+    city: string;
+    state: string;
+    description: string;
+    company_website: string;
+    company_size: string;
+  };
   eligibility?: {
     min_followers?: number;
     allowed_niches?: string[];
@@ -59,6 +79,9 @@ const AllCampaigns = () => {
   } = useInfluencerTheme();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [applyModalOpen, setApplyModalOpen] = useState(false);
+  const [negotiationRequested, setNegotiationRequested] = useState(false);
 
   // ⚡ REACT QUERY HOOKS - Automatic caching & refetching
   const { data: campaigns = [], isLoading: campaignsLoading } = useCampaigns() as { data: Campaign[]; isLoading: boolean };
@@ -146,13 +169,26 @@ const AllCampaigns = () => {
   /* -------------------------------
      APPLY TO CAMPAIGN (using mutation)
   ------------------------------- */
-  const applyToCampaign = (campaignId: string) => {
-    if (!influencerId) return;
+  const applyToCampaign = () => {
+    if (!influencerId || !selectedCampaign) return;
     
     applyMutation.mutate({ 
-      campaignId, 
-      influencerId 
+      campaignId: selectedCampaign.id, 
+      influencerId,
+      negotiationRequested
+    }, {
+      onSuccess: () => {
+        setApplyModalOpen(false);
+        setSelectedCampaign(null);
+        setNegotiationRequested(false);
+      }
     });
+  };
+
+  const handleOpenApplyModal = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setNegotiationRequested(false);
+    setApplyModalOpen(true);
   };
 
   /* -------------------------------
@@ -278,6 +314,32 @@ const AllCampaigns = () => {
                           <CardTitle className={`text-lg ${theme.text}`}>
                             {campaign.name}
                           </CardTitle>
+                          {campaign.brand_profiles && (
+                            <div className="flex flex-col gap-1 mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <p className={`text-xs font-semibold ${theme.accent}`}>
+                                  {campaign.brand_profiles.company_name}
+                                </p>
+                                {campaign.brand_profiles.is_verified && (
+                                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                                    <CheckCircle2 className="h-2.5 w-2.5 text-blue-400" />
+                                    <span className="text-[8px] font-bold text-blue-400 uppercase tracking-tighter">Verified</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-muted-foreground uppercase tracking-wider">
+                                  {campaign.brand_profiles.industry}
+                                </span>
+                                {(campaign.brand_profiles.city || campaign.brand_profiles.state) && (
+                                  <div className="flex items-center gap-1 text-[10px] text-white/40 font-medium italic">
+                                    <MapPin className="h-2.5 w-2.5" />
+                                    {campaign.brand_profiles.city}, {campaign.brand_profiles.state}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           {campaign.description && (
                             <CardDescription
                               className={`${theme.muted} line-clamp-2 text-sm`}
@@ -318,15 +380,19 @@ const AllCampaigns = () => {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <DollarSign
-                                className={`h-4 w-4 ${theme.accent}`}
-                              />
-                              <span
-                                className={`text-xs md:text-sm ${theme.text} font-medium`}
-                              >
-                                ₹{campaign.base_payout} base payout
-                              </span>
+                            <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-1">
+                              <div className="flex items-center gap-2">
+                                <DollarSign
+                                  className={`h-4 w-4 ${theme.accent}`}
+                                />
+                                <div className="flex flex-col">
+                                  <span
+                                    className={`text-xs md:text-sm ${theme.text} font-medium leading-none`}
+                                  >
+                                    ₹{campaign.base_payout} base payout
+                                  </span>
+                                </div>
+                              </div>
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -387,18 +453,11 @@ const AllCampaigns = () => {
                             </Button>
                           ) : (
                             <Button
-                              onClick={() => applyToCampaign(campaign.id)}
-                              disabled={applyMutation.isPending}
+                              onClick={() => handleOpenApplyModal(campaign)}
                               className="w-full"
                             >
-                              {applyMutation.isPending ? (
-                                "Applying..."
-                              ) : (
-                                <>
-                                  <Sparkles className="h-4 w-4 mr-2" />
-                                  Apply Now
-                                </>
-                              )}
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Apply Now
                             </Button>
                           )}
                         </CardContent>
@@ -411,6 +470,81 @@ const AllCampaigns = () => {
           </>
         )}
       </main>
+
+      {/* APPLICATION MODAL */}
+      <Dialog open={applyModalOpen} onOpenChange={setApplyModalOpen}>
+        <DialogContent className={`${theme.card} border flex flex-col md:max-w-md ${theme.text} p-6 overflow-hidden rounded-xl bg-card border-white/10`}>
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Apply for Campaign</DialogTitle>
+            <DialogDescription className="text-white/60">
+              {selectedCampaign?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 my-4">
+            <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-2">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-white/60">Base Payout</p>
+                <div className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">
+                  Standard Rate
+                </div>
+              </div>
+              <p className="text-2xl font-bold">₹{selectedCampaign?.base_payout}</p>
+              <p className="text-[11px] text-white/40 leading-relaxed italic">
+                * This is the fixed compensation for the deliverables mentioned. 
+                Payments are processed via our secure ledger after content verification.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg transition-all duration-300 border ${negotiationRequested ? 'bg-amber-500/5 border-amber-500/30' : 'bg-white/5 border-white/10'}`}>
+              <div className="flex items-start gap-3">
+                <input 
+                  id="negotiation-checkbox"
+                  type="checkbox" 
+                  checked={negotiationRequested}
+                  onChange={(e) => setNegotiationRequested(e.target.checked)}
+                  className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500 transition-all cursor-pointer"
+                />
+                <div className="flex-1">
+                  <label htmlFor="negotiation-checkbox" className="text-sm font-semibold cursor-pointer block mb-1">
+                    I want to negotiate a higher pay
+                  </label>
+                  <p className="text-[11px] text-white/50 leading-tight">
+                    Check this only if your profile reach, high engagement, or premium content quality justifies a rate above the base payout.
+                  </p>
+                </div>
+              </div>
+              
+              {negotiationRequested && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-3 p-2 rounded bg-amber-500/10 text-amber-400 text-[10px] font-medium border border-amber-500/20"
+                >
+                  💡 Negotiation options will be enabled in your campaign dashboard once the brand shortlists you.
+                </motion.div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto" 
+              onClick={() => setApplyModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="w-full sm:w-auto" 
+              onClick={applyToCampaign}
+              disabled={applyMutation.isPending}
+            >
+              {applyMutation.isPending ? "Applying..." : "Submit Application"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

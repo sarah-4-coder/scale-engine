@@ -23,7 +23,20 @@ export const useCampaigns = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('campaigns')
-        .select('*')
+        .select(`
+          *,
+          brand_profiles!fk_campaigns_brand_id_v1 (
+            company_name,
+            industry,
+            description,
+            is_verified,
+            city,
+            state,
+            company_size,
+            company_website,
+            contact_person_name
+          )
+        `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -41,7 +54,20 @@ export const useCampaign = (campaignId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('campaigns')
-        .select('*')
+        .select(`
+          *,
+          brand_profiles!fk_campaigns_brand_id_v1 (
+            company_name,
+            description,
+            industry,
+            city,
+            state,
+            company_website,
+            company_size,
+            is_verified,
+            contact_person_name
+          )
+        `)
         .eq('id', campaignId)
         .single();
       
@@ -216,10 +242,11 @@ export const useCampaignApplication = (campaignId: string, influencerId: string)
 // ============================================
 
 export const useDashboardStats = (userId: string) => {
+  const queryClient = useQueryClient();
   const { data: profile } = useUserProfile(userId);
   const { data: influencer } = useInfluencerProfile(userId);
   
-  return useQuery({
+  const query = useQuery({
     //@ts-ignore
     queryKey: ['dashboard-stats', influencer?.id],
     queryFn: async () => {
@@ -273,6 +300,39 @@ export const useDashboardStats = (userId: string) => {
     //@ts-expect-error
     enabled: !!influencer?.id,
   });
+
+  // ⚡ REAL-TIME DASHBOARD UPDATES
+  useEffect(() => {
+    //@ts-ignore
+    if (!influencer?.id) return;
+
+    //@ts-ignore
+    const subscription = supabase
+      .channel(`dashboard_stats_${(influencer as any).id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaign_influencers',
+          //@ts-ignore
+          filter: `influencer_id=eq.${(influencer as any).id}`,
+        },
+        () => {
+          console.log('Refreshing dashboard stats...');
+          //@ts-ignore
+          queryClient.invalidateQueries({ queryKey: ['dashboard-stats', (influencer as any).id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+    //@ts-ignore
+  }, [influencer?.id, queryClient]);
+
+  return query;
 };
 
 // ============================================
@@ -283,15 +343,31 @@ export const useApplyToCampaign = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ campaignId, influencerId }: { campaignId: string; influencerId: string }) => {
+    mutationFn: async ({ 
+      campaignId, 
+      influencerId, 
+      requestedPayout,
+      negotiationRequested 
+    }: { 
+      campaignId: string; 
+      influencerId: string; 
+      requestedPayout?: number;
+      negotiationRequested?: boolean;
+    }) => {
+      const payload: any = {
+        campaign_id: campaignId,
+        influencer_id: influencerId,
+        status: 'applied',
+        negotiation_requested: negotiationRequested ?? false
+      };
+      
+      if (requestedPayout !== undefined) {
+        payload.requested_payout = requestedPayout;
+      }
+
       const { data, error } = await supabase
         .from('campaign_influencers')
-        //@ts-expect-error
-        .insert({
-          campaign_id: campaignId,
-          influencer_id: influencerId,
-          status: 'applied',
-        })
+        .insert(payload)
         .select()
         .single();
 
@@ -306,6 +382,27 @@ export const useApplyToCampaign = () => {
     onError: () => {
       toast.error('Already applied or not allowed');
     },
+  });
+};
+
+export const usePayoutTransaction = (contractId: string) => {
+  return useQuery({
+    queryKey: ['payout-transaction', contractId],
+    queryFn: async () => {
+      if (!contractId) return null;
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('contract_id', contractId)
+        .eq('type', 'influencer_payout')
+        .order('created_at', { ascending: false })
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!contractId,
+    staleTime: 30 * 1000,
   });
 };
 

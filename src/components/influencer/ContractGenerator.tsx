@@ -27,10 +27,13 @@ import { genAI } from "@/lib/gemini";
 interface ContractGeneratorProps {
   campaignId: string;
   influencerId: string;
+  campaignInfluencerId: string;
   campaignName: string;
   finalPayout: number;
   deliverables: string;
   timeline: string;
+  brandName?: string;
+  brandProfile?: any;
 }
 
 /**
@@ -45,10 +48,13 @@ interface ContractGeneratorProps {
 export const ContractGenerator = ({
   campaignId,
   influencerId,
+  campaignInfluencerId,
   campaignName,
   finalPayout,
   deliverables,
   timeline,
+  brandName = "the Brand",
+  brandProfile,
 }: ContractGeneratorProps) => {
   const { theme } = useInfluencerTheme();
   const [loading, setLoading] = useState(false);
@@ -57,7 +63,7 @@ export const ContractGenerator = ({
 
   // Fetch existing contract if available
   const { data: existingContract } = useContract(campaignId, influencerId) as {
-    data: { contract_text: string; status: string } | null;
+    data: { contract_text: string; status: string; metadata?: any; signed_at?: string; created_at?: string } | null;
   };
 
   // Load existing contract on mount
@@ -105,50 +111,47 @@ export const ContractGenerator = ({
       });
 
       // Get Gemini API key from environment
-      const GEMINI_API_KEY = import.meta.env.VITE_GOOGLE_AI_API_KEY;
+      const GEMINI_API_KEY = import.meta.env.VITE_GOOGLE_AI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
 
       if (!GEMINI_API_KEY) {
         throw new Error(
-          "Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.\n\n" +
+          "Gemini API key not configured. Please add VITE_GOOGLE_AI_API_KEY or VITE_GEMINI_API_KEY to your .env file.\n\n" +
             "Get your API key from: https://ai.google.dev/gemini-api/docs/api-key",
         );
       }
 
       // Call Gemini API to generate contract
-      // Call Gemini using official SDK
       const response = await genAI.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: `Generate a professional influencer marketing contract with the following details:
-
-Campaign Name: ${campaignName}
-Influencer Name: ${influencerName}
-Influencer Email: ${influencerEmail}
-Instagram Handle: @${instagramHandle}
-Payment Amount: ₹${finalPayout}
-Deliverables: ${deliverables}
-Timeline: ${timeline}
-
-Include:
-1. Clear payment terms stating "Payment is secured by Dotfluence Escrow"
-2. Deliverable requirements
-3. Timeline and deadlines
-4. Content usage rights
-5. Termination clauses
-
-Make it professional but concise (max 500 words).
-Format in clear sections with proper headings.`,
-              },
-            ],
-          },
-        ],
+        contents: `Generate a professional influencer marketing contract for ${brandName}.
+        
+        PARTIES:
+        1. Brand: ${brandName} 
+           ${brandProfile?.industry ? `Industry: ${brandProfile.industry}` : ""}
+           ${brandProfile?.city ? `Address: ${brandProfile.city}, ${brandProfile.state}` : ""}
+        2. Influencer: ${influencerName} (@${instagramHandle})
+        
+        CAMPAIGN DETAILS:
+        - Campaign Name: ${campaignName}
+        - Payout: ₹${finalPayout}
+        - Deliverables: ${deliverables}
+        - Timeline: ${timeline}
+        
+        INSTRUCTIONS:
+        1. Use formal legal tone but maintain a partnership spirit.
+        2. State clearly: "Payment is secured by Dotfluence Escrow and will be released upon visual verification of content."
+        3. Do NOT use markdown symbols like asterisks (*) or hash symbols (#) for formatting. Use plain text with clear line breaks and CAPS for headings.
+        4. Include sections for: Deliverables, Payout Terms, Content Rights (90 days), and Mutual Professionalism.
+        5. Add a "SIGNATURES" section at the end for the Brand and the Influencer.
+        6. Keep it under 400 words.`,
       });
 
-      const contractText = response.text;
+      const rawText = response.text;
+      const contractText = rawText
+        .replace(/\*\*/g, "") // Remove bold
+        .replace(/\*/g, "-")  // Replace bullets with dashes
+        .replace(/#{1,6}\s?/g, "") // Remove headers
+        .trim();
 
       if (!contractText) {
         throw new Error("Failed to generate contract text");
@@ -156,14 +159,15 @@ Format in clear sections with proper headings.`,
 
       setContract(contractText);
 
-      // Save contract to database
-      const { error: insertError } = await supabase.from("contracts").insert({
+      const { error: insertError } = await supabase.from("contracts").upsert({
+        campaign_influencer_id: campaignInfluencerId,
         campaign_id: campaignId,
         influencer_id: influencerId,
         contract_text: contractText,
         status: "pending_signature",
-        created_at: new Date().toISOString(),
-      } as any);
+        created_at: existingContract?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any, { onConflict: 'campaign_id, influencer_id' });
 
       if (insertError) {
         console.error("Database insert error:", insertError);
@@ -191,16 +195,21 @@ Format in clear sections with proper headings.`,
 
   const signContract = async () => {
     try {
-      // Update contract status
+      // Append signature date to text for persistence in the document itself
+      const signatureBlock = `\n\n------------------------------------------------\nDIGITALLY SIGNED BY: ${existingContract?.metadata?.full_name || 'Influencer'}\nDATE: ${new Date().toLocaleString()}\nIP: ${existingContract?.metadata?.ip || 'Verified Remote'}\n------------------------------------------------`;
+      const finalContractText = `${contract}${signatureBlock}`;
+
+      // Update contract status and text
       const { error: contractError } = await supabase
         .from("contracts")
         //@ts-ignore
         .update({
           status: "signed",
           signed_at: new Date().toISOString(),
+          contract_text: finalContractText,
         } as any)
-        .eq("campaign_id", campaignId)
-        .eq("influencer_id", influencerId);
+        //@ts-ignore
+        .eq("campaign_influencer_id", campaignInfluencerId);
 
       if (contractError) {
         throw contractError;
@@ -211,13 +220,13 @@ Format in clear sections with proper headings.`,
         .from("campaign_influencers")
         //@ts-ignore
         .update({ contract_signed: true })
-        .eq("campaign_id", campaignId)
-        .eq("influencer_id", influencerId);
+        .eq("id", campaignInfluencerId);
 
       if (campaignError) {
         throw campaignError;
       }
 
+      setContract(finalContractText);
       setSigned(true);
       toast.success("Contract signed successfully! 🎉");
     } catch (error) {
@@ -242,7 +251,7 @@ Format in clear sections with proper headings.`,
   };
 
   // Check if API key is configured
-  const apiKeyConfigured = !!import.meta.env.VITE_GEMINI_API_KEY;
+  const apiKeyConfigured = !!(import.meta.env.VITE_GOOGLE_AI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY);
 
   return (
     <Card className={`${theme.card} ${theme.radius}`}>
@@ -282,24 +291,62 @@ Format in clear sections with proper headings.`,
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/30"
+          className="flex items-center justify-between p-3 rounded-xl bg-green-500/10 border border-green-500/30 backdrop-blur-md"
         >
-          <Shield className="h-5 w-5 text-green-400" />
-          <p className="text-sm text-green-400 font-medium">
-            Payment Secured by Dotfluence Escrow
-          </p>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-green-400" />
+            <p className="text-sm text-green-400 font-semibold tracking-tight">
+              SECURE ESCROW VERIFIED
+            </p>
+          </div>
+          <div className="flex items-center gap-1 bg-green-500/20 px-2 py-0.5 rounded text-[10px] font-bold text-green-300 uppercase letter-spacing-1">
+            <Check className="h-3 w-3" />
+            Certified
+          </div>
         </motion.div>
 
         {/* Contract Display */}
         {contract ? (
           <div className="space-y-4">
-            <div
-              className={`p-4 rounded-lg bg-white/5 border border-white/10 max-h-96 overflow-y-auto ${theme.text}`}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative p-6 md:p-10 rounded-xl bg-[#FDFBF7] shadow-inner border border-[#E5E0D5] min-h-[400px] overflow-hidden"
             >
-              <pre className="text-xs whitespace-pre-wrap font-mono">
-                {contract}
-              </pre>
-            </div>
+              {/* Draft Watermark */}
+              {!signed && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] rotate-[-25deg] select-none">
+                  <span className="text-[120px] font-black text-black tracking-tighter">OFFER DRAFT</span>
+                </div>
+              )}
+
+              <div className="relative z-10 font-serif text-[#2C2925] leading-relaxed text-sm md:text-base">
+                <div className="text-center mb-8 pb-4 border-b border-[#E5E0D5]">
+                  <h3 className="text-xl font-bold uppercase tracking-[0.2em] text-[#1A1816] mb-2">Influencer Partnership Agreement</h3>
+                  <p className="text-[10px] font-sans text-muted-foreground uppercase tracking-widest">Digital Recording ID: {campaignId.split('-')[0]}-{influencerId.split('-')[0]}</p>
+                </div>
+                
+                <div className="whitespace-pre-wrap">
+                  {contract}
+                </div>
+
+                {signed && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-12 pt-8 border-t border-[#E5E0D5] flex flex-col items-end"
+                  >
+                    <div className="text-right">
+                      <p className="text-xs font-sans text-muted-foreground uppercase mb-2">Digitally Signed By</p>
+                      <p className="font-serif italic text-lg leading-none text-[#1A1816]">/ e-Signed Digitally /</p>
+                      <p className="text-[10px] font-sans text-muted-foreground mt-1">
+                        IP: {existingContract?.metadata?.ip || 'Verified Remote'} • {new Date(existingContract?.signed_at || '').toLocaleString()}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
 
             {/* Action Buttons */}
             <div className="flex gap-3">
