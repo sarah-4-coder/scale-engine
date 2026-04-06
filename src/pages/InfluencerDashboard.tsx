@@ -10,6 +10,11 @@ import {
   BarChart3,
   Sparkles,
   X,
+  AlertCircle,
+  Mail,
+  Link,
+  ChevronRight,
+  Info,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -25,16 +30,20 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import AmbientLayer from "@/components/ambient/AmbientLayer";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { ThemeKey } from "@/theme/themes";
 import {
   StatCardSkeleton,
   CardSkeleton,
 } from "@/components/influencer/Skeletons";
-import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 import { useDashboardStats } from "@/hooks/useCampaigns";
 import { ProfileLinkCard } from "@/components/influencer/ProfileLinkCard";
 import BlockedAccountScreen from "@/components/BlockedAccountScreen";
+import ProfileSetupDrawer from "@/components/influencer/ProfileSetupDrawer";
+import BankDetailsModal from "@/components/influencer/BankDetailsModal";
+import { toast } from "sonner";
 
 /* --------------------------------
    TYPES
@@ -65,86 +74,6 @@ const StatCard = memo(({ stat }: { stat: any }) => {
 
 StatCard.displayName = "StatCard";
 
-/* --------------------------------
-   WELCOME MODAL
--------------------------------- */
-const WelcomeModal = ({
-  show,
-  onClose,
-  fullName,
-}: {
-  show: boolean;
-  onClose: () => void;
-  fullName: string;
-}) => {
-  const { theme } = useInfluencerTheme();
-
-  return (
-    <AnimatePresence>
-      {show && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            onClick={onClose}
-          />
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-md"
-          >
-            <Card
-              className={`${theme.card} ${theme.radius} border-2 border-purple-500/30`}
-            >
-              <CardHeader className="relative px-4 pt-4 md:px-6 md:pt-6">
-                <button
-                  onClick={onClose}
-                  className="absolute top-3 right-3 md:top-4 md:right-4 p-1.5 md:p-2 rounded-full hover:bg-white/10 transition-colors"
-                >
-                  <X className="h-4 w-4 md:h-5 md:w-5" />
-                </button>
-                <div className="pr-8">
-                  <Sparkles
-                    className={`h-8 w-8 md:h-10 md:w-10 ${theme.accent} mb-3 md:mb-4`}
-                  />
-                  <CardTitle
-                    className={`text-xl md:text-2xl ${theme.text} mb-1.5 md:mb-2`}
-                  >
-                    Welcome {fullName}! 🎉
-                  </CardTitle>
-                  <CardDescription className={`${theme.muted} text-sm`}>
-                    Your personalized influencer dashboard is ready
-                  </CardDescription>
-                </div>
-              </CardHeader>
-
-              <CardContent className="px-4 pb-4 md:px-6 md:pb-6 space-y-3 md:space-y-4">
-                <p className={`${theme.text} text-sm`}>
-                  Start exploring campaigns that match your niche and grow your
-                  brand partnerships.
-                </p>
-
-                <div className="flex gap-2 md:gap-3 flex-col sm:flex-row">
-                  <Button
-                    onClick={onClose}
-                    className={`flex-1 bg-gradient-to-r ${theme.primary}`}
-                  >
-                    Get Started
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-};
-
 const InfluencerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -156,14 +85,16 @@ const InfluencerDashboard = () => {
     loading: themeLoading,
   } = useInfluencerTheme();
 
-  const [showWelcome, setShowWelcome] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [checkingBlockStatus, setCheckingBlockStatus] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const [showProfileDrawer, setShowProfileDrawer] = useState(false);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [linkEmail, setLinkEmail] = useState("");
 
-  // ⚡ USE REACT QUERY HOOK - Automatic caching & refetching
-  const { data: stats, isLoading } = useDashboardStats(user?.id || "");
+  const { data: stats, isLoading, refetch: refetchStats } = useDashboardStats(user?.id || "");
 
-  // Extract data from hook (with defaults)
   const fullName = stats?.fullName || "Creator";
   const followers = stats?.followers;
   const activeCampaigns = stats?.activeCampaigns || 0;
@@ -171,52 +102,86 @@ const InfluencerDashboard = () => {
   const recentCampaigns = stats?.recentCampaigns || [];
 
   useEffect(() => {
-    const checkBlockStatus = async () => {
-      if (!user?.id) {
-        setCheckingBlockStatus(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from("influencer_profiles")
-          .select("is_blocked")
-          .eq("user_id", user.id)
-          .single();
-
-        if (error) {
-          console.error("Error checking block status:", error);
-          setCheckingBlockStatus(false);
-          return;
-        }
-        //@ts-ignore
-        setIsBlocked(data?.is_blocked || false);
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        setCheckingBlockStatus(false);
-      }
-    };
-
-    checkBlockStatus();
+    fetchProfile();
   }, [user?.id]);
 
-  /* -------------------------------
-     CHECK IF FIRST VISIT
-  ------------------------------- */
-  //   useEffect(() => {
-  //     const hasSeenWelcome = localStorage.getItem("dotfluence_welcome_seen");
-  //     if (!hasSeenWelcome && !themeLoading && !isLoading) {
-  //       setTimeout(() => {
-  //         setShowWelcome(true);
-  //         localStorage.setItem("dotfluence_welcome_seen", "true");
-  //       }, 1000);
-  //     }
-  //   }, [themeLoading, isLoading]);
+  const fetchProfile = async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from("influencer_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-  /* -------------------------------
-     STATS CONFIG
-  ------------------------------- */
+      if (error) throw error;
+      setProfile(data);
+      setIsBlocked(data?.is_blocked || false);
+      
+      // Check for completed campaigns without bank details
+      if (data && !data.bank_details) {
+          const { count } = await supabase
+            .from('campaign_influencers')
+            .select('*', { count: 'exact', head: true })
+            .eq('influencer_id', data.id)
+            .eq('status', 'completed');
+          
+          if (count && count > 0) {
+              setShowBankModal(true);
+          }
+      }
+
+      // One-time prompt for email if missing
+      if (data && !data.email && !sessionStorage.getItem('dismissed_email_prompt')) {
+          setShowEmailPrompt(true);
+      }
+
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setCheckingBlockStatus(false);
+    }
+  };
+
+  const calculateCompletion = () => {
+    if (!profile) return 0;
+    // Exactly 5 fields, 20% each
+    const fields = [
+        !!profile.phone_number,
+        !!profile.full_name,
+        !!profile.instagram_handle,
+        !!(profile.niches && profile.niches.length > 0),
+        !!profile.profile_image_url
+    ];
+    const completedCount = fields.filter(Boolean).length;
+    return completedCount * 20;
+  };
+
+  const handleLinkEmail = async () => {
+    if (!linkEmail || !linkEmail.includes("@")) {
+        toast.error("Valid email required");
+        return;
+    }
+
+    try {
+        // Link logic (Case 3): Update profile with email
+        const { error } = await supabase
+            .from('influencer_profiles')
+            .update({ email: linkEmail })
+            .eq('id', profile.id);
+        
+        if (error) throw error;
+
+        toast.success("Email linked successfully!");
+        setShowEmailPrompt(false);
+        fetchProfile();
+    } catch (e: any) {
+        toast.error(e.message);
+    }
+  };
+
+  const completion = calculateCompletion();
+
   const statsConfig = [
     {
       title: "Active Campaigns",
@@ -244,9 +209,6 @@ const InfluencerDashboard = () => {
     },
   ];
 
-  /* -------------------------------
-     LOADING STATE - PREVENT FLASH
-  ------------------------------- */
   if (themeLoading || checkingBlockStatus) {
     return (
       <div
@@ -261,16 +223,12 @@ const InfluencerDashboard = () => {
     );
   }
 
-  /* -------------------------------
-     SHOW BLOCKED SCREEN IF BLOCKED
-  ------------------------------- */
   if (isBlocked) {
     return <BlockedAccountScreen />;
   }
 
   return (
     <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
-      {/* Animated Theme Background */}
       <motion.div
         className="absolute inset-0"
         animate={{
@@ -280,19 +238,80 @@ const InfluencerDashboard = () => {
         style={{ background: theme.background }}
       />
 
-      {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
-
-      {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
 
-      {/* CONTENT - 2 COLUMN LAYOUT ON DESKTOP */}
-      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10">
-        <div className="max-w-7xl mx-auto">
+      <main className="relative z-10 px-4 md:px-6 py-4 md:py-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          
+          {/* PROFILE COMPLETION BANNER */}
+          {completion < 100 && (
+            <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full bg-gradient-to-r from-primary/20 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-xl"
+            >
+                <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                        <Sparkles className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-black text-lg">Complete Your Profile</h3>
+                        <p className="text-sm text-muted-foreground font-medium">Add more details to increase your approval rate by 70%.</p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-6 w-full md:w-auto">
+                    <div className="flex-1 md:w-48 space-y-2">
+                        <div className="flex justify-between text-xs font-black uppercase tracking-widest">
+                            <span>Progress</span>
+                            <span className="text-primary">{completion}%</span>
+                        </div>
+                        <Progress value={completion} className="h-2 bg-primary/10" />
+                    </div>
+                    <Button 
+                        size="sm" 
+                        onClick={() => setShowProfileDrawer(true)}
+                        className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20"
+                    >
+                        Fix Now
+                    </Button>
+                </div>
+            </motion.div>
+          )}
+
+          {/* EMAIL PROMPT (CASE 3/ONE-TIME) */}
+          {showEmailPrompt && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-blue-600/10 border border-blue-500/30 rounded-2xl p-4 flex items-center justify-between gap-4"
+              >
+                  <div className="flex items-center gap-3">
+                      <Mail className="w-5 h-5 text-blue-400" />
+                      <div>
+                        <p className="text-sm font-bold">Add email to secure your account</p>
+                        <p className="text-xs text-muted-foreground">This helps you recover your account if you change your phone number.</p>
+                      </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                      <Input 
+                        placeholder="email@example.com"
+                        value={linkEmail}
+                        onChange={(e) => setLinkEmail(e.target.value)}
+                        className="bg-black/20 border-white/10 h-9 w-48 text-xs"
+                      />
+                      <Button size="sm" variant="outline" onClick={handleLinkEmail} className="h-9 px-4 text-xs font-bold">Link Email</Button>
+                      <button onClick={() => {
+                          setShowEmailPrompt(false);
+                          sessionStorage.setItem('dismissed_email_prompt', 'true');
+                      }} className="p-1 hover:bg-white/5 rounded-full"><X size={14}/></button>
+                  </div>
+              </motion.div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* MAIN CONTENT - LEFT SIDE */}
             <div className="lg:col-span-2 space-y-6">
-              {/* HEADER */}
               <div>
                 <h2 className={`text-2xl md:text-3xl font-bold ${theme.text}`}>
                   Welcome {fullName} 👋
@@ -302,16 +321,13 @@ const InfluencerDashboard = () => {
                 </p>
               </div>
 
-              {/* STATS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 {isLoading
                   ? [1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)
                   : statsConfig.map((s) => <StatCard key={s.title} stat={s} />)}
               </div>
 
-              {/* RECENT + ACTIONS */}
-              <div className="grid grid-cols-1 gap-4 md:gap-6 hidden md:block">
-                {/* QUICK ACTIONS */}
+              <div className="grid grid-cols-1 gap-4 md:gap-6">
                 <Card className={`${theme.card} ${theme.radius}`}>
                   <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
                     <CardTitle className="text-lg md:text-xl">
@@ -319,57 +335,57 @@ const InfluencerDashboard = () => {
                     </CardTitle>
                     <CardDescription>Move faster</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 px-4 md:px-6">
                     <Button
-                      className="w-full"
+                      className="w-full text-left justify-between h-14 rounded-xl group"
+                      variant="outline"
                       onClick={() => navigate("/dashboard/campaigns/all")}
                     >
-                      Browse Campaigns
+                      Browse New Campaigns
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full text-foreground"
+                      className="w-full text-left justify-between h-14 rounded-xl group"
                       onClick={() => navigate("/dashboard/campaigns/my")}
                     >
-                      My Campaigns
+                      Manage Applications
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full text-foreground"
+                      className="w-full text-left justify-between h-14 rounded-xl group"
                       onClick={() => navigate("/dashboard/settings/payment")}
                     >
-                      Payment Settings
+                      Payment & Bank Settings
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full text-foreground"
+                      className="w-full text-left justify-between h-14 rounded-xl opacity-50 cursor-not-allowed"
                       disabled
                     >
-                      Analytics (Coming Soon)
+                      Audience Analytics
+                      <Info className="w-4 h-4" />
                     </Button>
                   </CardContent>
                 </Card>
               </div>
             </div>
 
-            {/* SIDEBAR - MEDIA KIT (DESKTOP ONLY, STICKY) */}
+            <div className="space-y-6">
+              <ProfileLinkCard userId={user?.id || ""} />
 
-            <div className="">
-              <div className="sticky top-24  space-y-6 hidden md:block lg:mt-[85px]">
-                <ProfileLinkCard userId={user?.id || ""} />
-              </div>
-              {/* RECENT CAMPAIGNS */}
-              <Card className={`${theme.card} ${theme.radius} md:mt-5 `}>
+              <Card className={`${theme.card} ${theme.radius}`}>
                 <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
                   <CardTitle className="text-lg md:text-xl">
-                    Recent Campaigns
+                    Recent Activity
                   </CardTitle>
-                  <CardDescription>Your latest activity</CardDescription>
+                  <CardDescription>Your latest campaign status</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
+                <CardContent className="space-y-3 px-4 md:px-6">
                   {isLoading ? (
                     <div className="space-y-3">
-                      <CardSkeleton />
                       <CardSkeleton />
                       <CardSkeleton />
                     </div>
@@ -377,31 +393,30 @@ const InfluencerDashboard = () => {
                     <>
                       {recentCampaigns.length === 0 && (
                         <p className="text-sm text-muted-foreground">
-                          No campaigns yet — explore new opportunities 🚀
+                          No activity yet — explore new opportunities 🚀
                         </p>
                       )}
 
                       {recentCampaigns.map((c, i) => (
                         <div
                           key={i}
-                          className="flex justify-between items-center p-3 md:p-4 rounded-lg bg-white/10"
+                          className="flex justify-between items-center p-4 rounded-xl bg-white/5 border border-white/5"
                         >
-                          <span
-                            className={`${theme.text} text-sm md:text-base`}
-                          >
+                          <span className="font-bold text-sm">
                             {c.name}
                           </span>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] uppercase font-black tracking-widest ${
                               c.status === "Active"
-                                ? "bg-green-500/20 text-green-400"
+                                ? "border-green-500/50 text-green-400 bg-green-500/10"
                                 : c.status === "Pending"
-                                  ? "bg-yellow-500/20 text-yellow-400"
-                                  : "bg-gray-500/20 text-gray-400"
+                                  ? "border-yellow-500/50 text-yellow-400 bg-yellow-500/10"
+                                  : "border-gray-500/50 text-gray-400 bg-gray-500/10"
                             }`}
                           >
                             {c.status}
-                          </span>
+                          </Badge>
                         </div>
                       ))}
                     </>
@@ -410,13 +425,28 @@ const InfluencerDashboard = () => {
               </Card>
             </div>
           </div>
-
-          {/* MOBILE: PROFILE LINK CARD */}
-          {/* <div className="lg:hidden mt-6">
-            <ProfileLinkCard userId={user?.id || ""} />
-          </div> */}
         </div>
       </main>
+
+      {/* DRAWERS & MODALS */}
+      <ProfileSetupDrawer 
+          open={showProfileDrawer} 
+          onOpenChange={setShowProfileDrawer} 
+          profile={profile}
+          onProfileUpdate={() => {
+              fetchProfile();
+              refetchStats();
+          }}
+      />
+
+      {profile && (
+        <BankDetailsModal 
+            open={showBankModal} 
+            onOpenChange={setShowBankModal}
+            profileId={profile.id}
+            onSuccess={fetchProfile}
+        />
+      )}
     </div>
   );
 };

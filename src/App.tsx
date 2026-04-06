@@ -15,7 +15,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProfileCompletionGuard from "./components/ProfileCompletionGuard";
-import BrandProfileCompletionGuard from "./components/Brandprofilecompletionguard ";
+import BrandProfileCompletionGuard from "./components/BrandProfileCompletionGuard";
+import AgencyProfileCompletionGuard from "./components/AgencyProfileCompletionGuard";
 
 // NEW: Brand Theme Layout
 import BrandLayout from "./layouts/BrandLayout";
@@ -27,6 +28,8 @@ import AdminManageBrands from "./pages/admin/AdminManageBrands";
 import LiveMediaKit from "./pages/influencer/LiveMediaKit";
 import AdminBlockedInfluencers from "./pages/admin/AdminBlockedInfluencers";
 import MediaKitSetup from "./pages/influencer/Mediakitsetup";
+import { RosterSessionBanner } from "./components/RosterSessionBanner";
+import { useMagicLinkApplication } from "./hooks/useMagicLinkApplication";
 
 // ============================================
 // LAZY LOADED COMPONENTS
@@ -38,6 +41,10 @@ const AllCampaigns = lazy(() => import("./pages/influencer/AllCampaigns"));
 const MyCampaigns = lazy(() => import("./pages/influencer/MyCampaigns"));
 const CampaignDetail = lazy(() => import("./pages/influencer/CampaignDetail"));
 const PaymentSettings = lazy(() => import("./pages/influencer/PaymentSettings"));
+const PublicCampaignPreview = lazy(() => import("./pages/influencer/PublicCampaignPreview"));
+const MagicLinkEntry = lazy(() => import("./pages/influencer/MagicLinkEntry"));
+const CampaignApply = lazy(() => import("./pages/influencer/CampaignApply"));
+const InfluencerLogin = lazy(() => import("./pages/influencer/InfluencerLogin"));
 
 // Admin routes
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -72,6 +79,7 @@ const AgencyDashboard = lazy(() => import("./pages/agency/AgencyDashboard"));
 const AgencyProfileSetup = lazy(() => import("./pages/agency/AgencyProfileSetup"));
 const AgencyProfile = lazy(() => import("./pages/agency/AgencyProfile"));
 const AgencySignup = lazy(() => import("./pages/agency/AgencySignup"));
+const AgencyRoster = lazy(() => import("./pages/agency/RosterManagement"));
 
 // ============================================
 // OPTIMIZED QUERY CLIENT
@@ -134,11 +142,16 @@ const AuthPage = ({ children }: { children: React.ReactNode }) => {
 // APP ROUTES
 // ============================================
 const AppRoutes = () => {
+  useMagicLinkApplication();
   return (
     <Routes>
       {/* Landing page */}
       <Route path="/" element={<Index />} />
       <Route path="/creators/:handle" element={<LiveMediaKit />} />
+      <Route path="/i/:slug" element={<Suspense fallback={<PageLoader />}><PublicCampaignPreview /></Suspense>} />
+      <Route path="/join/:hash" element={<Suspense fallback={<PageLoader />}><MagicLinkEntry /></Suspense>} />
+      <Route path="/campaign/:id/preview" element={<Suspense fallback={<PageLoader />}><CampaignApply /></Suspense>} />
+      <Route path="/influencer-login" element={<Suspense fallback={<PageLoader />}><InfluencerLogin /></Suspense>} />
 
       {/* Influencer Auth routes */}
       <Route
@@ -292,6 +305,21 @@ const AppRoutes = () => {
         }
       />
 
+      <Route
+        path="/company/roster"
+        element={
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
+            <BrandProfileCompletionGuard>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <AgencyRoster />
+                </Suspense>
+              </BrandLayout>
+            </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
       {/* ========================================
           NEW: AGENCY ROUTES
       ======================================== */}
@@ -299,9 +327,11 @@ const AppRoutes = () => {
         path="/agency/dashboard"
         element={
           <ProtectedRoute allowedRoles={["agency"]}>
-            <Suspense fallback={<PageLoader />}>
-              <AgencyDashboard />
-            </Suspense>
+            <AgencyProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <AgencyDashboard />
+              </Suspense>
+            </AgencyProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
@@ -323,6 +353,18 @@ const AppRoutes = () => {
             <Suspense fallback={<PageLoader />}>
               <AgencyProfileSetup />
             </Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/agency/roster"
+        element={
+          <ProtectedRoute allowedRoles={["agency"]}>
+            <AgencyProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <AgencyRoster />
+              </Suspense>
+            </AgencyProfileCompletionGuard>
           </ProtectedRoute>
         }
       />
@@ -548,6 +590,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <WorkspaceProvider>
+            <RosterSessionBanner />
             <AppRoutes />
           </WorkspaceProvider>
         </AuthProvider>

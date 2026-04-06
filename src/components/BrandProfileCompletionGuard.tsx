@@ -38,7 +38,7 @@ const BrandProfileCompletionGuard = ({ children }: { children: ReactNode }) => {
   }
 
   if (completed === false) {
-    return <Navigate to="/company/profile-setup" replace />;
+    return <Navigate to="/company/profile" replace />;
   }
 
   return <>{children}</>;

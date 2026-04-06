@@ -17,7 +17,9 @@ import {
   Loader2,
   Instagram,
   AlertCircle,
+  Tag,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import "@/styles/auth-pages.css";
 
 /* ------------------------
@@ -115,7 +117,19 @@ const ProfileSetup = () => {
 
       const { data: profile } = await supabase
         .from('influencer_profiles')
-        .select('*')
+        .select(`
+          full_name,
+          instagram_handle,
+          phone_number,
+          city,
+          state,
+          niches,
+          profile_image_url,
+          upi_id,
+          bank_name,
+          account_number,
+          ifsc_code
+        `)
         .eq('user_id', user.id)
         .single();
 
@@ -634,6 +648,85 @@ const ProfileSetup = () => {
                   </p>
                 )}
               </>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-4">
+                <p className="text-sm md:text-base font-medium">
+                  Select your content categories
+                </p>
+                <p className="text-xs text-white/60">
+                  Pick at least one niche that best describes your content.
+                </p>
+                
+                <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {allNiches.length > 0 ? (
+                    allNiches.map((niche) => (
+                      <label 
+                        key={niche} 
+                        className={cn(
+                          "flex items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer",
+                          selectedNiches.includes(niche) 
+                            ? "bg-primary/20 border-primary text-white" 
+                            : "bg-white/5 border-white/10 text-white/60 hover:border-white/30"
+                        )}
+                      >
+                        <Checkbox
+                          checked={selectedNiches.includes(niche)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedNiches([...selectedNiches, niche]);
+                            } else {
+                              setSelectedNiches(selectedNiches.filter(n => n !== niche));
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        <Tag className={cn("h-3.5 w-3.5", selectedNiches.includes(niche) ? "text-primary" : "text-white/40")} />
+                        <span className="text-sm font-medium">{niche}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <div className="col-span-2 py-8 text-center text-white/40 italic">
+                      Loading categories...
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
+                  <Input
+                    placeholder="Add custom niche"
+                    className="h-10 text-sm"
+                    value={newNiche}
+                    onChange={(e) => setNewNiche(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        const clean = normalizeLabel(newNiche);
+                        if (clean && !allNiches.includes(clean)) {
+                          setAllNiches([...allNiches, clean]);
+                          setSelectedNiches([...selectedNiches, clean]);
+                          setNewNiche("");
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-10"
+                    onClick={() => {
+                      const clean = normalizeLabel(newNiche);
+                      if (clean && !allNiches.includes(clean)) {
+                        setAllNiches([...allNiches, clean]);
+                        setSelectedNiches([...selectedNiches, clean]);
+                        setNewNiche("");
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
             )}
 
             {step === 5 && (

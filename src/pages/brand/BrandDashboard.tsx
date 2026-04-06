@@ -23,6 +23,7 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import BrandNavbar from "@/components/BrandNavbar";
@@ -350,6 +351,20 @@ const BrandDashboard = () => {
                     <div className="font-semibold">Browse Influencers</div>
                     <div className="text-xs opacity-80">
                       Discover verified creators
+                    </div>
+                  </div>
+                </Button>
+
+                <Button
+                  className="w-full justify-start h-auto py-4 border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/5"
+                  variant="outline"
+                  onClick={() => navigate("/company/roster")}
+                >
+                  <FileSpreadsheet className="mr-2 h-5 w-5 text-purple-500" />
+                  <div className="text-left">
+                    <div className="font-semibold text-purple-400">Private Roster</div>
+                    <div className="text-xs opacity-80">
+                      Manage your own creator list
                     </div>
                   </div>
                 </Button>

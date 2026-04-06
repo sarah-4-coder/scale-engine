@@ -87,7 +87,7 @@ const LiveMediaKit = () => {
     try {
       const { data: influencerData, error: influencerError } = await supabase
         .from("influencer_profiles")
-        .select("*")
+        .select("id, user_id, instagram_handle, followers_count, niches, bio, profile_image_url, media_kit_bio, city, state, full_name, avg_engagement_rate, services")
         .eq("instagram_handle", handle)
         .eq("media_kit_enabled", true)
         .single<CreatorProfile>();

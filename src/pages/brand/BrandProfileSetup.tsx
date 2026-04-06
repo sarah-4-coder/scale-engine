@@ -41,6 +41,7 @@ const BrandProfileSetup = () => {
   const [state, setState] = useState("");
   const [contactPersonName, setContactPersonName] = useState("");
   const [designation, setDesignation] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
 
   useEffect(() => {
     const fetchExistingProfile = async () => {
@@ -62,6 +63,7 @@ const BrandProfileSetup = () => {
           setState(brand.state || "");
           setContactPersonName(brand.contact_person_name || "");
           setDesignation(brand.contact_person_designation || "");
+          setLogoUrl(brand.logo_url || "");
         }
       } else {
         setIsEditMode(false);
@@ -77,6 +79,7 @@ const BrandProfileSetup = () => {
         setState("");
         setContactPersonName("");
         setDesignation("");
+        setLogoUrl("");
       }
     };
 
@@ -113,6 +116,7 @@ const BrandProfileSetup = () => {
         state: state,
         contact_person_name: contactPersonName,
         contact_person_designation: designation,
+        logo_url: logoUrl,
         profile_completed: true,
         agency_id: agency?.id || null, // Link to agency if applicable
         updated_at: new Date().toISOString(),
@@ -259,6 +263,16 @@ const BrandProfileSetup = () => {
                         value={workEmail}
                         onChange={(e) => setWorkEmail(e.target.value)}
                         required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="logoUrl">Brand Logo URL</Label>
+                      <Input
+                        id="logoUrl"
+                        placeholder="https://..."
+                        value={logoUrl}
+                        onChange={(e) => setLogoUrl(e.target.value)}
                       />
                     </div>
                   </div>

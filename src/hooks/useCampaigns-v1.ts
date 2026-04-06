@@ -61,7 +61,7 @@ export const useInfluencerProfile = (userId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('influencer_profiles')
-        .select('*')
+        .select('id, user_id, instagram_handle, full_name, profile_image_url, bio, followers_count, niches, is_blocked, city, state, upi_id, bank_name, account_number, ifsc_code, razorpay_account_id, profile_completed')
         .eq('user_id', userId)
         .single();
       

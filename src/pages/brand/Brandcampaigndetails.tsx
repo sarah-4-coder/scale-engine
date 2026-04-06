@@ -29,6 +29,7 @@ import {
   Mail,
   MessageSquare,
   FileText, Shield, Lock,
+  Share2
 } from "lucide-react";
 import BrandNavbar from "@/components/BrandNavbar";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,8 @@ interface Campaign {
   execution_model?: 'agency' | 'brand_self' | 'brand_managed' | 'internal';
   transfer_request_status?: string | null;
   created_at: string;
+  slug: string;
+  type?: 'paid' | 'barter';
   platform_fee_percent?: number | null;
   followers_count?: number;
   brand_profiles?: {
@@ -119,6 +122,8 @@ const BrandCampaignDetails = () => {
   const [viewingContract, setViewingContract] = useState<viewingContract | null>(null);
   const [counterOfferValue, setCounterOfferValue] = useState("");
   const [localIsProcessing, setLocalIsProcessing] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isProfileComplete, setIsProfileComplete] = useState(true);
 
   const {
     isProcessingPayment,
@@ -127,17 +132,33 @@ const BrandCampaignDetails = () => {
     handleBatchMerchantFunding
   } = usePayment(() => fetchCampaignDetails());
 
-  const COLUMNS = [
-    { id: "applied", label: "Applied", color: "blue" },
-    { id: "shortlisted", label: "Shortlisted", color: "yellow" },
-    { id: "negotiation", label: "Negotiation", color: "orange" },
-    { id: "approved", label: "Approved", color: "emerald" },
-    { id: "content_posted", label: "Content Submitted", color: "rose" },
-    { id: "completed", label: "Completed", color: "teal" },
-    { id: "paid", label: "Paid", color: "indigo" }
-  ];
+  const COLUMNS = useMemo(() => {
+    if (campaign?.type === 'barter') {
+      return [
+        { id: "applied", label: "Applied", color: "blue" },
+        { id: "shortlisted", label: "Shortlisted", color: "yellow" },
+        { id: "product_sent", label: "Product Sent", color: "orange" },
+        { id: "product_received", label: "Product Received", color: "emerald" },
+        { id: "content_posted", label: "Content Submitted", color: "rose" },
+        { id: "completed", label: "Completed", color: "teal" }
+      ];
+    }
+    return [
+      { id: "applied", label: "Applied", color: "blue" },
+      { id: "shortlisted", label: "Shortlisted", color: "yellow" },
+      { id: "negotiation", label: "Negotiation", color: "orange" },
+      { id: "approved", label: "Approved", color: "emerald" },
+      { id: "content_posted", label: "Content Submitted", color: "rose" },
+      { id: "completed", label: "Completed", color: "teal" },
+      { id: "paid", label: "Paid", color: "indigo" }
+    ];
+  }, [campaign?.type]);
 
   const getColumnForStatus = (status: string) => {
+    if (campaign?.type === 'barter') {
+      if (status === 'accepted') return 'product_sent';
+      return status;
+    }
     if (["influencer_negotiated", "admin_negotiated"].includes(status)) return "negotiation";
     if (status === "accepted" || status === "funded" || status === "content_rejected") return "approved";
     if (status === "paid") return "paid";
@@ -187,7 +208,9 @@ const BrandCampaignDetails = () => {
           *,
           brand_profiles!brand_id (
             company_name,
-            work_email
+            work_email,
+            is_verified,
+            logo_url
           )
         `)
         .eq("id", id)
@@ -200,6 +223,8 @@ const BrandCampaignDetails = () => {
         return;
       }
       setCampaign(campaignData as any);
+      setIsVerified(campaignData.brand_profiles?.is_verified || false);
+      setIsProfileComplete(!!campaignData.brand_profiles?.logo_url);
       const { data: applicantsData, error: applicantsError } = await supabase
         .from("campaign_influencers")
         .select(`
@@ -235,6 +260,20 @@ const BrandCampaignDetails = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const copyMagicLink = () => {
+    if (!campaign?.slug) return;
+    const url = `${window.location.origin}/i/${campaign.slug}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Magic Link copied to clipboard!");
+  };
+
+  const shareWhatsApp = () => {
+    if (!campaign?.slug) return;
+    const url = `${window.location.origin}/i/${campaign.slug}`;
+    const text = `Hey! Check out this campaign on DotFluence: ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const handleNegotiation = async (applicant: Applicant, action: 'accept' | 'counter') => {
@@ -420,14 +459,50 @@ const BrandCampaignDetails = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/company/campaigns")}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Campaigns
-          </Button>
+          <div className="flex items-center gap-4 mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/company/campaigns")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Campaigns
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="border-primary/20 hover:bg-primary/5 text-primary font-bold" onClick={copyMagicLink}>
+                <Share2 className="h-4 w-4 mr-2" /> Copy Magic Link
+              </Button>
+              <Button variant="outline" className="border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-600 font-bold" onClick={shareWhatsApp}>
+                <MessageSquare className="h-4 w-4 mr-2" /> WhatsApp Link
+              </Button>
+            </div>
+          </div>
+
+          {!isVerified && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-amber-500" />
+                <div>
+                  <p className="text-sm font-bold text-amber-600">Account Verification in Progress</p>
+                  <p className="text-xs text-amber-500/80">You have full access to CRM, but Escrow/Payouts are disabled until verified (usually within 24h).</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isProfileComplete && (
+            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-sm font-bold text-blue-600">Complete Your Brand Profile</p>
+                  <p className="text-xs text-blue-500/80">Add your logo and company details to build trust with influencers.</p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="border-blue-500/30 text-blue-600 hover:bg-blue-500/10" onClick={() => navigate('/settings')}>
+                Complete Profile
+              </Button>
+            </div>
+          )}
 
           <Card className="bg-card/50 backdrop-blur-xl">
             <CardHeader>
@@ -482,7 +557,8 @@ const BrandCampaignDetails = () => {
                             size="lg" 
                             onClick={() => handleBatchMerchantFunding(id!, applicants.filter(a => a.status === 'completed' && a.funding_status === 'unfunded'))}
                             className="bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
-                            disabled={!!isProcessingPayment}
+                            disabled={!!isProcessingPayment || !isVerified}
+                            title={!isVerified ? "Account verification in progress — usually within 24 hours." : ""}
                           >
                             {isProcessingPayment?.toString().startsWith('batch') ? "Processing..." : "Fund All Creators"}
                           </Button>
@@ -599,7 +675,8 @@ const BrandCampaignDetails = () => {
                                 <button
                                   onClick={() => handleBatchMerchantFunding(id!, applicants.filter(a => a.status === 'completed' && a.funding_status === 'unfunded'))}
                                   className="text-[10px] text-primary hover:underline font-bold uppercase transition-all"
-                                  disabled={!!isProcessingPayment}
+                                  disabled={!!isProcessingPayment || !isVerified}
+                                  title={!isVerified ? "Account verification in progress" : ""}
                                 >
                                   {isProcessingPayment?.toString().startsWith('batch') ? "Processing..." : "Fund All"}
                                 </button>
@@ -660,6 +737,7 @@ const BrandCampaignDetails = () => {
                                                     : "border-blue-500/30 text-blue-500 bg-blue-500/10"
                                               )}>
                                                 {(() => {
+                                                  if (campaign?.type === 'barter') return "Barter Collaboration";
                                                   const currentColumn = getColumnForStatus(applicant.status);
                                                   const isNegotiated = applicant.final_payout !== null && applicant.final_payout !== undefined && applicant.final_payout !== campaign?.base_payout;
                                                   
@@ -669,7 +747,7 @@ const BrandCampaignDetails = () => {
                                                   if (['shortlisted', 'accepted', 'completed', 'paid'].includes(applicant.status)) return "Agreed: ";
                                                   return "Payout: ";
                                                 })()}
-                                                ₹{(applicant.final_payout || applicant.requested_payout || campaign?.base_payout || 0).toLocaleString()}
+                                                {campaign?.type !== 'barter' && `₹${(applicant.final_payout || applicant.requested_payout || campaign?.base_payout || 0).toLocaleString()}`}
                                               </div>
                                             </div>
                                          </div>
@@ -795,9 +873,34 @@ const BrandCampaignDetails = () => {
                       <div className="flex flex-col p-3 rounded-xl bg-secondary/30 border border-border/40">
                         <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Location</p>
                         <p className="font-bold flex items-center gap-1.5 truncate text-xs">
-                          <Calendar className="h-4 w-4 text-primary" />
                           {selectedApplicant.influencer_profiles.city}, {selectedApplicant.influencer_profiles.state}
                         </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col p-3 rounded-xl bg-secondary/30 border border-border/40">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Contact Phone</p>
+                        <p className="font-bold flex items-center gap-1.5 text-xs">
+                          <Phone className="h-3 w-3 text-primary" />
+                          {selectedApplicant.influencer_profiles.phone_number || "N/A"}
+                        </p>
+                      </div>
+                      <div className="flex flex-col p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <p className="text-[10px] uppercase font-bold text-emerald-600 mb-1">WhatsApp Invite</p>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-6 text-[10px] text-emerald-600 hover:bg-emerald-500/10 p-0 font-black flex items-center gap-1"
+                          onClick={() => {
+                            const phone = selectedApplicant.influencer_profiles.phone_number;
+                            const campaignName = campaign?.name;
+                            const url = `${window.location.origin}/i/${campaign?.slug}`;
+                            const text = `Hi! ${campaign?.brand_profiles?.company_name || 'A brand'} has a new campaign "${campaignName}" for you on DotFluence. Check it out here: ${url}`;
+                            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+                          }}
+                        >
+                          <MessageSquare className="h-3 w-3" /> INVITE VIA WA
+                        </Button>
                       </div>
                     </div>
                     <div>

@@ -99,6 +99,13 @@ const AgencyDashboard = () => {
           </div>
           <div className="flex gap-4">
             <Button 
+                onClick={() => navigate("/agency/roster")}
+                variant="outline"
+                className="border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
+            >
+                <Users className="h-4 w-4 mr-2" /> Direct Roster
+            </Button>
+            <Button 
                 onClick={() => navigate("/company/profile-setup")}
                 className="bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-500/20"
             >

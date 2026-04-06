@@ -48,6 +48,7 @@ interface Campaign {
   brand_user_id: string;
   base_payout: number;
   platform_fee_percent?: number | null;
+  slug?: string;
 }
 
 interface Row {
@@ -124,7 +125,7 @@ const AdminCampaignDetails = () => {
 
     const { data: campaignData } = await supabase
       .from("campaigns")
-      .select("id, name, description, managed_by_dotfluence, execution_model, brand_user_id, platform_fee_percent")
+      .select("id, name, description, managed_by_dotfluence, execution_model, brand_user_id, platform_fee_percent, slug")
       .eq("id", campaignId)
       .single();
 
@@ -280,6 +281,16 @@ const AdminCampaignDetails = () => {
     }
   };
 
+  const copyMagicLink = () => {
+    if (!campaign?.slug) {
+      toast.error("Campaign slug not found.");
+      return;
+    }
+    const url = `${window.location.origin}/i/${campaign.slug}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Magic Link copied to clipboard!");
+  };
+
   // usePayment hook handled above
 
   const exportCSV = () => {
@@ -331,7 +342,7 @@ const AdminCampaignDetails = () => {
              <span className="font-medium text-foreground">{campaign.name}</span>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-4">
             <div className="max-w-4xl">
               <div className="flex items-center gap-3 mb-4">
                  <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
@@ -345,6 +356,9 @@ const AdminCampaignDetails = () => {
             </div>
             
             <div className="flex gap-3">
+               <Button onClick={copyMagicLink} variant="outline" className="rounded-full px-6 border-primary/30 text-primary hover:bg-primary/5">
+                  <ExternalLink className="mr-2 h-4 w-4" /> Copy Magic Link
+               </Button>
                <Button onClick={exportCSV} variant="outline" className="rounded-full px-6 bg-card/50">
                   <Download className="mr-2 h-4 w-4" /> Export
                </Button>

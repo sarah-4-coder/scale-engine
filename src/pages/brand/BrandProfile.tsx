@@ -37,6 +37,7 @@ const BrandProfile = () => {
   const [state, setState] = useState("");
   const [contactPersonName, setContactPersonName] = useState("");
   const [designation, setDesignation] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
 
   useEffect(() => {
     const brand = brands.find(b => b.id === activeBrandId);
@@ -52,6 +53,7 @@ const BrandProfile = () => {
       setState(brand.state || "");
       setContactPersonName(brand.contact_person_name || "");
       setDesignation(brand.contact_person_designation || "");
+      setLogoUrl(brand.logo_url || "");
     }
     setFetching(false);
   }, [activeBrandId, brands]);
@@ -76,6 +78,7 @@ const BrandProfile = () => {
           state: state,
           contact_person_name: contactPersonName,
           contact_person_designation: designation,
+          logo_url: logoUrl,
           updated_at: new Date().toISOString(),
         })
         .eq("id", activeBrandId);
@@ -141,8 +144,12 @@ const BrandProfile = () => {
                 <Card className="glass overflow-hidden">
                   <div className="h-24 bg-gradient-to-r from-blue-600 to-purple-600" />
                   <CardContent className="pt-0 -mt-8 flex flex-col items-center text-center">
-                    <div className="h-16 w-16 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center mb-4">
-                      <Building2 className="h-8 w-8 text-primary" />
+                    <div className="h-16 w-16 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center mb-4 overflow-hidden">
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 className="h-8 w-8 text-primary" />
+                      )}
                     </div>
                     <h2 className="font-bold text-lg">{companyName || "Your Brand"}</h2>
                     <p className="text-sm text-muted-foreground">{industry || "General Industry"}</p>
@@ -177,6 +184,14 @@ const BrandProfile = () => {
                         <Label>Work Email</Label>
                         <Input type="email" value={workEmail} onChange={e => setWorkEmail(e.target.value)} required />
                       </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Brand Logo URL</Label>
+                      <Input 
+                        placeholder="https://..." 
+                        value={logoUrl} 
+                        onChange={e => setLogoUrl(e.target.value)} 
+                      />
                     </div>
                     
                     <div className="space-y-2">

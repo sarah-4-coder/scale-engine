@@ -14,8 +14,11 @@ import {
   Instagram,
   MapPin,
   TrendingUp,
-  Filter,
   X,
+  Plus,
+  MessageSquare,
+  PhoneCall,
+  Trash2
 } from "lucide-react";
 import BrandNavbar from "@/components/BrandNavbar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +29,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
 
 interface InfluencerProfile {
   id: string;
@@ -50,8 +62,27 @@ const BrandInfluencers = () => {
   const [minFollowers, setMinFollowers] = useState<string>("");
   const [availableNiches, setAvailableNiches] = useState<string[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [subscriptionTier, setSubscriptionTier] = useState<string>("free");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkWhatsAppDialog, setShowBulkWhatsAppDialog] = useState(false);
+  const [showBulkAICallDialog, setShowBulkAICallDialog] = useState(false);
+  const [showBulkPushDialog, setShowBulkPushDialog] = useState(false);
+  const [targetCampaignId, setTargetCampaignId] = useState("");
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+
+  const selectedInfluencers = useMemo(() => 
+    influencers.filter(inf => selectedIds.includes(inf.id)),
+    [influencers, selectedIds]
+  );
 
   useEffect(() => {
+    fetchUserTier();
+    const fetchCampaigns = async () => {
+        const { data } = await supabase.from('campaigns').select('id, name, total_slots').eq('status', 'active');
+        setCampaigns(data || []);
+    };
+    fetchCampaigns();
     const fetchInfluencers = async () => {
       try {
       setLoading(true);
@@ -59,7 +90,19 @@ const BrandInfluencers = () => {
       // Fetch all influencers from the platform with profile_image_url where is_blocked is false
       const { data, error } = await supabase
         .from("influencer_profiles")
-        .select("*")
+        .select(`
+          id,
+          user_id,
+          full_name,
+          instagram_handle,
+          instagram_profile_url,
+          followers_count,
+          niches,
+          city,
+          state,
+          bio,
+          profile_image_url
+        `)
         .eq("is_blocked", false)
         .order("followers_count", { ascending: false });
 
@@ -125,6 +168,14 @@ const BrandInfluencers = () => {
     });
   }, [influencers, searchTerm, selectedNiche, selectedCity, minFollowers]);
 
+  // Clear selection on filter change
+  useEffect(() => {
+    if (selectedIds.length > 0) {
+      setSelectedIds([]);
+      toast.info("Selection cleared because filters changed.");
+    }
+  }, [searchTerm, selectedNiche, selectedCity, minFollowers]);
+
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedNiche("all");
@@ -137,6 +188,71 @@ const BrandInfluencers = () => {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
+  };
+
+  const handleToggleSelect = (uid: string) => {
+    setSelectedIds(prev =>
+      prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === filteredInfluencers.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredInfluencers.map(i => i.id));
+    }
+  };
+
+  const handleBulkWhatsApp = async () => {
+    setIsBulkProcessing(true);
+    for (let i = 0; i < selectedInfluencers.length; i++) {
+        const inf = selectedInfluencers[i];
+        //@ts-expect-error
+        const phone = inf.phone_number || inf.full_name?.replace(/\D/g, '') || "919000000000"; // Fallback for testing
+        const formattedPhone = phone.toString().startsWith('91') ? phone : `91${phone}`;
+        const url = `https://wa.me/${formattedPhone}?text=Hi%20${inf.full_name}!%20Dotfluence%20has%20a%20campaign%20for%20you:%20https://dotfluence.in/magic`;
+        window.open(url, '_blank');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    setIsBulkProcessing(false);
+    setShowBulkWhatsAppDialog(false);
+    setSelectedIds([]);
+    toast.success(`Launched threads for ${selectedInfluencers.length} influencers`);
+  };
+
+  const handleBulkPushToCampaign = async () => {
+    if (!targetCampaignId) return;
+    setIsBulkProcessing(true);
+    try {
+        const { data: campaign } = await supabase.from('campaigns').select('total_slots').eq('id', targetCampaignId).single();
+        const { count } = await supabase.from('campaign_influencers').select('*', { count: 'exact', head: true }).eq('campaign_id', targetCampaignId);
+        
+        const remainingSlots = (campaign?.total_slots || 200) - (count || 0);
+        let targetList = selectedInfluencers;
+        if (selectedInfluencers.length > remainingSlots) {
+            if (!confirm(`Only ${remainingSlots} slots remaining. Only the first ${remainingSlots} will be added. Continue?`)) return;
+            targetList = selectedInfluencers.slice(0, remainingSlots);
+        }
+
+        const applications = targetList.map(inf => ({
+            campaign_id: targetCampaignId,
+            influencer_id: inf.id,
+            status: 'applied',
+            payout_agreed: 0
+        }));
+
+        const { error } = await supabase.from('campaign_influencers').insert(applications);
+        if (error && error.code !== '23505') throw error;
+
+        toast.success(`Influencers pushed to campaign!`);
+        setShowBulkPushDialog(false);
+        setSelectedIds([]);
+    } catch (e) {
+        toast.error("Failed to push to campaign");
+    } finally {
+        setIsBulkProcessing(false);
+    }
   };
 
   if (loading) {
@@ -248,11 +364,24 @@ const BrandInfluencers = () => {
           </Card>
 
           {/* Results Count */}
-          <div className="mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Showing {filteredInfluencers.length} of {influencers.length}{" "}
               influencers
             </p>
+            {filteredInfluencers.length > 0 && (
+                <div className="flex items-center gap-2">
+                    <Checkbox 
+                        id="select-all" 
+                        checked={selectedIds.length === filteredInfluencers.length && filteredInfluencers.length > 0}
+                        onCheckedChange={handleSelectAll}
+                        className="border-purple-500/30 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                    />
+                    <label htmlFor="select-all" className="text-xs font-bold uppercase tracking-widest cursor-pointer text-slate-400">
+                        {selectedIds.length === filteredInfluencers.length ? "De-select All" : "Select all on page"}
+                    </label>
+                </div>
+            )}
           </div>
 
           {/* Influencer Cards */}
@@ -273,8 +402,17 @@ const BrandInfluencers = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="bg-card/50 backdrop-blur-xl hover:border-primary/50 transition-all h-full">
-                    <CardContent className="p-6">
+                  <Card className="bg-card/50 backdrop-blur-xl hover:border-primary/50 transition-all h-full relative">
+                    <CardContent className="p-6 relative">
+                      {/* Checkbox for selection */}
+                      <div className="absolute top-4 right-4 z-10">
+                        <Checkbox 
+                          checked={selectedIds.includes(influencer.id)}
+                          onCheckedChange={() => handleToggleSelect(influencer.id)}
+                          className="border-purple-500/30 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                        />
+                      </div>
+
                       {/* Profile Header */}
                       <div className="flex items-start gap-4 mb-4">
                         <Avatar className="h-16 w-16 ring-2 ring-primary/20">
@@ -317,8 +455,8 @@ const BrandInfluencers = () => {
                       </div>
 
                       {/* Stats */}
-                      <div className="flex items-center gap-4 mb-4 p-3 bg-muted/30 rounded-lg">
-                        <div className="text-center">
+                      <div className="flex items-center gap-4 mb-4 p-3 bg-muted/30 rounded-lg relative overflow-hidden">
+                        <div className={`text-center transition-all ${subscriptionTier === 'free' ? 'blur-sm select-none' : ''}`}>
                           <div className="flex items-center gap-1 justify-center">
                             <Users className="h-4 w-4 text-muted-foreground" />
                             <span className="font-bold text-lg">
@@ -331,7 +469,7 @@ const BrandInfluencers = () => {
                         </div>
 
                         {influencer.city && (
-                          <div className="text-center flex-1 border-l pl-4">
+                          <div className={`text-center flex-1 border-l pl-4 transition-all ${subscriptionTier === 'free' ? 'blur-sm select-none' : ''}`}>
                             <div className="flex items-center gap-1 justify-center">
                               <MapPin className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm font-medium">
@@ -343,18 +481,29 @@ const BrandInfluencers = () => {
                             </p>
                           </div>
                         )}
+
+                        {subscriptionTier === 'free' && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/5 z-10">
+                                <Badge className="bg-purple-600/90 text-white border-none text-[10px] uppercase font-black tracking-widest px-2 py-0.5">
+                                    Premium Only
+                                </Badge>
+                            </div>
+                        )}
                       </div>
 
                       {/* Bio */}
-                      {influencer.bio && (
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                          {influencer.bio}
-                        </p>
-                      )}
+                      <div className="relative">
+                          <p className={`text-sm text-muted-foreground mb-4 line-clamp-2 transition-all ${subscriptionTier === 'free' ? 'blur-sm select-none' : ''}`}>
+                            {influencer.bio || "No bio available for this creator profile."}
+                          </p>
+                          {subscriptionTier === 'free' && (
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent" />
+                          )}
+                      </div>
 
                       {/* Niches */}
                       {influencer.niches && influencer.niches.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
+                        <div className={`flex flex-wrap gap-2 mb-4 transition-all ${subscriptionTier === 'free' ? 'blur-sm select-none' : ''}`}>
                           {influencer.niches.slice(0, 3).map((niche) => (
                             <Badge
                               key={niche}
@@ -374,17 +523,24 @@ const BrandInfluencers = () => {
 
                       {/* Action Button */}
                       <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() =>
-                          window.open(
-                            influencer.instagram_profile_url,
-                            "_blank"
-                          )
-                        }
+                        variant={subscriptionTier === 'free' ? "default" : "outline"}
+                        className={`w-full ${subscriptionTier === 'free' ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 border-none shadow-lg shadow-purple-500/20" : ""}`}
+                        onClick={() => {
+                            if (subscriptionTier === 'free') {
+                                toast.info("Join our Silver or Gold plan to unlock Direct Access 🚀");
+                                return;
+                            }
+                            window.open(influencer.instagram_profile_url, "_blank");
+                        }}
                       >
-                        <Instagram className="h-4 w-4 mr-2" />
-                        View Profile
+                        {subscriptionTier === 'free' ? (
+                            <>Unlock Direct Access</>
+                        ) : (
+                            <>
+                                <Instagram className="h-4 w-4 mr-2" />
+                                View Profile
+                            </>
+                        )}
                       </Button>
 
                       {/* Note */}
@@ -398,9 +554,104 @@ const BrandInfluencers = () => {
             </div>
           )}
         </motion.div>
+
+        {selectedIds.length > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-2xl animate-in slide-in-from-bottom duration-500">
+                <Card className="bg-slate-900 shadow-2xl border-purple-500/30 p-4 rounded-2xl border-2">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold border border-purple-500/30">
+                                {selectedIds.length}
+                            </div>
+                            <div>
+                                <p className="font-bold text-white text-sm">Bulk Actions</p>
+                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">{selectedIds.length} creators selected</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" className="bg-white/5 border-white/10 hover:bg-emerald-500/10 hover:text-emerald-400 h-9" onClick={() => setShowBulkWhatsAppDialog(true)}>
+                                <MessageSquare className="h-4 w-4 mr-2" /> WhatsApp All
+                            </Button>
+                            <Button size="sm" variant="outline" className="bg-white/5 border-white/10 hover:bg-amber-500/10 hover:text-amber-400 h-9" onClick={() => setShowBulkAICallDialog(true)}>
+                                <PhoneCall className="h-4 w-4 mr-2" /> AI Call All
+                            </Button>
+                            <Button size="sm" className="bg-purple-600 hover:bg-purple-500 text-white h-9" onClick={() => setShowBulkPushDialog(true)}>
+                                <Plus className="h-4 w-4 mr-2" /> Push to Campaign
+                            </Button>
+                            <div className="h-6 w-px bg-white/10 mx-2" />
+                            <Button variant="ghost" size="icon" className="text-slate-500 hover:text-white" onClick={() => setSelectedIds([])}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        )}
+
+        {/* Dialogs */}
+        <Dialog open={showBulkWhatsAppDialog} onOpenChange={setShowBulkWhatsAppDialog}>
+          <DialogContent className="bg-slate-900 border-white/10 text-white">
+            <DialogHeader>
+              <DialogTitle>Bulk WhatsApp confirmation</DialogTitle>
+              <DialogDescription>
+                Send pre-fill messages to {selectedIds.length} influencers with 1s interval?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowBulkWhatsAppDialog(false)}>Cancel</Button>
+              <Button onClick={handleBulkWhatsApp} disabled={isBulkProcessing} className="bg-emerald-600 hover:bg-emerald-500">
+                Confirm & Send
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showBulkAICallDialog} onOpenChange={setShowBulkAICallDialog}>
+          <DialogContent className="bg-slate-900 border-white/10 text-white">
+            <DialogHeader>
+              <DialogTitle>Bulk AI Call Confirmation</DialogTitle>
+              <DialogDescription>
+                Queue outbound calls to {selectedIds.length} influencers?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowBulkAICallDialog(false)}>Cancel</Button>
+              <Button onClick={handleBulkWhatsApp} disabled={isBulkProcessing} className="bg-amber-600 hover:bg-amber-500">
+                Confirm & Queue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showBulkPushDialog} onOpenChange={setShowBulkPushDialog}>
+          <DialogContent className="bg-slate-900 border-white/10 text-white">
+            <DialogHeader>
+              <DialogTitle>Push to Campaign</DialogTitle>
+              <DialogDescription>Add {selectedIds.length} influencers to an active campaign.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Select value={targetCampaignId} onValueChange={setTargetCampaignId}>
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                  <SelectValue placeholder="Select a Campaign" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/10 text-white">
+                  {campaigns.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowBulkPushDialog(false)}>Cancel</Button>
+              <Button onClick={handleBulkPushToCampaign} disabled={!targetCampaignId || isBulkProcessing} className="bg-purple-600 hover:bg-purple-500">
+                Push Now
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
+;
 };
 
 export default BrandInfluencers;

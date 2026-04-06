@@ -142,7 +142,7 @@ const MediaKitSetup = () => {
     try {
       const { data: influencerData } = (await supabase
         .from("influencer_profiles")
-        .select("*")
+        .select("id, user_id, instagram_handle, profile_image_url, media_kit_bio, services, media_kit_completed, media_kit_enabled")
         .eq("user_id", user?.id)
         .single()) as any;
 

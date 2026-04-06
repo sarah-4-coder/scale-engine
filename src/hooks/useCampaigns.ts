@@ -90,7 +90,7 @@ export const useInfluencerProfile = (userId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('influencer_profiles')
-        .select('*')
+        .select('id, user_id, instagram_handle, full_name, profile_image_url, bio, followers_count, niches, is_blocked, city, state, upi_id, bank_name, account_number, ifsc_code, razorpay_account_id, profile_completed')
         .eq('user_id', userId)
         .single();
       
@@ -286,9 +286,7 @@ export const useDashboardStats = (userId: string) => {
       });
 
       return {
-        //@ts-expect-error
         fullName: profile?.full_name || 'Creator',
-        //@ts-expect-error
         followers: influencer.followers_count,
         activeCampaigns,
         earnings,
@@ -297,7 +295,6 @@ export const useDashboardStats = (userId: string) => {
     },
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
     gcTime: 5 * 60 * 1000,
-    //@ts-expect-error
     enabled: !!influencer?.id,
   });
 
@@ -421,7 +418,6 @@ export const useUpdateCampaignStatus = () => {
     }) => {
       const { data, error } = await supabase
         .from('campaign_influencers')
-        //@ts-expect-error
         .update(updates)
         .eq('campaign_id', campaignId)
         .eq('influencer_id', influencerId)

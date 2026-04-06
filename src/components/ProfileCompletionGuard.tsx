@@ -15,16 +15,36 @@ const ProfileCompletionGuard = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // 1. Session Storage Bypass (for immediate transition)
+      const isMagicLinkSession = sessionStorage.getItem("invited_via") === "campaign";
+      
+      if (isMagicLinkSession) {
+        setCompleted(true);
+        setChecking(false);
+        return;
+      }
+
+      // 2. Database Persistent Bypass (for refresh/return)
       const { data, error } = await supabase
         .from('influencer_profiles')
-        .select('profile_completed')
+        .select('profile_completed, custom_data')
         .eq('user_id', user.id)
-        .maybeSingle<{ profile_completed: boolean }>();
+        .maybeSingle() as any;
 
-      if (error || !data || data.profile_completed !== true) {
+      if (error) {
+        console.error("Error checking profile completion:", error);
         setCompleted(false);
-      } else {
+        setChecking(false);
+        return;
+      }
+
+      // Bypass if explicitly created via magic link
+      const isMagicLinkUser = data?.custom_data?.created_via === 'magic_link';
+
+      if (isMagicLinkUser || data?.profile_completed === true) {
         setCompleted(true);
+      } else {
+        setCompleted(false);
       }
 
       setChecking(false);
