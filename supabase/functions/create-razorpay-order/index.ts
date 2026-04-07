@@ -25,35 +25,46 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // 1. Fetch Influencer and Campaign Info
-    const { amount, contractId } = await req.json();
+    // 1. Fetch Request Info
+    const { amount, contractId, type, campaignId } = await req.json();
 
-    if (!amount || !contractId) {
+    if (!amount || (!contractId && type !== 'merchant_funding_batch')) {
       throw new Error('Missing amount or contractId');
     }
 
-    // Get influencer_id and bank details for this contract
-    const { data: contract, error: contractErr } = await supabase
-      .from('campaign_influencers')
-      .select(`
-        influencer_id,
-        final_payout,
-        influencer_profiles!inner (
-          full_name,
-          razorpay_account_id,
-          account_number,
-          ifsc_code,
-          bank_account_name,
-          upi_id
-        )
-      `)
-      .eq('id', contractId)
-      .single();
+    let influencer: any = null;
+    let payoutAmount = 0;
+    let receiptId = `rect_${Date.now()}`;
+    let influencerUserId: string | null = null;
 
-    if (contractErr || !contract) throw new Error('Contract or Influencer not found');
+    if (contractId) {
+      // Get influencer_id and bank details for this contract
+      const { data: contract, error: contractErr } = await supabase
+        .from('campaign_influencers')
+        .select(`
+          influencer_id,
+          final_payout,
+          influencer_profiles!inner (
+            full_name,
+            razorpay_account_id,
+            account_number,
+            ifsc_code,
+            bank_account_name,
+            upi_id
+          )
+        `)
+        .eq('id', contractId)
+        .single();
 
-    const influencer = contract.influencer_profiles;
-    const payoutAmount = contract.final_payout || 0;
+      if (!contractErr && contract) {
+        influencer = contract.influencer_profiles;
+        payoutAmount = contract.final_payout || 0;
+        receiptId = `receipt_${contractId.substring(0, 10)}`;
+        influencerUserId = contract.influencer_id;
+      }
+    } else if (type === 'merchant_funding_batch' && campaignId) {
+       receiptId = `batch_${campaignId.substring(0, 10)}_${Date.now()}`;
+    }
 
     // Razorpay Keys from edge function environment
     const key_id = Deno.env.get('RAZORPAY_KEY_ID');
@@ -65,15 +76,15 @@ serve(async (req) => {
 
     const authHeader = 'Basic ' + btoa(`${key_id}:${key_secret}`);
 
-    let razorpayAccountId = influencer.razorpay_account_id;
+    let razorpayAccountId = influencer?.razorpay_account_id;
 
     // 2. AUTOMATED ONBOARDING: Create Linked Account if missing
-    if (!razorpayAccountId && (influencer.account_number || influencer.upi_id)) {
+    if (influencer && !razorpayAccountId && (influencer.account_number || influencer.upi_id)) {
       console.log(`Creating Razorpay Linked Account for ${influencer.full_name}...`);
       
       const accountPayload: any = {
         type: "route",
-        reference_id: `influencer_${contract.influencer_id.substring(0, 8)}`,
+        reference_id: `influencer_${influencerUserId?.substring(0, 8)}`,
         business_type: "individual",
         contact_name: influencer.bank_account_name || influencer.full_name,
         profile: {
@@ -113,7 +124,7 @@ serve(async (req) => {
         await supabase
           .from('influencer_profiles')
           .update({ razorpay_account_id: razorpayAccountId })
-          .eq('user_id', contract.influencer_id);
+          .eq('user_id', influencerUserId);
 
         // Link Stakeholder/Bank Account to the new account
         // Note: In production, you'd call /accounts/{id}/stakeholders and /accounts/{id}/bank_accounts
@@ -127,9 +138,10 @@ serve(async (req) => {
     const orderBody: any = {
       amount: Math.round(amount * 100),
       currency: 'INR',
-      receipt: `receipt_${contractId.substring(0, 10)}`,
+      receipt: receiptId,
       notes: {
-        contractId,
+        contractId: contractId || 'batch',
+        campaignId: campaignId || '',
         userId: user.id
       }
     };

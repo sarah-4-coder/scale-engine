@@ -37,6 +37,7 @@ import { useMagicLinkApplication } from "./hooks/useMagicLinkApplication";
 // Influencer routes
 const InfluencerDashboard = lazy(() => import("./pages/InfluencerDashboard"));
 const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
+const AccountSetup = lazy(() => import("./pages/influencer/AccountSetup"));
 const AllCampaigns = lazy(() => import("./pages/influencer/AllCampaigns"));
 const MyCampaigns = lazy(() => import("./pages/influencer/MyCampaigns"));
 const CampaignDetail = lazy(() => import("./pages/influencer/CampaignDetail"));
@@ -150,7 +151,7 @@ const AppRoutes = () => {
       <Route path="/creators/:handle" element={<LiveMediaKit />} />
       <Route path="/i/:slug" element={<Suspense fallback={<PageLoader />}><PublicCampaignPreview /></Suspense>} />
       <Route path="/join/:hash" element={<Suspense fallback={<PageLoader />}><MagicLinkEntry /></Suspense>} />
-      <Route path="/campaign/:id/preview" element={<Suspense fallback={<PageLoader />}><CampaignApply /></Suspense>} />
+      <Route path="/apply/:id" element={<Suspense fallback={<PageLoader />}><CampaignApply /></Suspense>} />
       <Route path="/influencer-login" element={<Suspense fallback={<PageLoader />}><InfluencerLogin /></Suspense>} />
 
       {/* Influencer Auth routes */}
@@ -381,6 +382,17 @@ const AppRoutes = () => {
                 <InfluencerDashboard />
               </Suspense>
             </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/account-setup"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <Suspense fallback={<PageLoader />}>
+              <AccountSetup />
+            </Suspense>
           </ProtectedRoute>
         }
       />

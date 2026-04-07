@@ -42,10 +42,9 @@ const MagicLinkEntry = () => {
       sessionStorage.setItem("campaign_context_slug", stub.campaign?.slug || "");
       sessionStorage.setItem("invited_phone", stub.phone_number);
 
-      // 3. Redirect to Signup (which will handle OTP for this phone)
-      // Pass the phone as a hint if possible, or just let them enter it
-      toast.success(`You've been invited to ${stub.campaign?.title}!`);
-      navigate("/signup");
+      // 3. Redirect to the Campaign Apply page 
+      toast.success(`You've been invited to ${stub.campaign?.name || 'a new campaign'}!`);
+      navigate(`/apply/${stub.campaign_id}`);
 
     } catch (error) {
       console.error("Magic link processing error:", error);

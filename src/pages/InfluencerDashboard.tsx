@@ -15,6 +15,8 @@ import {
   Link,
   ChevronRight,
   Info,
+  ShieldCheck,
+  ArrowRight,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -115,24 +117,29 @@ const InfluencerDashboard = () => {
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
-      setIsBlocked(data?.is_blocked || false);
+      const profileData = data as any;
+      setProfile(profileData);
+      setIsBlocked(profileData?.is_blocked || false);
       
-      // Check for completed campaigns without bank details
-      if (data && !data.bank_details) {
-          const { count } = await supabase
-            .from('campaign_influencers')
-            .select('*', { count: 'exact', head: true })
-            .eq('influencer_id', data.id)
-            .eq('status', 'completed');
+      // Check for completed campaigns without payout details (UPI or Bank)
+      if (profileData) {
+          const hasPayoutDetails = !!profileData.upi_id || (!!profileData.bank_account_number && !!profileData.bank_ifsc_code);
           
-          if (count && count > 0) {
-              setShowBankModal(true);
+          if (!hasPayoutDetails) {
+              const { count } = await supabase
+                .from('campaign_influencers')
+                .select('*', { count: 'exact', head: true })
+                .eq('influencer_id', profileData.id)
+                .eq('status', 'completed');
+              
+              if (count && count > 0) {
+                  setShowBankModal(true);
+              }
           }
       }
 
       // One-time prompt for email if missing
-      if (data && !data.email && !sessionStorage.getItem('dismissed_email_prompt')) {
+      if (profileData && !profileData.email && !sessionStorage.getItem('dismissed_email_prompt')) {
           setShowEmailPrompt(true);
       }
 
@@ -167,6 +174,7 @@ const InfluencerDashboard = () => {
         // Link logic (Case 3): Update profile with email
         const { error } = await supabase
             .from('influencer_profiles')
+            // @ts-ignore
             .update({ email: linkEmail })
             .eq('id', profile.id);
         
@@ -244,8 +252,41 @@ const InfluencerDashboard = () => {
       <main className="relative z-10 px-4 md:px-6 py-4 md:py-8">
         <div className="max-w-7xl mx-auto space-y-6">
           
-          {/* PROFILE COMPLETION BANNER */}
-          {completion < 100 && (
+          {/* MAGIC LINK ACCOUNT BLOCKER */}
+          {profile?.custom_data?.created_via === 'magic_link' && !profile?.profile_completed && (
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="w-full bg-gradient-to-br from-indigo-600 to-slate-900 border border-indigo-500/30 rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden"
+            >
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#ffffff11,transparent_50%)]" />
+                
+                <div className="relative z-10 flex items-center gap-6">
+                    <div className="h-16 w-16 rounded-3xl bg-white/10 backdrop-blur-xl flex items-center justify-center text-white border border-white/10">
+                        <ShieldCheck className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="font-black text-2xl text-white tracking-tight">Success! Application Submitted</h3>
+                        <p className="text-indigo-100/70 font-medium max-w-sm">
+                          Your profile is currently under review. To browse campaigns, manage applications, and unlock your Media Kit, please complete your creator setup.
+                        </p>
+                    </div>
+                </div>
+                
+                <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                    <Button 
+                        size="lg" 
+                        onClick={() => navigate("/account-setup")}
+                        className="w-full sm:w-auto h-16 rounded-2xl bg-white text-indigo-600 hover:bg-slate-50 font-black text-lg px-10 shadow-xl"
+                    >
+                        Setup Account <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                </div>
+            </motion.div>
+          )}
+
+          {/* PROFILE COMPLETION BANNER (For normal users or magic link users who finished setup but still missing some fields) */}
+          {completion < 100 && !(profile?.custom_data?.created_via === 'magic_link' && !profile?.profile_completed) && (
             <motion.div 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}

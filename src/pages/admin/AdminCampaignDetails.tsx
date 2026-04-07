@@ -38,6 +38,15 @@ import {
 } from "@/components/ui/dialog";
 import { usePayment } from "@/hooks/usePayment";
 import { ManualDistributionDialog } from "@/components/admin/ManualDistributionDialog";
+import { Input } from "@/components/ui/input";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Search, Filter, SlidersHorizontal } from "lucide-react";
 
 interface Campaign {
   id: string;
@@ -107,6 +116,10 @@ const AdminCampaignDetails = () => {
   const [selectedApplicant, setSelectedApplicant] = useState<Row | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [isManualPayoutOpen, setIsManualPayoutOpen] = useState(false);
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [nicheFilter, setNicheFilter] = useState("all");
+  const [followerFilter, setFollowerFilter] = useState("all");
 
   const { 
     isProcessingPayment, 
@@ -205,12 +218,42 @@ const AdminCampaignDetails = () => {
     };
   }, [campaignId]);
 
+  const uniqueNiches = useMemo(() => {
+    const niches = new Set<string>();
+    rows.forEach(r => {
+      r.influencer_profiles.niches?.forEach(n => niches.add(n));
+    });
+    return Array.from(niches).sort();
+  }, [rows]);
+
+  const filteredRows = useMemo(() => {
+    return rows.filter(row => {
+      const name = row.influencer_profiles.full_name || "";
+      const handle = row.influencer_profiles.instagram_handle || "";
+      const matchesSearch = 
+        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        handle.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesNiche = nicheFilter === "all" || 
+        row.influencer_profiles.niches?.some(n => n.toLowerCase() === nicheFilter.toLowerCase());
+      
+      const followers = row.influencer_profiles.followers_count || 0;
+      let matchesFollowers = true;
+      if (followerFilter === "nano") matchesFollowers = followers < 10000;
+      else if (followerFilter === "micro") matchesFollowers = followers >= 10000 && followers < 50000;
+      else if (followerFilter === "mid") matchesFollowers = followers >= 50000 && followers < 500000;
+      else if (followerFilter === "macro") matchesFollowers = followers >= 500000;
+
+      return matchesSearch && matchesNiche && matchesFollowers;
+    });
+  }, [rows, searchQuery, nicheFilter, followerFilter]);
+
   const metrics = useMemo(() => ({
-    total: rows.length,
-    active: rows.filter(r => r.status === 'accepted' || r.status === 'content_posted').length,
-    completed: rows.filter(r => r.status === 'completed').length,
-    funds: rows.reduce((acc, curr) => acc + (curr.final_payout || 0), 0)
-  }), [rows]);
+    total: filteredRows.length,
+    active: filteredRows.filter(r => r.status === 'accepted' || r.status === 'content_posted').length,
+    completed: filteredRows.filter(r => r.status === 'completed').length,
+    funds: filteredRows.reduce((acc, curr) => acc + (curr.final_payout || 0), 0)
+  }), [filteredRows]);
 
   const onDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
@@ -380,7 +423,63 @@ const AdminCampaignDetails = () => {
 
           {/* Kanban Section */}
           <div className="space-y-6">
-             <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row items-center gap-4 bg-card/40 backdrop-blur-md p-4 rounded-2xl border border-border/40 shadow-sm">
+                <div className="relative flex-1 group">
+                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                   <Input 
+                    placeholder="Search by name or handle..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-11 bg-background/50 border-border/50 rounded-xl focus-visible:ring-primary/20"
+                   />
+                </div>
+                
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Select value={nicheFilter} onValueChange={setNicheFilter}>
+                      <SelectTrigger className="w-full md:w-[160px] h-11 bg-background/50 border-border/50 rounded-xl">
+                        <Filter className="h-3.5 w-3.5 mr-2" />
+                        <SelectValue placeholder="All Niches" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Niches</SelectItem>
+                        {uniqueNiches.map(niche => (
+                          <SelectItem key={niche} value={niche.toLowerCase()}>{niche}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={followerFilter} onValueChange={setFollowerFilter}>
+                      <SelectTrigger className="w-full md:w-[160px] h-11 bg-background/50 border-border/50 rounded-xl">
+                        <Users className="h-3.5 w-3.5 mr-2" />
+                        <SelectValue placeholder="Tiers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Tiers</SelectItem>
+                        <SelectItem value="nano">Nano (&lt; 10k)</SelectItem>
+                        <SelectItem value="micro">Micro (10k-50k)</SelectItem>
+                        <SelectItem value="mid">Mid-Tier (50k-500k)</SelectItem>
+                        <SelectItem value="macro">Macro (500k+)</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {(searchQuery || nicheFilter !== "all" || followerFilter !== "all") && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => {
+                          setSearchQuery("");
+                          setNicheFilter("all");
+                          setFollowerFilter("all");
+                        }}
+                        className="h-11 w-11 rounded-xl hover:bg-rose-500/10 hover:text-rose-500 text-muted-foreground"
+                      >
+                        <XCircle className="h-5 w-5" />
+                      </Button>
+                    )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                   <LayoutGrid className="h-6 w-6 text-primary" />
                   Execution Kanban
@@ -388,7 +487,7 @@ const AdminCampaignDetails = () => {
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-full border border-border/20">
                    <Clock className="h-3.5 w-3.5" /> Drag and drop to update lifecycle
                 </div>
-             </div>
+              </div>
 
              <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex overflow-x-auto pb-6 gap-6 -mx-4 px-4 scrollbar-hide">
@@ -399,20 +498,20 @@ const AdminCampaignDetails = () => {
                            <div className={cn("w-2 h-2 rounded-full", column.bg.replace("bg-", "bg-").replace("/10", ""))} />
                            <h3 className="font-bold text-sm uppercase tracking-widest opacity-80">{column.label}</h3>
                            <Badge variant="secondary" className="bg-muted/50 rounded-md">
-                              {rows.filter(r => getColumnForStatus(r.status) === column.id).length}
+                              {filteredRows.filter(r => getColumnForStatus(r.status) === column.id).length}
                            </Badge>
                         </div>
-                        {column.id === 'completed' && rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded').length > 0 && (
+                        {column.id === 'completed' && filteredRows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded').length > 0 && (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            onClick={() => handleBatchMerchantFunding(campaignId!, rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded'))}
+                            onClick={() => handleBatchMerchantFunding(campaignId!, filteredRows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded'))}
                             className="h-6 text-[9px] font-bold px-2 border-amber-500/50 text-amber-600 hover:bg-amber-50"
                           >
                             Batch Fund
                           </Button>
                         )}
-                        {column.id === 'completed' && rows.filter(r => r.status === 'completed' && r.funding_status === 'funded').length > 0 && (
+                        {column.id === 'completed' && filteredRows.filter(r => r.status === 'completed' && r.funding_status === 'funded').length > 0 && (
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -435,7 +534,7 @@ const AdminCampaignDetails = () => {
                             )}
                           >
                              <AnimatePresence>
-                               {rows
+                               {filteredRows
                                  .filter(r => getColumnForStatus(r.status) === column.id)
                                  .map((row, index) => (
                                    <InfluencerCard

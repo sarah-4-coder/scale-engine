@@ -142,11 +142,18 @@ const MediaKitSetup = () => {
     try {
       const { data: influencerData } = (await supabase
         .from("influencer_profiles")
-        .select("id, user_id, instagram_handle, profile_image_url, media_kit_bio, services, media_kit_completed, media_kit_enabled")
+        .select("id, user_id, instagram_handle, profile_image_url, media_kit_bio, services, media_kit_completed, media_kit_enabled, profile_completed, custom_data")
         .eq("user_id", user?.id)
         .single()) as any;
 
       if (influencerData) {
+        // Restriction: Magic link users must complete account setup first
+        if (influencerData.custom_data?.created_via === 'magic_link' && !influencerData.profile_completed) {
+          toast.error("Please complete your account setup first");
+          navigate("/dashboard");
+          return;
+        }
+
         setProfile(influencerData);
         setProfileImageUrl(influencerData.profile_image_url || "");
         setBio(influencerData.media_kit_bio || "");

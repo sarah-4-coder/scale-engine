@@ -76,6 +76,26 @@ const BrandInfluencers = () => {
     [influencers, selectedIds]
   );
 
+  const fetchUserTier = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("brand_profiles")
+        .select("subscription_tier")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        setSubscriptionTier(data.subscription_tier || "free");
+      }
+    } catch (error) {
+      console.error("Error fetching user tier:", error);
+    }
+  };
+
   useEffect(() => {
     fetchUserTier();
     const fetchCampaigns = async () => {

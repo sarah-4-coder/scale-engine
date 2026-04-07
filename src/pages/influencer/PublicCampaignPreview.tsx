@@ -251,7 +251,7 @@ const PublicCampaignPreview = () => {
               </div>
            </Card>
 
-           {/* Action / OTP Card */}
+           {/* Action Card */}
            <Card className="bg-white border-slate-200 shadow-xl shadow-slate-200/40 rounded-[2rem] p-6 md:p-10 h-full flex flex-col justify-center min-h-[300px]">
               <div className="space-y-8">
                  {roleConflict ? (
@@ -266,88 +266,25 @@ const PublicCampaignPreview = () => {
                  ) : isClosed ? (
                     <div className="text-center py-10 bg-slate-50 rounded-2xl">
                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Closed</p>
+                       <p className="text-slate-500 text-sm mt-2">Registration for this is closed.</p>
                     </div>
-                 ) : !showOtpFlow ? (
+                 ) : (
                     <div className="space-y-6">
                        <div className="text-center space-y-1">
                           <h4 className="text-xl font-black text-slate-900 tracking-tight">Apply to Partner</h4>
-                          <p className="text-[11px] text-slate-500 font-medium">Verified creator access</p>
+                          <p className="text-[11px] text-slate-500 font-medium font-sans">Open for all verified creators</p>
                        </div>
                        <Button 
-                          onClick={() => setShowOtpFlow(true)}
+                          onClick={() => navigate(`/apply/${campaign.id}`)}
                           className="w-full h-16 rounded-2xl bg-indigo-600 text-white text-lg font-black hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 group"
                        >
                           Apply Now 
                           <ArrowRight className="ml-2.5 w-5 h-5 group-hover:translate-x-1 transition-all" />
                        </Button>
-                    </div>
-                 ) : (
-                    <div className="py-2">
-                    <AnimatePresence mode="wait">
-                       {step === 'phone' ? (
-                          <motion.form 
-                             key="phone"
-                             initial={{ opacity: 0, x: -10 }}
-                             animate={{ opacity: 1, x: 0 }}
-                             exit={{ opacity: 0, x: 10 }}
-                             onSubmit={handleSendOtp}
-                             className="space-y-6"
-                          >
-                             <div className="space-y-2.5">
-                                <Label className="text-[10px] uppercase font-black text-slate-400 tracking-widest ml-3">Phone</Label>
-                                <Input 
-                                   type="tel"
-                                   placeholder="99999 99999"
-                                   value={phone}
-                                   onChange={(e) => setPhone(e.target.value)}
-                                   className="h-14 px-5 bg-slate-50 border-slate-100 rounded-xl text-lg font-bold text-slate-900 transition-all"
-                                   required
-                                />
-                             </div>
-                             <Button 
-                                type="submit"
-                                disabled={isAuthenticating}
-                                className="w-full h-14 rounded-xl bg-slate-900 text-white text-base font-black transition-all"
-                             >
-                                {isAuthenticating ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify Mobile"}
-                             </Button>
-                          </motion.form>
-                       ) : (
-                          <motion.form 
-                             key="otp"
-                             initial={{ opacity: 0, x: 10 }}
-                             animate={{ opacity: 1, x: 0 }}
-                             exit={{ opacity: 0, x: -10 }}
-                             onSubmit={handleVerifyOtp}
-                             className="space-y-6"
-                          >
-                             <div className="space-y-2.5">
-                                <Label className="text-[10px] uppercase font-black text-slate-400 tracking-widest ml-3 text-center block">OTP Code</Label>
-                                <Input 
-                                   placeholder="000000"
-                                   value={otp}
-                                   onChange={(e) => setOtp(e.target.value)}
-                                   className="h-16 text-center text-2xl font-black tracking-[0.4em] bg-slate-50 border-slate-100 rounded-xl text-slate-900 transition-all"
-                                   required
-                                />
-                             </div>
-                             <Button 
-                                type="submit"
-                                disabled={isAuthenticating}
-                                className="w-full h-16 rounded-xl bg-indigo-600 text-white text-lg font-black transition-all hover:bg-slate-900"
-                             >
-                                {isAuthenticating ? <Loader2 className="w-6 h-6 animate-spin" /> : "Confirm OTP"}
-                             </Button>
-                             <button 
-                                type="button" 
-                                onClick={() => setStep('phone')} 
-                                className="w-full text-[10px] font-black uppercase text-slate-400 hover:text-slate-900 tracking-widest text-center"
-                             >
-                                Change number
-                             </button>
-                          </motion.form>
-                       )}
-                    </AnimatePresence>
+                       <div className="flex items-center justify-center gap-2 opacity-50">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <p className="text-[9px] font-black uppercase tracking-widest">Safe & Secure</p>
+                       </div>
                     </div>
                  )}
               </div>
