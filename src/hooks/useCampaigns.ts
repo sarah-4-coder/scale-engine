@@ -464,3 +464,40 @@ export const useUpdateCampaignStatus = () => {
     },
   });
 };
+
+// ============================================
+// BRAND VELOCITY (Fast Approval Badge)
+// ============================================
+export const useBrandVelocity = () => {
+  return useQuery({
+    queryKey: ['brand-velocity'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('campaign_influencers' as any)
+        .select('created_at, approved_at, campaigns!inner(brand_id)')
+        .not('approved_at', 'is', null)
+        .limit(1000);
+      if (error) throw error;
+      const brandDeltas: Record<string, number[]> = {};
+      ((data as any[]) || []).forEach((row) => {
+        const brandId = (row.campaigns as any)?.brand_id;
+        if (!brandId || !row.created_at || !row.approved_at) return;
+        const ms = new Date(row.approved_at).getTime() - new Date(row.created_at).getTime();
+        if (ms > 0) {
+          if (!brandDeltas[brandId]) brandDeltas[brandId] = [];
+          brandDeltas[brandId].push(ms);
+        }
+      });
+      const fastBrandIds = new Set<string>();
+      Object.entries(brandDeltas).forEach(([id, deltas]) => {
+        if (!deltas.length) return;
+        const avg = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+        if (avg < 86400000) fastBrandIds.add(id);
+      });
+      return fastBrandIds;
+    },
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};

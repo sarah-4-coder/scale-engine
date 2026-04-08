@@ -177,12 +177,14 @@ const BrandCampaignDetails = () => {
     setApplicants(prev => prev.map(app =>
       app.id === draggableId ? { ...app, status: newStatus } : app
     ));
+    const isApproving = newStatus === "approved";
     const { error } = await supabase
       .from("campaign_influencers")
       .update({
-        status: newStatus === "negotiation" ? "admin_negotiated" : (newStatus === "approved" ? "accepted" : newStatus),
+        status: newStatus === "negotiation" ? "admin_negotiated" : (isApproving ? "accepted" : newStatus),
         funding_status: newStatus === 'completed' ? 'unfunded' : undefined,
-        final_payout: newStatus === "negotiation" ? null : undefined
+        final_payout: newStatus === "negotiation" ? null : undefined,
+        ...(isApproving ? { approved_at: new Date().toISOString() } : {}),
       })
       .eq("id", draggableId);
     if (error) {
@@ -286,7 +288,8 @@ const BrandCampaignDetails = () => {
       if (action === 'accept') {
         updatePayload = {
           status: 'accepted',
-          final_payout: applicant.requested_payout || campaign?.base_payout
+          final_payout: applicant.requested_payout || campaign?.base_payout,
+          approved_at: new Date().toISOString(),
         };
       } else if (action === 'counter') {
         if (!counterOfferValue) {
