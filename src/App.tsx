@@ -590,6 +590,7 @@ const AppRoutes = () => {
 };
 
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
+import { InfluencerThemeProvider } from "./contexts/InfluencerThemeContext";
 
 // ============================================
 // MAIN APP
@@ -602,8 +603,10 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <WorkspaceProvider>
-            <RosterSessionBanner />
-            <AppRoutes />
+            <InfluencerThemeProvider>
+              <RosterSessionBanner />
+              <AppRoutes />
+            </InfluencerThemeProvider>
           </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>

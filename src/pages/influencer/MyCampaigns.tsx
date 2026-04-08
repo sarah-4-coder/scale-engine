@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { useEffect, memo } from "react";
+import { useEffect, memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
 import MobileBottomNav from "@/components/influencer/MobileBottomNav";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Calendar,
@@ -21,6 +22,7 @@ import {
 import { CampaignCardSkeleton } from "@/components/influencer/Skeletons";
 import { useInfluencerProfile, useMyCampaigns } from "@/hooks/useCampaigns";
 import { supabase } from "@/integrations/supabase/client";
+import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 
 interface Campaign {
   id: string;
@@ -52,7 +54,7 @@ interface Application {
 }
 
 const MyCampaigns = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
@@ -70,107 +72,78 @@ const MyCampaigns = () => {
   // My campaigns - auto-refetches + real-time subscription built-in
   const { data: applications = [], isLoading: applicationsLoading } = useMyCampaigns(influencerId || '') as { data: Application[]; isLoading: boolean };
 
-  const loading = profileLoading || applicationsLoading;
+  const loading = authLoading || profileLoading || applicationsLoading || (!!user && !profile);
 
   // Get campaign IDs
   //@ts-ignore
-  const campaignIds = applications.map((a) => a.campaign_id) || [];
-
-  // Fetch campaign details when we have campaign IDs
-  useEffect(() => {
-    const fetchCampaigns = async () => {
-      if (campaignIds.length === 0) return;
-
-      const { data: campaignsData } = await supabase
-        .from("campaigns")
-        .select(`
-          *,
-          brand_profiles!fk_campaigns_brand_id_v1 (
-            company_name,
-            is_verified,
-            industry,
-            description,
-            city,
-            state,
-            company_website,
-            company_size
-          )
-        `)
-        .in("id", campaignIds);
-
-      // Store in cache for future use
-      (campaignsData as Campaign[] | null)?.forEach(campaign => {
-        queryClient.setQueryData(['campaign', campaign.id], campaign);
-      });
-    };
-
-    fetchCampaigns();
-  }, [campaignIds.length, queryClient]);
+  const campaignIds = useMemo(() => applications.map((a) => a.campaign_id), [applications]);
 
   const getStatusInfo = (status: string) => {
+    const isLight = themeKey === 'light';
+    
     const statusMap: Record<
       string,
       { label: string; color: string; icon: any; bg: string }
     > = {
       applied: {
         label: "Applied",
-        color: "text-blue-400",
+        color: isLight ? "text-blue-600" : "text-blue-400",
         icon: Clock,
-        bg: "bg-blue-500/20",
+        bg: isLight ? "bg-blue-500/10" : "bg-blue-500/20",
       },
       shortlisted: {
         label: "Shortlisted",
-        color: "text-green-400",
+        color: isLight ? "text-blue-600" : "text-blue-600",
         icon: CheckCircle2,
-        bg: "bg-green-500/20",
+        bg: isLight ? "bg-blue-500/10" : "bg-blue-500/10",
       },
       influencer_negotiated: {
         label: "Negotiating",
-        color: "text-yellow-400",
+        color: "text-amber-600",
         icon: AlertCircle,
-        bg: "bg-yellow-500/20",
+        bg: "bg-amber-500/10",
       },
       admin_negotiated: {
         label: "Counter Offer",
-        color: "text-orange-400",
+        color: "text-orange-600",
         icon: AlertCircle,
-        bg: "bg-orange-500/20",
+        bg: "bg-orange-500/10",
       },
       accepted: {
         label: "Accepted",
-        color: "text-green-400",
+        color: isLight ? "text-blue-600" : "text-blue-600",
         icon: CheckCircle2,
-        bg: "bg-green-500/20",
+        bg: isLight ? "bg-blue-500/10" : "bg-blue-500/10",
       },
       not_shortlisted: {
         label: "Not Shortlisted",
-        color: "text-red-400",
+        color: "text-rose-600",
         icon: XCircle,
-        bg: "bg-red-500/20",
+        bg: "bg-rose-500/10",
       },
       rejected: {
         label: "Rejected",
-        color: "text-red-400",
+        color: "text-rose-600",
         icon: XCircle,
-        bg: "bg-red-500/20",
+        bg: "bg-rose-500/10",
       },
       content_posted: {
         label: "Content Submitted",
-        color: "text-purple-400",
+        color: isLight ? "text-blue-600" : "text-blue-600",
         icon: CheckCircle2,
-        bg: "bg-purple-500/20",
+        bg: isLight ? "bg-blue-500/10" : "bg-blue-500/10",
       },
       content_rejected: {
         label: "Content Rejected",
-        color: "text-red-400",
+        color: "text-rose-600",
         icon: XCircle,
-        bg: "bg-red-500/20",
+        bg: "bg-rose-500/10",
       },
       completed: {
         label: "Completed",
-        color: "text-emerald-400",
+        color: isLight ? "text-blue-700" : "text-blue-700",
         icon: CheckCircle2,
-        bg: "bg-emerald-500/20",
+        bg: isLight ? "bg-blue-500/20" : "bg-blue-500/20",
       },
     };
 
@@ -184,41 +157,32 @@ const MyCampaigns = () => {
     );
   };
 
-  // Get campaigns from cache
-  const campaignsWithDetails = applications.map(app => {
-    //@ts-ignore
-    const campaign = queryClient.getQueryData(['campaign', app.campaign_id]);
-    return campaign;
-  }).filter(Boolean);
+  // Get campaigns from the joined application data
+  const campaignsWithDetails = useMemo(() => {
+    return (applications as any[]).map(app => app.campaigns).filter(Boolean);
+  }, [applications]);
 
-  /* -------------------------------
-     LOADING STATE - PREVENT FLASH
-  ------------------------------- */
-  if (themeLoading) {
+  if (loading) {
     return (
       <div 
-        className="min-h-screen flex items-center justify-center"
+        className="min-h-screen flex items-center justify-center transition-colors duration-500"
         style={{ background: theme.background }}
       >
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white/50" />
-          <p className="text-white/70 text-sm">Loading campaigns...</p>
+        <div className="flex flex-col items-center gap-6">
+          <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-primary" />
+          <p className={`text-sm font-black tracking-widest uppercase opacity-50 ${themeKey === 'dark' ? 'text-white' : 'text-gray-900'}`}>Loading applications...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
+    <div 
+      className="min-h-screen relative overflow-hidden pb-20 md:pb-0 transition-colors duration-500"
+      style={{ background: theme.background }}
+    >
       {/* Animated Theme Background */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        style={{ background: theme.background }}
-      />
+      <ThemedStudioBackground themeKey={themeKey} />
 
       {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
@@ -227,7 +191,7 @@ const MyCampaigns = () => {
       <MobileBottomNav />
 
       {/* CONTENT */}
-      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-6xl mx-auto">
+      <main className="relative z-10 px-4 md:px-8 py-6 md:py-12 max-w-7xl mx-auto">
         {/* HEADER */}
         <div className="mb-6 md:mb-10">
           <h2 className={`text-2xl md:text-3xl font-bold ${theme.text}`}>
@@ -249,18 +213,16 @@ const MyCampaigns = () => {
           <>
             {/* CAMPAIGNS GRID */}
             {campaignsWithDetails.length === 0 ? (
-              <div className={`${theme.card} ${theme.radius} p-12 text-center`}>
-                <p className={theme.muted}>
+              <div className={`${theme.card} ${theme.radius} p-12 text-center shadow-xl border border-white/5`}>
+                <p className={`${theme.muted} font-medium`}>
                   You haven't applied to any campaigns yet.
                 </p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <Button
                   onClick={() => navigate("/dashboard/campaigns/all")}
-                  className="mt-6 px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-medium"
+                  className="mt-8 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black px-10 h-14 shadow-xl shadow-primary/20"
                 >
-                  Browse Campaigns
-                </motion.button>
+                  Browse Campaigns <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
@@ -287,7 +249,7 @@ const MyCampaigns = () => {
                       className="cursor-pointer"
                     >
                       <Card
-                        className={`${theme.card} ${theme.radius} overflow-hidden transition-all duration-300 hover:shadow-2xl`}
+                        className={`${theme.card} ${theme.radius} overflow-hidden transition-all duration-500 hover:shadow-2xl ${themeKey === 'light' ? 'hover:shadow-blue-500/10' : 'hover:shadow-blue-500/10'} border border-white/5 group`}
                       >
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between gap-3">
@@ -299,16 +261,16 @@ const MyCampaigns = () => {
                             />
                           </div>
 
-                          {/* Brand Info */}
-                          {campaign.brand_profiles && (
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <p className={`text-[10px] font-bold tracking-tight text-white/60`}>
+                           {/* Brand Info */}
+                           {campaign.brand_profiles && (
+                            <div className="flex items-center gap-2 mb-3">
+                              <p className={`text-[11px] font-black uppercase tracking-widest ${theme.muted}`}>
                                 {campaign.brand_profiles.company_name}
                               </p>
                               {campaign.brand_profiles.is_verified && (
-                                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
-                                  <CheckCircle2 className="h-2 w-2 text-blue-400" />
-                                  <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter">Verified</span>
+                                <div className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full border ${themeKey === 'light' ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
+                                  <CheckCircle2 className={`h-2.5 w-2.5 ${themeKey === 'light' ? 'text-blue-600' : 'text-blue-500'}`} />
+                                  <span className={`text-[8px] font-black tracking-tighter uppercase ${themeKey === 'light' ? 'text-blue-600' : 'text-blue-500'}`}>Verified</span>
                                 </div>
                               )}
                             </div>
@@ -330,10 +292,10 @@ const MyCampaigns = () => {
                         </CardHeader>
 
                         <CardContent className="space-y-4">
-                          {/* Description */}
-                            {campaign.description && (
+                           {/* Description */}
+                             {campaign.description && (
                             <p
-                              className={`${theme.muted} text-sm`}
+                              className={`${theme.muted} text-sm line-clamp-2`}
                             >
                               {campaign.description}
                             </p>
@@ -386,12 +348,12 @@ const MyCampaigns = () => {
                             )}
                           </div>
 
-                          {/* Click to view */}
-                          <div className={`pt-2 border-t border-white/10`}>
+                           {/* Click to view */}
+                           <div className={`pt-4 border-t ${themeKey === 'dark' ? 'border-white/5' : 'border-black/5'}`}>
                             <p
-                              className={`text-xs ${theme.accent} flex items-center gap-1`}
+                              className={`text-xs font-black uppercase tracking-widest ${themeKey === 'dark' ? 'text-primary' : 'text-primary'} flex items-center gap-2 group-hover:gap-3 transition-all`}
                             >
-                              Click to view details
+                              View Campaign Details
                               <ArrowRight className="h-3 w-3" />
                             </p>
                           </div>

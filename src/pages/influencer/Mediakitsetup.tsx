@@ -107,7 +107,7 @@ const SERVICE_TEMPLATES: Service[] = [
 const MediaKitSetup = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { theme } = useInfluencerTheme();
+  const { theme, themeKey } = useInfluencerTheme();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -432,13 +432,12 @@ const MediaKitSetup = () => {
   const progress = ((step - 1) / totalSteps) * 100;
 
   return (
-    <div className="min-h-screen bg-[#050505] pb-20 md:pb-0">
+    <div className={`min-h-screen ${themeKey === 'light' ? 'bg-slate-50' : 'bg-[#050505]'} pb-20 md:pb-0`}>
      
 
-      {/* Dynamic Background */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-900/20 blur-[120px] rounded-full" />
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className={`absolute top-[-10%] left-[-10%] w-[40%] h-[40%] ${themeKey === 'light' ? 'bg-blue-600/10' : 'bg-blue-600/10'} blur-[120px] rounded-full`} />
+        <div className={`absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] ${themeKey === 'light' ? 'bg-blue-600/10' : 'bg-blue-600/10'} blur-[120px] rounded-full`} />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 md:py-12 space-y-6 md:space-y-8">
@@ -447,34 +446,34 @@ const MediaKitSetup = () => {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs font-medium"
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${themeKey === 'light' ? 'bg-black/5 border-black/10 text-black/60' : 'bg-white/5 border-white/10 text-white/60'} text-xs font-medium`}
           >
-            <Sparkles size={14} className="text-purple-400" />
+            <Sparkles size={14} className={themeKey === 'light' ? 'text-blue-600' : 'text-blue-400'} />
             Premium Media Kit Setup
           </motion.div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white break-words">
+          <h1 className={`text-3xl md:text-4xl lg:text-5xl font-black ${themeKey === 'light' ? 'text-black' : 'text-white'} break-words`}>
             Build Your Professional{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+            <span className={`text-transparent bg-clip-text bg-gradient-to-r ${themeKey === 'light' ? 'from-blue-600 to-blue-400' : 'from-blue-400 to-blue-600'}`}>
               Portfolio
             </span>
           </h1>
-          <p className="text-white/60 text-sm md:text-base max-w-2xl mx-auto">
+          <p className={`${themeKey === 'light' ? 'text-black/60' : 'text-white/60'} text-sm md:text-base max-w-2xl mx-auto`}>
             Create a stunning media kit to showcase your best work and attract brand collaborations
           </p>
         </div>
 
         {/* Progress Bar */}
         {step < 5 && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6">
+          <div className={`${themeKey === 'light' ? 'bg-white border-black/10' : 'bg-white/5 border-white/10'} rounded-2xl p-4 md:p-6 shadow-sm`}>
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm md:text-base font-semibold text-white">
+              <span className={`text-sm md:text-base font-semibold ${themeKey === 'light' ? 'text-black' : 'text-white'}`}>
                 Step {step} of {totalSteps}
               </span>
-              <span className="text-xs md:text-sm text-white/60">{Math.round(progress)}% Complete</span>
+              <span className={`text-xs md:text-sm ${themeKey === 'light' ? 'text-black/60' : 'text-white/60'}`}>{Math.round(progress)}% Complete</span>
             </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className={`h-2 ${themeKey === 'light' ? 'bg-black/5' : 'bg-white/10'} rounded-full overflow-hidden`}>
               <motion.div
-                className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                className={`h-full bg-gradient-to-r ${themeKey === 'light' ? 'from-blue-600 to-blue-400' : 'from-blue-500 to-blue-800'}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5 }}
@@ -493,10 +492,10 @@ const MediaKitSetup = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
             >
-              <Card className="bg-white/5 border-white/10 rounded-2xl md:rounded-3xl">
+              <Card className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'} rounded-2xl md:rounded-3xl shadow-sm`}>
                 <CardHeader>
-                  <CardTitle className="text-xl md:text-2xl text-white">Upload Profile Picture</CardTitle>
-                  <CardDescription className="text-white/60 text-sm md:text-base">
+                  <CardTitle className={`text-xl md:text-2xl ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}>Upload Profile Picture</CardTitle>
+                  <CardDescription className={`${themeKey === 'dark' ? 'text-white/60' : 'text-slate-500'} text-sm md:text-base`}>
                     Choose a professional photo that represents your brand
                   </CardDescription>
                 </CardHeader>
@@ -504,7 +503,7 @@ const MediaKitSetup = () => {
                   <div className="flex flex-col items-center gap-6">
                     {/* Image Preview */}
                     <div className="relative">
-                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 p-1">
+                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-blue-500 to-blue-800 p-1">
                         {profileImageUrl || profileImage ? (
                           <img
                             src={
@@ -530,7 +529,7 @@ const MediaKitSetup = () => {
 
                     {/* Upload Button */}
                     <label className="cursor-pointer">
-                      <div className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all text-white font-semibold text-sm md:text-base flex items-center gap-2">
+                      <div className={`px-6 py-3 ${themeKey === 'dark' ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white' : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'} border rounded-xl transition-all font-semibold text-sm md:text-base flex items-center gap-2`}>
                         <Upload size={18} />
                         Choose Photo
                       </div>
@@ -549,7 +548,7 @@ const MediaKitSetup = () => {
                   <Button
                     onClick={handleStep1Submit}
                     disabled={loading || (!profileImage && !profileImageUrl)}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-6 rounded-xl text-base"
+                    className={`w-full text-white font-bold py-6 rounded-xl text-base transition-all ${themeKey === 'light' ? 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'}`}
                   >
                     {loading ? "Saving..." : "Continue"}
                     <ArrowRight className="h-5 w-5 ml-2" />
@@ -567,10 +566,10 @@ const MediaKitSetup = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
             >
-              <Card className="bg-white/5 border-white/10 rounded-2xl md:rounded-3xl">
+              <Card className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'} rounded-2xl md:rounded-3xl`}>
                 <CardHeader>
-                  <CardTitle className="text-xl md:text-2xl text-white">Write Your Bio</CardTitle>
-                  <CardDescription className="text-white/60 text-sm md:text-base">
+                  <CardTitle className={`text-xl md:text-2xl ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}>Write Your Bio</CardTitle>
+                  <CardDescription className={`${themeKey === 'dark' ? 'text-white/60' : 'text-slate-500'} text-sm md:text-base`}>
                     Tell brands what makes you unique and why they should work with you
                   </CardDescription>
                 </CardHeader>
@@ -580,9 +579,9 @@ const MediaKitSetup = () => {
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="e.g., Luxury travel & lifestyle creator based in Mumbai. Helping brands tell authentic stories through cinematic storytelling and high-engagement visuals..."
                     rows={6}
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none rounded-xl text-sm md:text-base"
+                    className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'} resize-none rounded-xl text-sm md:text-base`}
                   />
-                  <div className="flex items-center justify-between text-xs md:text-sm text-white/60">
+                  <div className={`flex items-center justify-between text-xs md:text-sm ${themeKey === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
                     <span>
                       {bio.length > 0 ? `${bio.length} characters` : "Start typing..."}
                     </span>
@@ -592,15 +591,14 @@ const MediaKitSetup = () => {
                   <div className="flex gap-3">
                     <Button
                       onClick={() => setStep(1)}
-                      variant="outline"
-                      className="flex-1 border-white/20 text-white hover:bg-white/10 py-6 rounded-xl"
+                      className={`flex-1 bg-transparent border border-solid transition-all ${themeKey === 'dark' ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900'} py-6 rounded-xl`}
                     >
                       Back
                     </Button>
                     <Button
                       onClick={handleStep2Submit}
                       disabled={loading || bio.length < 50}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-6 rounded-xl"
+                      className={`flex-1 text-white font-bold py-6 rounded-xl transition-all ${themeKey === 'light' ? 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'}`}
                     >
                       {loading ? "Saving..." : "Continue"}
                       <ArrowRight className="h-5 w-5 ml-2" />
@@ -621,10 +619,10 @@ const MediaKitSetup = () => {
               className="space-y-6"
             >
               {/* Add Instagram Link */}
-              <Card className="bg-white/5 border-white/10 rounded-2xl md:rounded-3xl">
+              <Card className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm'} rounded-2xl md:rounded-3xl`}>
                 <CardHeader>
-                  <CardTitle className="text-xl md:text-2xl text-white">Add Your Best Content</CardTitle>
-                  <CardDescription className="text-white/60 text-sm md:text-base">
+                  <CardTitle className={`text-xl md:text-2xl ${theme.text}`}>Add Your Best Content</CardTitle>
+                  <CardDescription className={theme.muted}>
                     Add links to your top 3-6 Instagram posts (minimum 3 required)
                   </CardDescription>
                 </CardHeader>
@@ -634,20 +632,20 @@ const MediaKitSetup = () => {
                       value={instagramLink}
                       onChange={(e) => setInstagramLink(e.target.value)}
                       placeholder="https://instagram.com/p/xxxxx or /reel/xxxxx"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl h-12"
+                      className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'} rounded-xl h-12`}
                     />
                     <div className="grid grid-cols-2 gap-3">
                       <Input
                         value={currentLinkViews}
                         onChange={(e) => setCurrentLinkViews(e.target.value)}
                         placeholder="Views (e.g., 45.2K)"
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl h-12"
+                        className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'} rounded-xl h-12`}
                       />
                       <Input
                         value={currentLinkLikes}
                         onChange={(e) => setCurrentLinkLikes(e.target.value)}
                         placeholder="Likes (e.g., 3.2K)"
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl h-12"
+                        className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'} rounded-xl h-12`}
                       />
                     </div>
                   </div>
@@ -655,7 +653,7 @@ const MediaKitSetup = () => {
                   <Button
                     onClick={handleAddInstagramLink}
                     disabled={isAddingLink || !instagramLink.trim()}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-6 rounded-xl"
+                    className={`w-full text-white font-bold py-6 rounded-xl transition-all ${themeKey === 'light' ? 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg' : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900'}`}
                   >
                     {isAddingLink ? "Adding..." : "Add Post"}
                     <LinkIcon className="h-5 w-5 ml-2" />
@@ -665,7 +663,7 @@ const MediaKitSetup = () => {
 
               {/* Portfolio Grid */}
               {portfolioItems.length > 0 ? (
-                <Card className="bg-white/5 border-white/10 rounded-2xl md:rounded-3xl">
+                <Card className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm'} rounded-2xl md:rounded-3xl`}>
                   <CardContent className="p-4 md:p-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                       {portfolioItems.map((item, index) => (
@@ -674,14 +672,14 @@ const MediaKitSetup = () => {
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: index * 0.1 }}
-                          className="relative aspect-[3/4] rounded-xl md:rounded-2xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-white/10 group"
+                          className={`relative aspect-[3/4] rounded-xl md:rounded-2xl overflow-hidden ${themeKey === 'dark' ? 'bg-gradient-to-br from-blue-600/20 to-blue-800/20 border-white/10' : 'bg-slate-50 border-slate-100'} border group`}
                         >
                           {/* Content Preview */}
                           <div className="absolute inset-0 flex items-center justify-center">
                             {item.content_type === "video" ? (
-                              <Play className="h-10 w-10 md:h-12 md:w-12 text-purple-400" />
+                              <Play className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />
                             ) : (
-                              <Camera className="h-10 w-10 md:h-12 md:w-12 text-purple-400" />
+                              <Camera className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />
                             )}
                           </div>
 
@@ -719,17 +717,17 @@ const MediaKitSetup = () => {
                   </CardContent>
                 </Card>
               ) : (
-                <Card className="bg-white/5 border-white/10 rounded-2xl md:rounded-3xl">
+                <Card className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm'} rounded-2xl md:rounded-3xl`}>
                   <CardContent className="p-8 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="h-16 w-16 rounded-full bg-purple-500/10 flex items-center justify-center">
-                        <LinkIcon className="h-8 w-8 text-purple-500" />
+                      <div className="h-16 w-16 rounded-full bg-blue-500/10 flex items-center justify-center">
+                        <LinkIcon className="h-8 w-8 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-white mb-1">
+                        <h3 className={`text-lg font-bold ${theme.text} mb-1`}>
                           No posts added yet
                         </h3>
-                        <p className="text-sm text-white/60">
+                        <p className={`text-sm ${theme.muted}`}>
                           Add at least 3 Instagram links above to build your portfolio
                         </p>
                       </div>
@@ -742,8 +740,7 @@ const MediaKitSetup = () => {
               <div className="flex gap-3">
                 <Button
                   onClick={() => setStep(2)}
-                  variant="outline"
-                  className="flex-1 border-white/20 text-white hover:bg-white/10 py-6 rounded-xl"
+                  className={`flex-1 bg-transparent border border-solid transition-all ${themeKey === 'dark' ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900'} py-6 rounded-xl`}
                 >
                   Back
                 </Button>
@@ -756,7 +753,7 @@ const MediaKitSetup = () => {
                     setStep(4);
                   }}
                   disabled={portfolioItems.length < 3}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-6 rounded-xl"
+                  className={`flex-1 text-white font-bold py-6 rounded-xl transition-all border border-transparent ${themeKey === 'light' ? 'bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg' : 'bg-gradient-to-r from-blue-600 to-pink-500 hover:from-blue-700 hover:to-pink-600'}`}
                 >
                   Continue
                   <ArrowRight className="h-5 w-5 ml-2" />
@@ -768,10 +765,10 @@ const MediaKitSetup = () => {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm text-yellow-200 font-semibold mb-1">
+                      <p className={`text-sm ${themeKey === 'dark' ? 'text-yellow-200' : 'text-yellow-800'} font-semibold mb-1`}>
                         Add at least 3 Instagram links to continue
                       </p>
-                      <p className="text-xs text-yellow-200/80">
+                      <p className={`text-xs ${themeKey === 'dark' ? 'text-yellow-200/80' : 'text-yellow-700'}`}>
                         Progress: {portfolioItems.length}/3 posts added. Add{" "}
                         {3 - portfolioItems.length} more to proceed.
                       </p>
@@ -791,13 +788,13 @@ const MediaKitSetup = () => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="space-y-6"
             >
-              <Card className="bg-white/5 border-white/10 rounded-2xl md:rounded-3xl">
+              <Card className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm'} rounded-2xl md:rounded-3xl`}>
                 <CardHeader>
-                  <CardTitle className="text-xl md:text-2xl text-white flex items-center gap-2">
-                    <Briefcase className="h-6 w-6 text-purple-400" />
+                  <CardTitle className={`text-xl md:text-2xl ${theme.text} flex items-center gap-2`}>
+                    <Briefcase className="h-6 w-6 text-blue-600" />
                     Your Services
                   </CardTitle>
-                  <CardDescription className="text-white/60 text-sm md:text-base">
+                  <CardDescription className={theme.muted}>
                     Choose from our templates or create your own custom services (optional)
                   </CardDescription>
                 </CardHeader>
@@ -805,23 +802,23 @@ const MediaKitSetup = () => {
                   {/* Selected Services */}
                   {services.length > 0 && (
                     <div className="space-y-3">
-                      <h3 className="text-sm font-semibold text-white/80">Your Services ({services.length}/6)</h3>
+                      <h3 className={`text-sm font-semibold ${themeKey === 'dark' ? 'text-white/80' : 'text-slate-700'}`}>Your Services ({services.length}/6)</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {services.map((service, index) => (
-                          <div
-                            key={index}
-                            className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-white/10 relative group"
-                          >
-                            <button
-                              onClick={() => handleRemoveService(index)}
-                              className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X size={12} />
-                            </button>
-                            <h4 className="font-bold text-white text-sm mb-1">{service.name}</h4>
-                            <p className="text-xs text-white/60 line-clamp-2">{service.description}</p>
-                            <p className="text-xs text-purple-400 font-semibold mt-2">{service.price}</p>
-                          </div>
+                           <div
+                             key={index}
+                             className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-white/10 relative group"
+                           >
+                             <button
+                               onClick={() => handleRemoveService(index)}
+                               className="absolute top-2 right-2 bg-rose-500/80 hover:bg-rose-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                             >
+                               <X size={12} />
+                             </button>
+                             <h4 className={`font-bold ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'} text-sm mb-1`}>{service.name}</h4>
+                             <p className={`text-xs ${themeKey === 'dark' ? 'text-white/60' : 'text-slate-600'} line-clamp-2`}>{service.description}</p>
+                             <p className="text-xs text-blue-400 font-semibold mt-2">{service.price}</p>
+                           </div>
                         ))}
                       </div>
                     </div>
@@ -829,20 +826,20 @@ const MediaKitSetup = () => {
 
                   {/* Service Templates */}
                   <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-white/80">Choose from Templates</h3>
+                    <h3 className={`text-sm font-semibold ${themeKey === 'dark' ? 'text-white/80' : 'text-slate-700'}`}>Choose from Templates</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2">
                       {SERVICE_TEMPLATES.map((template, index) => (
                         <button
                           key={index}
                           onClick={() => handleAddService(template)}
                           disabled={services.length >= 6}
-                          className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed group"
+                          className={`p-4 rounded-xl ${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'} border hover:border-blue-500/50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed group`}
                         >
                           <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-bold text-white text-sm">{template.name}</h4>
-                            <Plus size={16} className="text-purple-400 group-hover:scale-110 transition-transform" />
+                            <h4 className={`font-bold text-sm ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}>{template.name}</h4>
+                            <Plus size={16} className="text-blue-400 group-hover:scale-110 transition-transform" />
                           </div>
-                          <p className="text-xs text-white/60 line-clamp-2">{template.description}</p>
+                          <p className={`text-xs line-clamp-2 ${themeKey === 'dark' ? 'text-white/60' : 'text-slate-600'}`}>{template.description}</p>
                         </button>
                       ))}
                     </div>
@@ -852,37 +849,36 @@ const MediaKitSetup = () => {
                   {!isCreatingCustomService ? (
                     <Button
                       onClick={() => setIsCreatingCustomService(true)}
-                      variant="outline"
-                      className="w-full border-white/20 text-white hover:bg-white/10 py-4 rounded-xl"
+                      className={`w-full py-4 rounded-xl bg-transparent border border-solid transition-all ${themeKey === 'dark' ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900'}`}
                       disabled={services.length >= 6}
                     >
                       <Plus className="h-5 w-5 mr-2" />
                       Create Custom Service
                     </Button>
                   ) : (
-                    <div className="p-4 rounded-xl bg-white/5 border border-purple-500/30 space-y-3">
-                      <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                        <Edit3 size={16} className="text-purple-400" />
+                    <div className={`p-4 rounded-xl ${themeKey === 'dark' ? 'bg-white/5' : 'bg-slate-50'} border border-blue-500/30 space-y-3`}>
+                      <h3 className={`text-sm font-semibold flex items-center gap-2 ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                        <Edit3 size={16} className="text-blue-400" />
                         Custom Service
                       </h3>
                       <Input
                         value={customService.name}
                         onChange={(e) => setCustomService({ ...customService, name: e.target.value })}
                         placeholder="Service Name"
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl"
+                        className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'} rounded-xl`}
                       />
                       <Textarea
                         value={customService.description}
                         onChange={(e) => setCustomService({ ...customService, description: e.target.value })}
                         placeholder="Service Description"
                         rows={3}
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none rounded-xl"
+                        className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'} resize-none rounded-xl`}
                       />
                       <Input
                         value={customService.price}
                         onChange={(e) => setCustomService({ ...customService, price: e.target.value })}
                         placeholder="Price (e.g., $500, Custom, Contact for pricing)"
-                        className="bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-xl"
+                        className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white placeholder:text-white/40' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'} rounded-xl`}
                       />
                       <div className="flex gap-2">
                         <Button
@@ -890,14 +886,14 @@ const MediaKitSetup = () => {
                             setIsCreatingCustomService(false);
                             setCustomService({ name: "", description: "", price: "Custom" });
                           }}
-                          variant="outline"
-                          className="flex-1 border-white/20 text-white hover:bg-white/10"
+                          variant="ghost"
+                          className={`flex-1 border border-solid transition-all ${themeKey === 'dark' ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900'}`}
                         >
                           Cancel
                         </Button>
                         <Button
                           onClick={handleAddCustomService}
-                          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500"
+                          className={`flex-1 text-white transition-all border border-transparent ${themeKey === 'light' ? 'bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
                         >
                           Add Service
                         </Button>
@@ -909,15 +905,14 @@ const MediaKitSetup = () => {
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <Button
                       onClick={() => setStep(3)}
-                      variant="outline"
-                      className="flex-1 border-white/20 text-white hover:bg-white/10 py-6 rounded-xl"
+                      className={`flex-1 py-6 rounded-xl bg-transparent border border-solid transition-all ${themeKey === 'dark' ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900'}`}
                     >
                       Back
                     </Button>
                     <Button
                       onClick={handlePublishMediaKit}
                       disabled={loading}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-6 rounded-xl"
+                      className={`flex-1 text-white font-bold py-6 rounded-xl transition-all border border-transparent ${themeKey === 'light' ? 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
                     >
                       {loading ? "Publishing..." : services.length > 0 ? "Publish Media Kit" : "Skip & Publish"}
                       <Check className="h-5 w-5 ml-2" />
@@ -925,7 +920,7 @@ const MediaKitSetup = () => {
                   </div>
 
                   {services.length === 0 && (
-                    <p className="text-center text-sm text-white/40">
+                    <p className={`text-center text-sm ${themeKey === 'dark' ? 'text-white/40' : 'text-slate-500'}`}>
                       Services are optional. You can skip this step or add them later.
                     </p>
                   )}
@@ -941,36 +936,36 @@ const MediaKitSetup = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
             >
-              <Card className="bg-white/5 border-2 border-purple-500/30 rounded-2xl md:rounded-3xl">
+              <Card className={`${themeKey === 'dark' ? 'bg-white/5 border-2 border-blue-500/30' : 'bg-white border-2 border-blue-500/10 shadow-2xl shadow-blue-500/5'} rounded-2xl md:rounded-3xl`}>
                 <CardContent className="p-8 md:p-12 text-center space-y-6 md:space-y-8">
                   <div className="flex justify-center">
-                    <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                       <CheckCircle2 className="h-10 w-10 md:h-12 md:w-12 text-white" />
                     </div>
                   </div>
 
                   <div>
-                    <h2 className="text-3xl md:text-4xl font-black text-white mb-3">
+                    <h2 className={`text-3xl md:text-4xl font-black ${theme.text} mb-3`}>
                       🎉 Media Kit Published!
                     </h2>
-                    <p className="text-white/60 text-sm md:text-base">
+                    <p className={`${theme.muted} text-sm md:text-base`}>
                       Your professional portfolio is now live and ready to impress brands
                     </p>
                   </div>
 
                   {/* Share Link */}
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-4 md:p-6">
-                    <p className="text-sm text-white/60 mb-3">Your Media Kit URL:</p>
+                  <div className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} rounded-xl p-4 md:p-6`}>
+                    <p className={`text-sm ${theme.muted} mb-3`}>Your Media Kit URL:</p>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <input
                         type="text"
                         value={mediaKitUrl}
                         readOnly
-                        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm outline-none"
+                        className={`flex-1 ${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'} rounded-lg px-4 py-3 text-sm outline-none`}
                       />
                       <Button
                         onClick={copyMediaKitLink}
-                        className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-semibold px-6 rounded-lg whitespace-nowrap"
+                        className={`text-white font-black px-6 rounded-lg whitespace-nowrap h-12 md:h-auto transition-all ${themeKey === 'light' ? 'bg-blue-600 hover:bg-blue-700 shadow-md' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
                       >
                         Copy Link
                       </Button>
@@ -978,26 +973,26 @@ const MediaKitSetup = () => {
                   </div>
 
                   {/* Next Steps */}
-                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-6 text-left">
-                    <h3 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
-                      <Sparkles className="text-purple-400" size={20} />
+                  <div className={`${themeKey === 'dark' ? 'bg-blue-500/10 border-blue-500/30' : 'bg-blue-50 border-blue-100'} border rounded-xl p-6 text-left`}>
+                    <h3 className={`text-lg md:text-xl font-black ${themeKey === 'dark' ? 'text-white' : 'text-blue-900'} mb-4 flex items-center gap-2`}>
+                      <Sparkles className="text-blue-600" size={20} />
                       Next Steps
                     </h3>
-                    <ol className="space-y-3 text-sm md:text-base text-purple-200">
+                    <ol className={`space-y-3 text-sm md:text-base ${themeKey === 'dark' ? 'text-blue-200' : 'text-blue-800'}`}>
                       <li className="flex items-start gap-3">
-                        <span className="bg-purple-500 text-white rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                        <span className="bg-blue-600 text-white rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                           1
                         </span>
                         <span>Add this link to your Instagram bio</span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <span className="bg-purple-500 text-white rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                        <span className="bg-blue-600 text-white rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                           2
                         </span>
                         <span>Share it when brands reach out to you</span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <span className="bg-purple-500 text-white rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                        <span className="bg-blue-600 text-white rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">
                           3
                         </span>
                         <span>Update your portfolio regularly with new content</span>
@@ -1014,15 +1009,14 @@ const MediaKitSetup = () => {
                       className="flex-1"
                     >
                       <Button
-                        variant="outline"
-                        className="w-full border-white/20 text-white hover:bg-white/10 py-6 rounded-xl font-semibold"
+                        className={`w-full bg-transparent border border-solid transition-all ${themeKey === 'dark' ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900'} py-6 rounded-xl font-bold`}
                       >
                         View Live Media Kit
                       </Button>
                     </a>
                     <Button
                       onClick={() => setStep(4)}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-6 rounded-xl"
+                      className={`flex-1 text-white font-black py-6 rounded-xl transition-all border border-transparent ${themeKey === 'light' ? 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
                     >
                       Edit Media Kit
                     </Button>
@@ -1033,12 +1027,12 @@ const MediaKitSetup = () => {
           )}
         </AnimatePresence>
 
-        <div className="text-center pt-4">
+        <div className="text-center pt-8">
           <button
             onClick={() => navigate("/dashboard")}
-            className="text-white/50 hover:text-white text-sm transition-colors"
+            className={`${theme.muted} hover:text-blue-500 text-sm transition-colors font-bold flex items-center justify-center mx-auto gap-2 group`}
           >
-            ← Back to Dashboard
+            <span className="group-hover:-translate-x-1 transition-transform">←</span> Back to Dashboard
           </button>
         </div>
       </div>

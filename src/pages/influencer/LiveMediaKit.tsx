@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
+import { ThemeKey } from "@/theme/themes";
+import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
+import { TiltCard } from "@/components/influencer/TiltCard";
 
 interface CreatorProfile {
   id: string;
@@ -68,10 +72,24 @@ const LiveMediaKit = () => {
   const [profile, setProfile] = useState<CreatorProfile | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<
-    "portfolio" | "audience" | "services"
-  >("portfolio");
+  const [activeTab, setActiveTab] = useState<"portfolio" | "audience" | "services">("portfolio");
   const [scrolled, setScrolled] = useState(false);
+  // FORCE PREMIUM SINGLE LOOK (Live Media Kit ignores global app theme)
+  const themeKey = 'dark' as ThemeKey;
+  const theme = {
+    background: '#050505',
+    text: 'text-white',
+    muted: 'text-white/60',
+    border: 'border-white/10',
+    card: 'bg-white/5 border-white/10',
+    cardHover: 'hover:bg-white/10',
+    input: 'bg-white/5 border-white/10 text-white placeholder:text-white/40',
+    inputFocus: 'focus:border-blue-500 focus:bg-white/10',
+    radius: 'rounded-2xl',
+    accent: 'text-blue-500',
+    activeTab: 'bg-white/10 text-white',
+    inactiveTab: 'text-white/60 hover:text-white hover:bg-white/5'
+  };
 
   useEffect(() => {
     loadCreatorProfile();
@@ -101,7 +119,7 @@ const LiveMediaKit = () => {
         .order("display_order", { ascending: true });
 
       setProfile(influencerData);
-      setPortfolio(portfolioData || []);
+      setPortfolio((portfolioData as PortfolioItem[]) || []);
     } catch (error) {
       console.error("Error loading profile:", error);
       toast.error("Creator profile not found");
@@ -112,8 +130,8 @@ const LiveMediaKit = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500" />
+      <div className={`min-h-screen ${themeKey === 'dark' ? 'bg-[#050505]' : 'bg-slate-50'} flex items-center justify-center`}>
+        <div className={`animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 ${themeKey === 'dark' ? 'border-blue-600' : 'border-blue-600'}`} />
       </div>
     );
   }
@@ -161,40 +179,41 @@ const LiveMediaKit = () => {
       : profile.followers_count * 0.36; // realistic IG reach assumption
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-purple-500/30">
-      {/* Dynamic Animated Background */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-900/20 blur-[120px] rounded-full" />
-      </div>
+    <div 
+      className={`min-h-screen transition-all duration-700 selection:bg-blue-500/30 overflow-x-hidden`}
+      style={{ background: theme.background }}
+    >
+      <ThemedStudioBackground themeKey={themeKey} />
 
       {/* Navigation */}
       <nav
-        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        className={`fixed top-0 w-full z-50 transition-all duration-500 ${
           scrolled
-            ? "bg-black/80 backdrop-blur-md py-3"
-            : "bg-transparent py-4 md:py-6"
+            ? (themeKey === 'dark' ? "bg-black/90" : "bg-white/90") + " backdrop-blur-xl border-b border-white/5 py-4"
+            : "bg-transparent py-6 md:py-8"
         }`}
       >
-        <div className="max-w-6xl mx-auto px-4 md:px-6 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-tr from-purple-600 to-pink-500 rounded-lg flex items-center justify-center font-bold text-sm md:text-base">
+            <div className={`w-7 h-7 md:w-8 md:h-8 ${themeKey === 'dark' ? 'bg-white/5 border-white/10 text-blue-400' : 'bg-blue-600 text-white'} rounded-lg flex items-center justify-center font-black text-sm md:text-base border shadow-sm`}>
               D
             </div>
-            <span className="font-bold tracking-tight text-lg md:text-xl">
+            <span className={`font-black tracking-tight text-lg md:text-xl ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}>
               DOTFLUENCE
             </span>
           </div>
-          <a
+          <motion.a
             href={`https://instagram.com/${profile.instagram_handle}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-white text-black px-4 md:px-5 py-2 rounded-full text-xs md:text-sm font-bold flex items-center gap-2 hover:scale-105 transition-transform"
+            whileHover={{ scale: 1.05, rotateZ: 2 }}
+            whileTap={{ scale: 0.95 }}
+            className={`${themeKey === 'dark' ? 'bg-white text-black' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'} px-4 md:px-6 py-2.5 rounded-full text-xs md:text-sm font-black flex items-center gap-2 transition-all`}
           >
             <Instagram size={14} className="md:w-4 md:h-4" />
             <span className="hidden sm:inline">Contact Creator</span>
             <span className="sm:hidden">Contact</span>
-          </a>
+          </motion.a>
         </div>
       </nav>
 
@@ -205,11 +224,16 @@ const LiveMediaKit = () => {
           <div className="md:hidden space-y-6">
             {/* Profile Image - Mobile */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
               className="relative flex justify-center"
             >
-              <div className="relative z-10 aspect-[4/5] w-full max-w-xs rounded-[2rem] overflow-hidden border border-white/20 shadow-2xl">
+              <motion.div
+                animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
+                transition={{ duration: 4.3, repeat: Infinity, ease: "easeInOut" }}
+                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+                className={`relative z-10 aspect-[4/5] w-full max-w-xs rounded-[2.5rem] overflow-hidden border ${themeKey === 'dark' ? 'border-white/10' : 'border-black/5'} shadow-[0_0_50px_rgba(37,99,235,0.15)] group-hover:shadow-[0_0_80px_rgba(37,99,235,0.3)] transition-shadow duration-500`}
+              >
                 {profile.profile_image_url ? (
                   <img
                     src={profile.profile_image_url}
@@ -217,7 +241,7 @@ const LiveMediaKit = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center text-6xl font-bold">
+                  <div className={`w-full h-full ${themeKey === 'dark' ? 'bg-gradient-to-br from-blue-500/20 to-blue-800/20' : 'bg-slate-100'} flex items-center justify-center text-6xl font-bold`}>
                     {profile.instagram_handle.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -242,8 +266,8 @@ const LiveMediaKit = () => {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="absolute -top-4 -left-4 w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full blur-2xl opacity-50" />
+              </motion.div>
+              <div className={`absolute -top-4 -left-4 w-20 h-20 bg-blue-500/20 rounded-full blur-2xl opacity-50`} />
             </motion.div>
 
             {/* Info - Mobile */}
@@ -251,19 +275,19 @@ const LiveMediaKit = () => {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs font-medium"
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/5'} border ${theme.muted} text-xs font-medium`}
               >
-                <CheckCircle2 size={12} className="text-blue-400" />
+                <CheckCircle2 size={12} className={themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} />
                 Verified Dotfluence Creator
               </motion.div>
 
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-4xl sm:text-5xl font-black tracking-tighter leading-[0.9] break-words"
+                className={`text-4xl sm:text-5xl font-black tracking-tighter leading-[0.9] break-words ${themeKey === 'dark' ? 'text-white' : 'text-slate-950'}`}
               >
                 {profile.full_name.split(" ")[0]} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400">
+                <span className={`text-transparent bg-clip-text bg-gradient-to-r ${themeKey === 'dark' ? 'from-blue-200 via-blue-300 to-blue-200' : 'from-blue-600 via-blue-700 to-blue-900'}`}>
                   {profile.full_name.split(" ").slice(1).join(" ")}
                 </span>
               </motion.h1>
@@ -272,7 +296,7 @@ const LiveMediaKit = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-sm text-white/60 leading-relaxed break-words"
+                className={`text-sm ${theme.muted} leading-relaxed break-words`}
               >
                 {profile.media_kit_bio || profile.bio}
               </motion.p>
@@ -296,19 +320,19 @@ const LiveMediaKit = () => {
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs font-medium"
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/5'} border ${theme.muted} text-xs font-medium`}
               >
-                <CheckCircle2 size={12} className="text-blue-400" />
+                <CheckCircle2 size={12} className="text-blue-600" />
                 Verified Dotfluence Creator
               </motion.div>
 
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-6xl lg:text-8xl font-black tracking-tighter leading-[0.9] break-words pr-4"
+                className={`text-6xl lg:text-8xl font-black tracking-tighter leading-[0.9] break-words pr-4 ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}
               >
                 {profile.full_name.split(" ")[0]} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400">
+                <span className={`text-transparent bg-clip-text bg-gradient-to-r ${themeKey === 'dark' ? 'from-blue-200 via-blue-300 to-blue-200' : 'from-blue-600 via-blue-700 to-blue-900'}`}>
                   {profile.full_name.split(" ").slice(1).join(" ")}
                 </span>
               </motion.h1>
@@ -317,7 +341,7 @@ const LiveMediaKit = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-base lg:text-lg text-white/60 max-w-lg leading-relaxed break-words pr-4"
+                className={`text-base lg:text-lg ${theme.muted} max-w-lg leading-relaxed break-words pr-4 font-medium`}
               >
                 {profile.media_kit_bio || profile.bio}
               </motion.p>
@@ -326,7 +350,7 @@ const LiveMediaKit = () => {
                 {profile.niches?.map((niche) => (
                   <span
                     key={niche}
-                    className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm hover:bg-white/10 transition-colors"
+                    className={`px-5 py-2.5 rounded-2xl ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/5'} border ${theme.muted} text-xs font-black uppercase tracking-widest hover:scale-105 transition-all`}
                   >
                     {niche}
                   </span>
@@ -335,11 +359,18 @@ const LiveMediaKit = () => {
             </div>
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="md:col-span-5 relative"
+              initial={{ opacity: 0, scale: 0.8, rotateX: 20, y: 50 }}
+              animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
+              transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+              className="md:col-span-5 relative group"
+              style={{ perspective: 1000 }}
             >
-              <div className="relative z-10 aspect-[4/5] max-w-sm mx-auto rounded-[2rem] overflow-hidden border border-white/20 shadow-2xl">
+              <motion.div
+                animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
+                transition={{ duration: 4.7, repeat: Infinity, ease: "easeInOut" }}
+                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+                className="relative z-10 aspect-[4/5] max-w-sm mx-auto rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_40px_80px_rgba(0,0,0,0.5)] group-hover:shadow-[0_40px_100px_rgba(37,99,235,0.4)] transition-all duration-700"
+              >
                 {profile.profile_image_url ? (
                   <img
                     src={profile.profile_image_url}
@@ -347,7 +378,7 @@ const LiveMediaKit = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center text-6xl font-bold">
+                  <div className={`w-full h-full ${themeKey === 'dark' ? 'bg-gradient-to-br from-blue-500/20 to-blue-800/20' : 'bg-slate-100'} flex items-center justify-center text-6xl font-bold`}>
                     {profile.instagram_handle.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -372,8 +403,8 @@ const LiveMediaKit = () => {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full blur-2xl opacity-50" />
+              </motion.div>
+              <div className={`absolute -top-4 -right-4 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl opacity-50`} />
             </motion.div>
           </div>
         </div>
@@ -381,7 +412,7 @@ const LiveMediaKit = () => {
 
       {/* Stats Bar */}
       <section className="relative z-10 px-4 md:px-6 py-8 md:py-12">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
               {
@@ -403,14 +434,19 @@ const LiveMediaKit = () => {
             ].map((stat, i) => (
               <motion.div
                 key={i}
-                whileHover={{ y: -5 }}
-                className="p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm"
+                initial={{ opacity: 0, y: 50, rotateX: -30 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.8, type: "spring", bounce: 0.4 }}
+                animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
+                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+                className={`p-6 md:p-8 rounded-[2rem] ${theme.card} border border-white/5 shadow-2xl hover:shadow-[0_20px_50px_rgba(37,99,235,0.2)] transition-colors duration-500`}
               >
-                <stat.icon className="text-purple-400 mb-2 md:mb-3" size={18} />
-                <p className="text-2xl md:text-3xl font-bold tracking-tight">
+                <stat.icon className={`${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-600'} mb-3 md:mb-4 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]`} size={24} />
+                <p className={`text-3xl md:text-4xl font-black tracking-tighter ${theme.text}`} style={{ transform: 'translateZ(20px)' }}>
                   {stat.value}
                 </p>
-                <p className="text-white/40 text-xs md:text-sm mt-1">
+                <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest mt-1 ${theme.muted}`} style={{ transform: 'translateZ(10px)' }}>
                   {stat.label}
                 </p>
               </motion.div>
@@ -421,21 +457,23 @@ const LiveMediaKit = () => {
 
       {/* Main Content Tabs */}
       <section className="relative z-10 px-4 md:px-6 pb-16 md:pb-24">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex gap-4 md:gap-8 border-b border-white/10 mb-8 md:mb-12 overflow-x-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className={`flex gap-4 md:gap-8 ${themeKey === 'dark' ? 'border-white/10' : 'border-slate-200'} mb-8 md:mb-12 overflow-x-auto`}>
             {["portfolio", "audience", "services"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
-                className={`pb-3 md:pb-4 text-xs md:text-sm font-bold uppercase tracking-widest relative transition-colors whitespace-nowrap ${
-                  activeTab === tab ? "text-white" : "text-white/40"
+                className={`pb-3 md:pb-4 text-xs md:text-sm font-black uppercase tracking-[0.2em] relative transition-colors whitespace-nowrap ${
+                  activeTab === tab 
+                    ? (themeKey === 'dark' ? "text-white" : "text-blue-600 font-black") 
+                    : (themeKey === 'dark' ? "text-white/40" : "text-slate-400 font-bold")
                 }`}
               >
                 {tab}
                 {activeTab === tab && (
                   <motion.div
                     layoutId="tab"
-                    className="absolute bottom-0 left-0 right-0 h-1 bg-purple-500"
+                    className={`absolute bottom-0 left-0 right-0 h-1 ${themeKey === 'dark' ? 'bg-blue-600' : 'bg-blue-600'}`}
                   />
                 )}
               </button>
@@ -451,16 +489,22 @@ const LiveMediaKit = () => {
                 exit={{ opacity: 0, y: -10 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
               >
-                {portfolio.map((item) => (
-                  <div
+                {portfolio.map((item, index) => (
+                  <motion.div
                     key={item.id}
-                    className="group relative aspect-[3/4] rounded-2xl md:rounded-3xl overflow-hidden bg-white/5 border border-white/10"
+                    initial={{ opacity: 0, y: 50, rotateX: 20 }}
+                    animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.6, type: "spring", bounce: 0.4 }}
+                    animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
+                transition={{ duration: 4.7, repeat: Infinity, ease: "easeInOut" }}
+                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+                    className={`group relative aspect-[3/4] rounded-[2rem] overflow-hidden ${theme.card} border border-white/5 transition-all duration-500 hover:shadow-[0_30px_60px_rgba(37,99,235,0.2)]`}
                   >
-                    <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                    <div className={`w-full h-full bg-gradient-to-br ${themeKey === 'dark' ? 'from-blue-600/10' : 'from-blue-600/10'} to-transparent flex items-center justify-center`}>
                       {item.content_type === "video" ? (
-                        <Play className="h-12 w-12 md:h-16 md:w-16 text-purple-400" />
+                        <Play className={`h-12 w-12 md:h-16 md:w-16 ${themeKey === 'dark' ? 'text-blue-600' : 'text-blue-600'} opacity-50`} />
                       ) : (
-                        <Camera className="h-12 w-12 md:h-16 md:w-16 text-purple-400" />
+                        <Camera className={`h-12 w-12 md:h-16 md:w-16 ${themeKey === 'dark' ? 'text-blue-600' : 'text-blue-600'} opacity-50`} />
                       )}
                     </div>
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity p-6 md:p-8 flex flex-col justify-end">
@@ -468,18 +512,18 @@ const LiveMediaKit = () => {
                         <div className="flex items-center gap-2">
                           <Eye
                             size={16}
-                            className="text-purple-400 md:w-[18px] md:h-[18px]"
+                            className={`${themeKey === 'dark' ? 'text-blue-600' : 'text-blue-600'} md:w-[18px] md:h-[18px]`}
                           />
-                          <span className="font-bold text-sm md:text-base">
+                          <span className={`font-black text-sm md:text-base ${theme.text}`}>
                             {formatNumber(item.reach_count)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Heart
                             size={16}
-                            className="text-pink-400 md:w-[18px] md:h-[18px]"
+                            className="text-rose-500 md:w-[18px] md:h-[18px]"
                           />
-                          <span className="font-bold text-sm md:text-base">
+                          <span className={`font-black text-sm md:text-base ${theme.text}`}>
                             {formatNumber(item.engagement_count)}
                           </span>
                         </div>
@@ -510,7 +554,7 @@ const LiveMediaKit = () => {
                         />
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </motion.div>
             )}
@@ -522,18 +566,23 @@ const LiveMediaKit = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="grid md:grid-cols-2 gap-6 md:gap-8"
               >
-                <div className="p-6 md:p-8 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10">
-                  <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
+                <motion.div 
+                  animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
+                transition={{ duration: 4.4, repeat: Infinity, ease: "easeInOut" }}
+                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+                  className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)]`}
+                >
+                  <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2" style={{ transform: 'translateZ(10px)' }}>
                     <Globe
                       size={18}
-                      className="text-purple-400 md:w-5 md:h-5"
+                      className={themeKey === 'dark' ? 'text-blue-600' : 'text-blue-600'}
                     />{" "}
                     Audience Insights
                   </h3>
-                  <div className="space-y-4">
+                  <div className="space-y-4" style={{ transform: 'translateZ(20px)' }}>
                     <div className="text-center py-6">
                       <BarChart3
-                        className="mx-auto mb-4 text-purple-400"
+                        className={`mx-auto mb-4 ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'}`}
                         size={48}
                       />
                       <p className="text-white/60 text-sm">
@@ -541,24 +590,29 @@ const LiveMediaKit = () => {
                       </p>
                     </div>
                   </div>
-                </div>
-                <div className="p-6 md:p-8 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10">
-                  <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
-                    <Users size={18} className="text-pink-400 md:w-5 md:h-5" />{" "}
+                </motion.div>
+                <motion.div 
+                  animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
+                transition={{ duration: 5.1, repeat: Infinity, ease: "easeInOut" }}
+                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+                  className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)]`}
+                >
+                  <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2" style={{ transform: 'translateZ(10px)' }}>
+                    <Users size={18} className="text-rose-500 md:w-5 md:h-5" />{" "}
                     Engagement Quality
                   </h3>
-                  <div className="text-center py-6">
-                    <div className="text-4xl md:text-5xl font-black text-purple-400 mb-2">
+                  <div className="text-center py-10" style={{ transform: 'translateZ(20px)' }}>
+                    <div className={`text-5xl md:text-7xl font-black ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} mb-2 tracking-tighter`}>
                       {avgEngagement.toFixed(1)}%
                     </div>
-                    <div className="text-white/40 text-xs md:text-sm uppercase tracking-widest">
+                    <div className={`text-[10px] md:text-xs font-black uppercase tracking-[0.2em] ${theme.muted}`}>
                       Average Engagement Rate
                     </div>
-                    <p className="text-white/60 text-xs md:text-sm mt-4">
+                    <p className={`text-sm ${theme.muted} mt-6 font-medium`}>
                       High-quality, authentic audience interaction
                     </p>
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
             )}
 
@@ -571,18 +625,24 @@ const LiveMediaKit = () => {
               >
                 {profile.services && profile.services.length > 0 ? (
                   profile.services.map((service, i) => (
-                    <div
+                    <motion.div
                       key={i}
-                      className="p-6 md:p-8 rounded-2xl md:rounded-3xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-colors"
+                      initial={{ opacity: 0, y: 30, rotateX: -20 }}
+                      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                      transition={{ delay: i * 0.1, duration: 0.6, type: "spring", bounce: 0.4 }}
+                      animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
+                transition={{ duration: 5.8, repeat: Infinity, ease: "easeInOut" }}
+                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+                      className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border-white/5 border hover:border-blue-600/50 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)]`}
                     >
-                      <h4 className="text-lg md:text-xl font-bold mb-2">
+                      <h4 className={`text-xl md:text-2xl font-black mb-2 ${theme.text}`} style={{ transform: 'translateZ(10px)' }}>
                         {service.name}
                       </h4>
-                      <p className="text-white/40 text-xs md:text-sm mb-4 md:mb-6 leading-relaxed">
+                      <p className={`${theme.muted} text-xs md:text-sm mb-6 leading-relaxed font-medium`} style={{ transform: 'translateZ(10px)' }}>
                         {service.description}
                       </p>
-                      <div className="flex justify-between items-center">
-                        <span className="text-purple-400 font-bold text-sm md:text-base">
+                      <div className="flex justify-between items-center" style={{ transform: 'translateZ(20px)' }}>
+                        <span className={`${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} font-bold text-sm md:text-base`}>
                           {service.price}
                         </span>
                         <a
@@ -590,16 +650,16 @@ const LiveMediaKit = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <button className="text-xs font-bold uppercase tracking-widest text-white/60 hover:text-white flex items-center gap-1">
+                          <button className={`text-xs font-bold uppercase tracking-widest ${themeKey === 'dark' ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-600'} flex items-center gap-1`}>
                             Inquire <ExternalLink size={12} />
                           </button>
                         </a>
                       </div>
-                    </div>
+                    </motion.div>
                   ))
                 ) : (
-                  <div className="col-span-full p-8 rounded-2xl bg-white/5 border border-white/10 text-center">
-                    <p className="text-white/60 text-sm">
+                  <div className={`col-span-full p-8 rounded-2xl ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} text-center`}>
+                    <p className={`${theme.muted} text-sm`}>
                       Contact creator directly for collaboration opportunities
                     </p>
                   </div>
@@ -613,9 +673,9 @@ const LiveMediaKit = () => {
       {/* Final CTA */}
       <section className="relative z-10 px-4 md:px-6 py-16 md:py-32 text-center">
         <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-          <h2 className="text-3xl md:text-4xl lg:text-6xl font-black leading-tight break-words px-2">
+          <h2 className={`text-4xl md:text-5xl lg:text-7xl font-black leading-tight break-words px-2 ${theme.text}`}>
             Let's create something{" "}
-            <span className="italic font-serif text-purple-400">
+            <span className={`italic font-serif ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'}`}>
               extraordinary
             </span>{" "}
             together.
@@ -627,7 +687,7 @@ const LiveMediaKit = () => {
               rel="noopener noreferrer"
               className="w-full md:w-auto"
             >
-              <button className="w-full md:w-auto bg-gradient-to-r from-purple-600 to-pink-500 px-8 md:px-10 py-3 md:py-4 rounded-2xl font-bold text-sm md:text-lg hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] transition-all">
+              <button className={`w-full md:w-auto bg-gradient-to-r ${themeKey === 'dark' ? 'from-blue-600 to-blue-800' : 'from-blue-600 to-blue-800'} px-8 md:px-10 py-3 md:py-4 rounded-2xl font-bold text-sm md:text-lg text-white hover:shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all`}>
                 Start Collaboration
               </button>
             </a>
@@ -637,7 +697,7 @@ const LiveMediaKit = () => {
               rel="noopener noreferrer"
               className="w-full md:w-auto"
             >
-              <button className="w-full md:w-auto bg-white/5 border border-white/10 backdrop-blur-md px-8 md:px-10 py-3 md:py-4 rounded-2xl font-bold text-sm md:text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+              <button className={`w-full md:w-auto ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'} backdrop-blur-md px-8 md:px-10 py-3 md:py-4 rounded-2xl font-bold text-sm md:text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2 ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                 <Mail size={18} className="md:w-5 md:h-5" /> Send Message
               </button>
             </a>

@@ -45,6 +45,7 @@ import { ProfileLinkCard } from "@/components/influencer/ProfileLinkCard";
 import BlockedAccountScreen from "@/components/BlockedAccountScreen";
 import ProfileSetupDrawer from "@/components/influencer/ProfileSetupDrawer";
 import BankDetailsModal from "@/components/influencer/BankDetailsModal";
+import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 import { toast } from "sonner";
 
 /* --------------------------------
@@ -57,20 +58,27 @@ type RecentCampaign = {
 
 // ⚡ MEMOIZED STAT CARD
 const StatCard = memo(({ stat }: { stat: any }) => {
-  const { theme } = useInfluencerTheme();
+  const { theme, themeKey } = useInfluencerTheme();
 
   return (
-    <Card className={`${theme.card} ${theme.radius}`}>
-      <CardHeader className="flex flex-row justify-between items-center pb-2 px-3 pt-3 md:px-6 md:pt-6">
-        <CardTitle className="text-sm opacity-70">{stat.title}</CardTitle>
-        <stat.icon className="h-4 w-4 opacity-70" />
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="w-full"
+    >
+      <Card className={`${theme.card} transition-all duration-300 hover:scale-[1.02]`}>
+      <CardHeader className="flex flex-row justify-between items-center pb-2 px-4 pt-4 md:px-6 md:pt-6">
+        <CardTitle className={`text-[10px] uppercase font-black tracking-widest ${theme.muted}`}>{stat.title}</CardTitle>
+        <stat.icon className={`h-4 w-4 ${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
       </CardHeader>
 
-      <CardContent className="px-3 md:px-6">
-        <div className="text-xl md:text-2xl font-bold">{stat.value}</div>
-        <p className="text-xs opacity-60 mt-1">{stat.note}</p>
+      <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+        <div className={`text-2xl md:text-3xl font-black ${theme.text}`}>{stat.value}</div>
+        <p className={`text-[10px] font-bold mt-1 ${theme.muted}`}>{stat.note}</p>
       </CardContent>
     </Card>
+    </motion.div>
   );
 });
 
@@ -198,16 +206,16 @@ const InfluencerDashboard = () => {
       note: "Currently running",
     },
     {
-      title: "Total Reach",
-      value: followers ? followers.toLocaleString() : "—",
+      title: "Potential Reach",
+      value: stats?.avgReach ? stats.avgReach.toLocaleString() : (followers ? followers.toLocaleString() : "—"),
       icon: TrendingUp,
-      note: "Instagram followers",
+      note: "Avg. reach per post",
     },
     {
       title: "Engagement",
-      value: "Coming soon",
+      value: stats?.avgEngagementRate ? `${stats.avgEngagementRate}%` : "Soon",
       icon: BarChart3,
-      note: "Auto-calculated",
+      note: "Creator health score",
     },
     {
       title: "Earnings",
@@ -217,15 +225,15 @@ const InfluencerDashboard = () => {
     },
   ];
 
-  if (themeLoading || checkingBlockStatus) {
+  if (themeLoading || checkingBlockStatus || (isLoading && !stats)) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center"
+        className="min-h-screen flex items-center justify-center transition-colors duration-500"
         style={{ background: theme.background }}
       >
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white/50" />
-          <p className="text-white/70 text-sm">Loading dashboard...</p>
+        <div className="flex flex-col items-center gap-6">
+          <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-primary" />
+          <p className={`text-sm font-black tracking-widest uppercase opacity-50 ${themeKey === 'dark' ? 'text-white' : 'text-gray-900'}`}>Loading dashboard...</p>
         </div>
       </div>
     );
@@ -236,15 +244,11 @@ const InfluencerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        style={{ background: theme.background }}
-      />
+    <div 
+      className={`influencer-portal min-h-screen relative overflow-hidden pb-20 md:pb-0 transition-colors duration-500`}
+      style={{ background: theme.background }}
+    >
+      <ThemedStudioBackground themeKey={themeKey} />
 
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
       <MobileBottomNav />
@@ -257,17 +261,17 @@ const InfluencerDashboard = () => {
             <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="w-full bg-gradient-to-br from-indigo-600 to-slate-900 border border-indigo-500/30 rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden"
+                className={`w-full ${themeKey === 'dark' ? 'bg-gradient-to-br from-indigo-900/40 to-slate-900/60' : 'bg-gradient-to-br from-purple-100 to-white'} border-2 ${themeKey === 'dark' ? 'border-purple-500/20' : 'border-purple-100'} rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden`}
             >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#ffffff11,transparent_50%)]" />
                 
                 <div className="relative z-10 flex items-center gap-6">
-                    <div className="h-16 w-16 rounded-3xl bg-white/10 backdrop-blur-xl flex items-center justify-center text-white border border-white/10">
+                    <div className={`h-16 w-16 rounded-3xl ${themeKey === 'dark' ? 'bg-white/10 text-white border-white/10' : 'bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-200'} backdrop-blur-xl flex items-center justify-center border`}>
                         <ShieldCheck className="w-8 h-8" />
                     </div>
                     <div className="space-y-1">
-                        <h3 className="font-black text-2xl text-white tracking-tight">Success! Application Submitted</h3>
-                        <p className="text-indigo-100/70 font-medium max-w-sm">
+                        <h3 className={`font-black text-2xl ${themeKey === 'dark' ? 'text-white' : 'text-slate-950'} tracking-tight`}>Success! Application Submitted</h3>
+                        <p className={`font-medium max-w-sm ${themeKey === 'dark' ? 'text-indigo-100/70' : 'text-slate-900/60'}`}>
                           Your profile is currently under review. To browse campaigns, manage applications, and unlock your Media Kit, please complete your creator setup.
                         </p>
                     </div>
@@ -277,7 +281,7 @@ const InfluencerDashboard = () => {
                     <Button 
                         size="lg" 
                         onClick={() => navigate("/account-setup")}
-                        className="w-full sm:w-auto h-16 rounded-2xl bg-white text-indigo-600 hover:bg-slate-50 font-black text-lg px-10 shadow-xl"
+                        className={`w-full sm:w-auto h-16 rounded-2xl ${themeKey === 'dark' ? 'bg-white text-purple-600' : 'bg-purple-600 text-white'} hover:opacity-90 font-black text-lg px-10 shadow-xl transition-all active:scale-95`}
                     >
                         Setup Account <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
@@ -290,15 +294,15 @@ const InfluencerDashboard = () => {
             <motion.div 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full bg-gradient-to-r from-primary/20 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-xl"
+                className={`w-full ${themeKey === 'dark' ? 'bg-purple-500/10 border-purple-500/20' : 'bg-purple-50 border-purple-100'} border rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-xl`}
             >
                 <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-                        <Sparkles className="w-6 h-6" />
+                    <div className={`h-12 w-12 rounded-xl ${themeKey === 'dark' ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-600 text-white shadow-lg shadow-purple-100'} flex items-center justify-center`}>
+                        <TrendingUp className="w-6 h-6" />
                     </div>
-                    <div>
-                        <h3 className="font-black text-lg">Complete Your Profile</h3>
-                        <p className="text-sm text-muted-foreground font-medium">Add more details to increase your approval rate by 70%.</p>
+                    <div className="space-y-0.5 text-center md:text-left">
+                        <p className={`text-lg font-black ${themeKey === 'dark' ? 'text-white' : 'text-slate-950'}`}>Complete your creative profile</p>
+                        <p className={`text-xs font-bold ${themeKey === 'dark' ? 'text-white/50' : 'text-slate-900/60'}`}>{100 - completion}% more to unlock your full media kit</p>
                     </div>
                 </div>
                 
@@ -362,48 +366,64 @@ const InfluencerDashboard = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 gap-4 md:gap-6">
                 {isLoading
                   ? [1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)
                   : statsConfig.map((s) => <StatCard key={s.title} stat={s} />)}
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:gap-6">
-                <Card className={`${theme.card} ${theme.radius}`}>
+                <Card className={`${theme.card}`}>
                   <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
-                    <CardTitle className="text-lg md:text-xl">
+                    <CardTitle className={`text-xl font-black ${theme.text}`}>
                       Quick Actions
                     </CardTitle>
-                    <CardDescription>Move faster</CardDescription>
+                    <CardDescription className={`${theme.muted} font-bold text-[10px] uppercase tracking-wider`}>Move faster</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 px-4 md:px-6">
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 px-4 md:px-6 pb-6 mt-2">
                     <Button
-                      className="w-full text-left justify-between h-14 rounded-xl group"
+                      className={`w-full text-left justify-between h-14 rounded-xl group font-bold border transition-all ${
+                        themeKey === 'dark' 
+                          ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white' 
+                          : 'bg-black/5 border-black/5 hover:bg-black/10 text-gray-900'
+                      }`}
                       variant="outline"
                       onClick={() => navigate("/dashboard/campaigns/all")}
                     >
                       Browse New Campaigns
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-[#8B5CF6]" />
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full text-left justify-between h-14 rounded-xl group"
+                      className={`w-full text-left justify-between h-14 rounded-xl group font-bold border transition-all ${
+                        themeKey === 'dark' 
+                          ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white' 
+                          : 'bg-black/5 border-black/5 hover:bg-black/10 text-gray-900'
+                      }`}
                       onClick={() => navigate("/dashboard/campaigns/my")}
                     >
                       Manage Applications
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-[#8B5CF6]" />
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full text-left justify-between h-14 rounded-xl group"
+                      className={`w-full text-left justify-between h-14 rounded-xl group font-bold border transition-all ${
+                        themeKey === 'dark' 
+                          ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white' 
+                          : 'bg-black/5 border-black/5 hover:bg-black/10 text-gray-900'
+                      }`}
                       onClick={() => navigate("/dashboard/settings/payment")}
                     >
                       Payment & Bank Settings
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-[#8B5CF6]" />
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full text-left justify-between h-14 rounded-xl opacity-50 cursor-not-allowed"
+                      className={`w-full text-left justify-between h-14 rounded-xl font-bold border opacity-50 cursor-not-allowed ${
+                        themeKey === 'dark' 
+                          ? 'bg-white/5 border-white/10 text-white/50' 
+                          : 'bg-black/5 border-black/5 text-gray-400'
+                      }`}
                       disabled
                     >
                       Audience Analytics
@@ -417,14 +437,14 @@ const InfluencerDashboard = () => {
             <div className="space-y-6">
               <ProfileLinkCard userId={user?.id || ""} />
 
-              <Card className={`${theme.card} ${theme.radius}`}>
+              <Card className={`${theme.card}`}>
                 <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
-                  <CardTitle className="text-lg md:text-xl">
+                  <CardTitle className={`text-xl font-black ${theme.text}`}>
                     Recent Activity
                   </CardTitle>
-                  <CardDescription>Your latest campaign status</CardDescription>
+                  <CardDescription className={`${theme.muted} font-bold text-[10px] uppercase tracking-wider`}>Campaign Status</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 px-4 md:px-6">
+                <CardContent className="space-y-3 px-4 md:px-6 pb-6">
                   {isLoading ? (
                     <div className="space-y-3">
                       <CardSkeleton />
@@ -433,7 +453,7 @@ const InfluencerDashboard = () => {
                   ) : (
                     <>
                       {recentCampaigns.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className={`text-sm italic ${theme.muted}`}>
                           No activity yet — explore new opportunities 🚀
                         </p>
                       )}
@@ -441,19 +461,23 @@ const InfluencerDashboard = () => {
                       {recentCampaigns.map((c, i) => (
                         <div
                           key={i}
-                          className="flex justify-between items-center p-4 rounded-xl bg-white/5 border border-white/5"
+                          className={`flex justify-between items-center p-4 rounded-xl border transition-all ${
+                            themeKey === 'dark' 
+                              ? 'bg-white/5 border-white/5 hover:bg-white/10' 
+                              : 'bg-black/5 border-black/5 hover:bg-black/10'
+                          }`}
                         >
-                          <span className="font-bold text-sm">
+                          <span className={`font-black text-sm ${theme.text}`}>
                             {c.name}
                           </span>
                           <Badge
                             variant="outline"
-                            className={`text-[10px] uppercase font-black tracking-widest ${
+                            className={`text-[10px] uppercase font-black tracking-widest px-3 py-1 rounded-full ${
                               c.status === "Active"
-                                ? "border-green-500/50 text-green-400 bg-green-500/10"
+                                ? "border-purple-500/50 text-purple-600 bg-purple-500/10"
                                 : c.status === "Pending"
-                                  ? "border-yellow-500/50 text-yellow-400 bg-yellow-500/10"
-                                  : "border-gray-500/50 text-gray-400 bg-gray-500/10"
+                                  ? "border-yellow-500/50 text-yellow-500 bg-yellow-500/10"
+                                  : "border-gray-500/50 text-gray-500 bg-gray-500/10"
                             }`}
                           >
                             {c.status}

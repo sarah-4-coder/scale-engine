@@ -16,8 +16,8 @@ const AuthBackground = () => {
         transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
         style={{
           background: `
-            radial-gradient(circle at 20% 20%, rgba(255, 122, 24, 0.15), transparent 40%),
-            radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.15), transparent 40%)
+            radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.15), transparent 40%),
+            radial-gradient(circle at 80% 80%, rgba(79, 70, 229, 0.15), transparent 40%)
           `,
           backgroundSize: "200% 200%",
         }}
@@ -28,8 +28,8 @@ const AuthBackground = () => {
         className="absolute inset-0 opacity-30"
         animate={{
           background: [
-            "linear-gradient(45deg, transparent 0%, rgba(255, 122, 24, 0.1) 25%, transparent 50%, rgba(99, 102, 241, 0.1) 75%, transparent 100%)",
-            "linear-gradient(45deg, transparent 0%, rgba(99, 102, 241, 0.1) 25%, transparent 50%, rgba(255, 122, 24, 0.1) 75%, transparent 100%)",
+            "linear-gradient(45deg, transparent 0%, rgba(139, 92, 246, 0.1) 25%, transparent 50%, rgba(79, 70, 229, 0.1) 75%, transparent 100%)",
+            "linear-gradient(45deg, transparent 0%, rgba(79, 70, 229, 0.1) 25%, transparent 50%, rgba(139, 92, 246, 0.1) 75%, transparent 100%)",
           ],
         }}
         transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
@@ -39,7 +39,7 @@ const AuthBackground = () => {
       <div 
         className="absolute inset-0 opacity-20"
         style={{
-          backgroundImage: `radial-gradient(circle at center, rgba(255, 122, 24, 0.3) 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle at center, rgba(139, 92, 246, 0.3) 1px, transparent 1px)`,
           backgroundSize: "40px 40px",
         }}
       />

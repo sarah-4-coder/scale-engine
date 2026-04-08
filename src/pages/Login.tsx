@@ -97,14 +97,14 @@ const Login = () => {
               </button>
             </div>
           </div>
-          <Button type="submit" disabled={isLoading} className="w-full h-11 bg-gradient-to-r from-orange-500 to-indigo-500">
+          <Button type="submit" disabled={isLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 text-white font-bold">
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 
         <div className="mt-4 md:mt-6 text-center">
           <p className="text-sm md:text-base text-white/70">
-            New here? <Link to="/signup" className="text-orange-400 hover:underline">Join as a creator</Link>
+            New here? <Link to="/signup" className="text-blue-400 hover:underline">Join as a creator</Link>
           </p>
         </div>
 

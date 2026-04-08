@@ -56,7 +56,7 @@ export const ContractGenerator = ({
   brandName = "the Brand",
   brandProfile,
 }: ContractGeneratorProps) => {
-  const { theme } = useInfluencerTheme();
+  const { theme, themeKey } = useInfluencerTheme();
   const [loading, setLoading] = useState(false);
   const [contract, setContract] = useState<string | null>(null);
   const [signed, setSigned] = useState(false);
@@ -259,8 +259,8 @@ export const ContractGenerator = ({
         <div className="flex items-center gap-3">
           <FileText className={`h-6 w-6 ${theme.accent}`} />
           <div>
-            <CardTitle>Smart Contract</CardTitle>
-            <CardDescription>
+            <CardTitle className={theme.text}>Smart Contract</CardTitle>
+            <CardDescription className={theme.muted}>
               AI-generated, legally binding agreement
             </CardDescription>
           </div>
@@ -273,14 +273,14 @@ export const ContractGenerator = ({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30"
+            className={`flex items-start gap-2 p-4 rounded-xl ${themeKey === 'dark' ? 'bg-blue-500/10 border-blue-500/30' : 'bg-slate-50 border-slate-200'}`}
           >
-            <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className={`h-5 w-5 ${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-600'} flex-shrink-0 mt-0.5`} />
             <div className="flex-1">
-              <p className="text-sm text-yellow-400 font-medium mb-1">
+              <p className={`text-sm font-black mb-1 ${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-700'}`}>
                 AI Contract Generation Not Configured
               </p>
-              <p className="text-xs text-yellow-400/80">
+              <p className={`text-xs ${themeKey === 'dark' ? 'text-blue-400/80' : 'text-slate-600'}`}>
                 Contact your administrator to set up the Gemini API key.
               </p>
             </div>
@@ -291,15 +291,15 @@ export const ContractGenerator = ({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-3 rounded-xl bg-green-500/10 border border-green-500/30 backdrop-blur-md"
+          className={`flex items-center justify-between p-4 rounded-xl ${themeKey === 'dark' ? 'bg-blue-500/5 border-blue-500/20' : 'bg-blue-50 border-blue-100'} backdrop-blur-md`}
         >
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-green-400" />
-            <p className="text-sm text-green-400 font-semibold tracking-tight">
+            <Shield className={`h-5 w-5 ${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
+            <p className={`text-sm font-black tracking-tight ${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-700'}`}>
               SECURE ESCROW VERIFIED
             </p>
           </div>
-          <div className="flex items-center gap-1 bg-green-500/20 px-2 py-0.5 rounded text-[10px] font-bold text-green-300 uppercase letter-spacing-1">
+          <div className={`flex items-center gap-1 ${themeKey === 'dark' ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-600 text-white shadow-sm'} px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest`}>
             <Check className="h-3 w-3" />
             Certified
           </div>
@@ -311,7 +311,7 @@ export const ContractGenerator = ({
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="relative p-6 md:p-10 rounded-xl bg-[#FDFBF7] shadow-inner border border-[#E5E0D5] min-h-[400px] overflow-hidden"
+              className={`relative p-6 md:p-12 rounded-xl bg-white shadow-inner border ${themeKey === 'dark' ? 'border-white/10' : 'border-slate-200'} min-h-[400px] overflow-hidden`}
             >
               {/* Draft Watermark */}
               {!signed && (
@@ -320,10 +320,10 @@ export const ContractGenerator = ({
                 </div>
               )}
 
-              <div className="relative z-10 font-serif text-[#2C2925] leading-relaxed text-sm md:text-base">
-                <div className="text-center mb-8 pb-4 border-b border-[#E5E0D5]">
-                  <h3 className="text-xl font-bold uppercase tracking-[0.2em] text-[#1A1816] mb-2">Influencer Partnership Agreement</h3>
-                  <p className="text-[10px] font-sans text-muted-foreground uppercase tracking-widest">Digital Recording ID: {campaignId.split('-')[0]}-{influencerId.split('-')[0]}</p>
+              <div className="relative z-10 font-serif text-slate-800 leading-relaxed text-sm md:text-base">
+                <div className="text-center mb-8 pb-4 border-b border-slate-100">
+                  <h3 className="text-xl font-bold uppercase tracking-[0.2em] text-slate-900 mb-2">Influencer Partnership Agreement</h3>
+                  <p className="text-[10px] font-sans text-slate-400 uppercase tracking-widest">Digital Recording ID: {campaignId.split('-')[0]}-{influencerId.split('-')[0]}</p>
                 </div>
                 
                 <div className="whitespace-pre-wrap">
@@ -334,12 +334,12 @@ export const ContractGenerator = ({
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="mt-12 pt-8 border-t border-[#E5E0D5] flex flex-col items-end"
+                    className="mt-12 pt-8 border-t border-slate-100 flex flex-col items-end"
                   >
                     <div className="text-right">
-                      <p className="text-xs font-sans text-muted-foreground uppercase mb-2">Digitally Signed By</p>
-                      <p className="font-serif italic text-lg leading-none text-[#1A1816]">/ e-Signed Digitally /</p>
-                      <p className="text-[10px] font-sans text-muted-foreground mt-1">
+                      <p className="text-xs font-sans text-slate-400 uppercase mb-2">Digitally Signed By</p>
+                      <p className="font-serif italic text-lg leading-none text-slate-900">/ e-Signed Digitally /</p>
+                      <p className="text-[10px] font-sans text-slate-400 mt-1">
                         IP: {existingContract?.metadata?.ip || 'Verified Remote'} • {new Date(existingContract?.signed_at || '').toLocaleString()}
                       </p>
                     </div>
@@ -349,11 +349,11 @@ export const ContractGenerator = ({
             </motion.div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <Button
                 onClick={downloadContract}
                 variant="outline"
-                className="flex-1"
+                className={`flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Download
@@ -362,15 +362,15 @@ export const ContractGenerator = ({
               {!signed ? (
                 <Button
                   onClick={signContract}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500"
+                  className={`flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs ${themeKey === 'dark' ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'}`}
                 >
                   <Check className="h-4 w-4 mr-2" />
                   Sign Contract
                 </Button>
               ) : (
-                <div className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-500/20 text-green-400">
+                <div className="flex-1 flex items-center justify-center gap-2 px-4 h-14 rounded-2xl bg-blue-500/10 text-blue-600 border border-blue-500/20">
                   <Check className="h-4 w-4" />
-                  <span className="text-sm font-medium">Contract Signed</span>
+                  <span className="text-xs font-black uppercase tracking-widest">Contract Signed</span>
                 </div>
               )}
             </div>
@@ -379,27 +379,27 @@ export const ContractGenerator = ({
           <Button
             onClick={generateContract}
             disabled={loading || !apiKeyConfigured}
-            className="w-full bg-gradient-to-r from-purple-500 to-indigo-500"
+            className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs ${themeKey === 'dark' ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'}`}
           >
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating Contract...
+                Generating...
               </>
             ) : (
               <>
                 <FileText className="h-4 w-4 mr-2" />
                 {apiKeyConfigured
                   ? "Generate Contract"
-                  : "Configuration Required"}
+                  : "Setup Required"}
               </>
             )}
           </Button>
         )}
 
         {/* Info Text */}
-        <p className="text-xs text-white/50 text-center">
-          This contract is AI-generated and legally binding once signed
+        <p className={`text-[10px] font-bold uppercase tracking-widest text-center mt-4 ${theme.muted}`}>
+          AI-generated • legally binding once signed
         </p>
       </CardContent>
     </Card>

@@ -159,14 +159,14 @@ const Signup = () => {
               </button>
             </div>
           </div>
-          <Button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-orange-500 to-indigo-500">
+          <Button type="submit" disabled={isLoading} className="w-full h-12 bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/20 text-white font-black text-lg rounded-xl">
             {isLoading ? "Creating..." : "Create account"}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-white/70">
-            Already a creator? <Link to="/login" className="text-orange-400 hover:underline">Sign in</Link>
+            Already a creator? <Link to="/login" className="text-blue-400 hover:underline">Sign in</Link>
           </p>
         </div>
 

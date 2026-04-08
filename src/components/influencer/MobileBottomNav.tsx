@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Search, FileText, User } from "lucide-react";
 import { motion } from "framer-motion";
+import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
 
 /**
  * Mobile Bottom Navigation - Always visible on mobile devices
@@ -10,6 +11,7 @@ import { motion } from "framer-motion";
 const MobileBottomNav = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { themeKey } = useInfluencerTheme();
 
   const navItems = [
     {
@@ -41,9 +43,13 @@ const MobileBottomNav = memo(() => {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-t border-white/10 pb-safe"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4"
     >
-      <div className="grid grid-cols-4 gap-1 px-2 py-2">
+      <div className={`backdrop-blur-[20px] transition-colors duration-300 border rounded-[20px] h-16 flex items-center justify-around shadow-2xl ${
+        themeKey === 'dark' 
+          ? 'bg-[#050505]/80 border-[rgba(255,255,255,0.1)]' 
+          : 'bg-white/90 border-black/5 shadow-gray-200'
+      }`}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -52,34 +58,23 @@ const MobileBottomNav = memo(() => {
             <motion.button
               key={item.path}
               onClick={() => navigate(item.path)}
-              whileTap={{ scale: 0.95 }}
-              className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl transition-all duration-200 ${
-                active
-                  ? "bg-gradient-to-br from-purple-500/20 to-indigo-500/20"
-                  : "hover:bg-white/5"
-              }`}
+              whileTap={{ scale: 0.9 }}
+              className="relative flex flex-col items-center justify-center w-12 h-12"
             >
-              <div className="relative">
-                <Icon
-                  className={`h-5 w-5 transition-colors ${
-                    active ? "text-white" : "text-white/60"
-                  }`}
-                />
-                {active && (
-                  <motion.div
-                    layoutId="activeIndicator"
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </div>
-              <span
-                className={`text-[10px] font-medium transition-colors ${
-                  active ? "text-white" : "text-white/60"
+              <Icon
+                className={`h-6 w-6 transition-all duration-300 ${
+                  active 
+                    ? "text-blue-600 scale-110" 
+                    : (themeKey === 'dark' ? "text-slate-500" : "text-slate-400")
                 }`}
-              >
-                {item.label}
-              </span>
+              />
+              {active && (
+                <motion.div
+                  layoutId="activeIndicator"
+                  className="absolute -bottom-1 w-1 h-1 rounded-full bg-blue-600 shadow-[0_0_8px_#2563eb]"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
             </motion.button>
           );
         })}

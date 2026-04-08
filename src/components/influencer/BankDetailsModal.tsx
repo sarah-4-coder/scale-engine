@@ -195,7 +195,7 @@ const BankDetailsModal = ({ open, onOpenChange, profileId, onSuccess }: BankDeta
                 {loading ? <Loader2 className="animate-spin" /> : "Save & Request Payout"}
               </Button>
               <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                <ShieldCheck className="w-4 h-4 text-green-500" />
+                <ShieldCheck className="w-4 h-4 text-blue-600" />
                 Data is encrypted and stored securely
               </div>
             </DialogFooter>

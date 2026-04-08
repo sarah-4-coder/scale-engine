@@ -45,70 +45,49 @@ const AmbientLayer = memo(({ themeKey }: { themeKey: ThemeKey }) => {
   };
 
   /* ------------------------
-     FASHION (LUXURY / EDITORIAL)
+     STUDIO DARK
   ------------------------ */
-  if (themeKey === "fashion") {
+  if (themeKey === "dark") {
     return (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
-        {/* Static gradient - no animation for performance */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#4a4439] via-[#8b7d6b] to-[#f1f1ee]" />
-        
-        {/* Single animated element */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Deep Black base */}
+        <div className="absolute inset-0 bg-[#050505]" />
+
+        {/* Cinematic accents */}
         <motion.div
-          className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px]"
-          animate={{ 
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.5, 0.3]
+          className="absolute -top-[10%] -left-[5%] w-[600px] h-[600px] bg-[#8B5CF6]/10 rounded-full blur-[140px]"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.15, 0.25, 0.15],
           }}
-          transition={{ 
-            duration: 32, 
-            repeat: Infinity, 
-            ease: "easeInOut" 
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "easeInOut"
           }}
           style={{ willChange: 'transform, opacity' }}
         />
-      </div>
-    );
-  }
-
-  /* ------------------------
-     TECH (FUTURISTIC / BUILDER)
-  ------------------------ */
-  if (themeKey === "tech") {
-    return (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Dark base */}
-        <div className="absolute inset-0 bg-[#020617]" />
-
-        {/* 2 optimized glow layers */}
         <motion.div
-          className="absolute -top-40 -left-40 w-[450px] h-[450px] bg-cyan-500/12 rounded-full blur-[90px]"
-          animate={animationConfig}
-          transition={transitionConfig}
-          style={{ willChange: 'transform' }}
-        />
-        <motion.div
-          className="absolute bottom-0 right-0 w-[450px] h-[450px] bg-indigo-500/12 rounded-full blur-[90px]"
-          animate={{ 
-            scale: [1, 1.12, 1],
-            transition: { 
-              duration: 32, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }
+          className="absolute bottom-[5%] -right-[5%] w-[500px] h-[500px] bg-[#EC4899]/10 rounded-full blur-[120px]"
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.1, 0.2, 0.1],
           }}
-          style={{ willChange: 'transform' }}
+          transition={{
+            duration: 30,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2
+          }}
+          style={{ willChange: 'transform, opacity' }}
         />
-        
-        {/* Subtle grid overlay */}
+
+        {/* Subtle dot pattern */}
         <div 
-          className="absolute inset-0 opacity-[0.02]"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: `
-              linear-gradient(rgba(6, 182, 212, 0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(6, 182, 212, 0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '50px 50px'
+            backgroundImage: `radial-gradient(circle, rgba(255, 255, 255, 0.5) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px'
           }}
         />
       </div>
@@ -116,66 +95,53 @@ const AmbientLayer = memo(({ themeKey }: { themeKey: ThemeKey }) => {
   }
 
   /* ------------------------
-     FITNESS (ENERGY / DISCIPLINE)
-  ------------------------ */
-  if (themeKey === "fitness") {
-    return (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Dark base */}
-        <div className="absolute inset-0 bg-[#020617]" />
-
-        {/* 2 energy glows */}
-        <motion.div
-          className="absolute top-0 left-1/3 w-[400px] h-[400px] bg-red-500/15 rounded-full blur-[90px]"
-          animate={{ 
-            scale: [1, 1.18, 1],
-            transition: { 
-              duration: 25, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }
-          }}
-          style={{ willChange: 'transform' }}
-        />
-        <motion.div
-          className="absolute bottom-0 right-1/3 w-[400px] h-[400px] bg-green-500/12 rounded-full blur-[90px]"
-          animate={animationConfig}
-          transition={transitionConfig}
-          style={{ willChange: 'transform' }}
-        />
-        
-        {/* Subtle radial gradient for depth */}
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/20" />
-      </div>
-    );
-  }
-
-  /* ------------------------
-     DEFAULT (MINIMAL)
+     STUDIO LIGHT
   ------------------------ */
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Dark base */}
-      <div className="absolute inset-0 bg-[#020617]" />
+      {/* Soft Light base */}
+      <div className="absolute inset-0 bg-[#F8F9FA]" />
 
-      {/* 2 minimal glows */}
+      {/* Elegant glass accents */}
       <motion.div
-        className="absolute -top-40 -left-40 w-[450px] h-[450px] bg-purple-500/10 rounded-full blur-[90px]"
-        animate={animationConfig}
-        transition={transitionConfig}
-        style={{ willChange: 'transform' }}
-      />
-      <motion.div
-        className="absolute bottom-0 right-0 w-[450px] h-[450px] bg-indigo-500/10 rounded-full blur-[90px]"
-        animate={{ 
+        className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-purple-200/30 rounded-full blur-[100px]"
+        animate={{
           scale: [1, 1.1, 1],
-          transition: { 
-            duration: 30, 
-            repeat: Infinity, 
-            ease: "easeInOut" 
-          }
+          opacity: [0.4, 0.6, 0.4],
         }}
-        style={{ willChange: 'transform' }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        style={{ willChange: 'transform, opacity' }}
+      />
+      
+      <motion.div
+        className="absolute bottom-[10%] right-[20%] w-[400px] h-[400px] bg-pink-100/30 rounded-full blur-[90px]"
+        animate={{
+          scale: [1, 1.15, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 1
+        }}
+        style={{ willChange: 'transform, opacity' }}
+      />
+
+      {/* Subtle grid pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: '100px 100px'
+        }}
       />
     </div>
   );

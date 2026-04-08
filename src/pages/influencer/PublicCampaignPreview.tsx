@@ -148,7 +148,7 @@ const PublicCampaignPreview = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -169,7 +169,7 @@ const PublicCampaignPreview = () => {
   const isClosed = campaign.status === 'closed' || (campaign.application_deadline && new Date(campaign.application_deadline) < new Date());
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-indigo-100 font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100 font-sans">
       <div className="fixed inset-0 bg-slate-50 -z-10" />
       
       {/* Top Navigation / Brand Bar */}
@@ -188,7 +188,7 @@ const PublicCampaignPreview = () => {
                 <p className="font-bold text-sm tracking-tight">{campaign.brand?.company_name}</p>
              </div>
           </div>
-          <Badge className="bg-indigo-50 text-indigo-600 hover:bg-indigo-50 border-indigo-100 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+          <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border-blue-100 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
             {campaign.type || 'Partnership'}
           </Badge>
         </div>
@@ -237,14 +237,14 @@ const PublicCampaignPreview = () => {
         {/* Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
            {/* Deliverables Card */}
-           <Card className="bg-white border-slate-200 shadow-xl shadow-slate-200/40 rounded-[2rem] p-6 md:p-10 space-y-6">
+           <Card className="bg-white border-slate-200 shadow-xl shadow-blue-900/5 rounded-[2rem] p-6 md:p-10 space-y-6">
               <h3 className="text-[11px] uppercase font-black text-slate-900 flex items-center gap-2">
-                 <CheckCircle2 className="w-4 h-4 text-indigo-600" /> Deliverables
+                 <CheckCircle2 className="w-4 h-4 text-blue-600" /> Deliverables
               </h3>
               <div className="space-y-3">
                  {(Array.isArray(campaign.deliverables) ? campaign.deliverables : [campaign.deliverables]).map((item: string, i: number) => (
-                    <div key={i} className="flex items-start gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100/50 group hover:border-indigo-100 transition-all">
-                       <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600">0{i+1}</span>
+                    <div key={i} className="flex items-start gap-3 p-4 rounded-2xl bg-white border border-slate-100/50 group hover:border-blue-100 transition-all">
+                       <span className="text-[10px] font-black text-slate-400 group-hover:text-blue-600">0{i+1}</span>
                        <p className="font-bold text-slate-700 text-sm leading-snug">{item}</p>
                     </div>
                  ))}
@@ -252,7 +252,7 @@ const PublicCampaignPreview = () => {
            </Card>
 
            {/* Action Card */}
-           <Card className="bg-white border-slate-200 shadow-xl shadow-slate-200/40 rounded-[2rem] p-6 md:p-10 h-full flex flex-col justify-center min-h-[300px]">
+           <Card className="bg-white border-slate-200 shadow-xl shadow-blue-900/5 rounded-[2rem] p-6 md:p-10 h-full flex flex-col justify-center min-h-[300px]">
               <div className="space-y-8">
                  {roleConflict ? (
                     <div className="text-center p-6 bg-rose-50 border border-rose-100 rounded-2xl space-y-4">
@@ -276,7 +276,7 @@ const PublicCampaignPreview = () => {
                        </div>
                        <Button 
                           onClick={() => navigate(`/apply/${campaign.id}`)}
-                          className="w-full h-16 rounded-2xl bg-indigo-600 text-white text-lg font-black hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100 group"
+                          className="w-full h-16 rounded-2xl bg-blue-600 text-white text-lg font-black hover:bg-slate-900 transition-all shadow-xl shadow-blue-100 group"
                        >
                           Apply Now 
                           <ArrowRight className="ml-2.5 w-5 h-5 group-hover:translate-x-1 transition-all" />

@@ -38,9 +38,12 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
     window.location.replace("https://dotfluence.in");
   };
 
-  return (
-    <div className="sticky top-0 z-40 backdrop-blur-xl bg-black/40 border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-3 md:px-6 py-2.5 md:py-4 flex items-center justify-between">
+  return (    <div className={`sticky top-0 z-40 backdrop-blur-[20px] border-b transition-colors duration-300 ${
+      currentTheme === "dark" 
+        ? "bg-[#050505]/80 border-[rgba(255,255,255,0.1)]" 
+        : "bg-white/80 border-black/5"
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5 flex items-center justify-between">
         {/* LEFT - Logo/Brand */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -48,15 +51,21 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
           className="flex items-center gap-2 md:gap-4"
         >
           <h1
-            className="text-base md:text-xl font-bold text-white tracking-wide cursor-pointer hover:text-white/80 transition-colors"
+            className={`text-xl md:text-2xl font-black tracking-tighter cursor-pointer hover:opacity-80 transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent ${
+              currentTheme === 'dark' 
+                ? 'from-white via-blue-200 to-blue-300' 
+                : 'from-blue-600 via-blue-700 to-blue-900'
+            }`}
             onClick={() => navigate("/dashboard")}
           >
             DotFluence
           </h1>
           
           {/* User greeting - only on desktop */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5">
-            <span className="text-sm text-white/60">
+          <div className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-full transition-colors duration-300 ${
+            currentTheme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-blue-50 border border-blue-100 shadow-sm'
+          }`}>
+            <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
               {userName}
             </span>
           </div>
@@ -75,12 +84,15 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
               size="icon"
               onClick={() => navigate("/dashboard/settings/payment")}
               title="Payout Settings"
-              className="hover:bg-white/10 h-8 w-8 md:h-10 md:w-10"
+              className={`h-8 w-8 md:h-10 md:w-10 ${
+                currentTheme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/5'
+              }`}
             >
-              <Landmark className="h-4 w-4 md:h-5 md:w-5 text-white" />
+              <Landmark className={`h-4 w-4 md:h-5 md:w-5 ${currentTheme === 'dark' ? 'text-white' : 'text-black'}`} />
             </Button>
           </motion.div>
 
+          {/* ... existing SVG and notification bell logic ... */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -92,11 +104,13 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
               size="icon"
               onClick={() => navigate("/dashboard")}
               title="Home"
-              className="hover:bg-white/10 h-8 w-8 md:h-10 md:w-10"
+              className={`h-8 w-8 md:h-10 md:w-10 ${
+                currentTheme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/5'
+              }`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 md:h-5 md:w-5 text-white"
+                className={`h-4 w-4 md:h-5 md:w-5 ${currentTheme === 'dark' ? 'text-white' : 'text-black'}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -131,9 +145,11 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
               size="icon"
               onClick={() => setOpen((p) => !p)}
               title="Change Theme"
-              className="hover:bg-white/10 h-8 w-8 md:h-10 md:w-10"
+              className={`h-8 w-8 md:h-10 md:w-10 ${
+                currentTheme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/5'
+              }`}
             >
-              <Palette className="h-4 w-4 md:h-5 md:w-5 text-white" />
+              <Palette className={`h-4 w-4 md:h-5 md:w-5 ${currentTheme === 'dark' ? 'text-white' : 'text-black'}`} />
             </Button>
 
             <AnimatePresence>
@@ -155,10 +171,16 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
                     style={{ willChange: 'transform, opacity' }}
-                    className="absolute right-0 mt-2 w-48 rounded-xl bg-black/90 backdrop-blur-xl border border-white/20 shadow-2xl overflow-hidden z-50"
+                    className={`absolute right-0 mt-2 w-48 rounded-xl backdrop-blur-xl border shadow-2xl overflow-hidden z-50 transition-colors duration-300 ${
+                      currentTheme === 'dark' 
+                        ? 'bg-black/90 border-white/20' 
+                        : 'bg-white/90 border-gray-200'
+                    }`}
                   >
                     <div className="p-2">
-                      <p className="px-3 py-2 text-xs text-white/50 font-medium uppercase tracking-wider">
+                      <p className={`px-3 py-2 text-xs font-medium uppercase tracking-wider ${
+                        currentTheme === 'dark' ? 'text-white/50' : 'text-gray-500'
+                      }`}>
                         Choose Theme
                       </p>
 
@@ -173,10 +195,10 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
                             setOpen(false);
                           }}
                           className={`w-full px-3 py-2.5 text-left text-sm flex items-center justify-between rounded-lg
-                            hover:bg-white/10 transition-all duration-150 ${
+                            transition-all duration-150 ${
                               currentTheme === theme.key
-                                ? "bg-white/10 text-white"
-                                : "text-white/70"
+                                ? (currentTheme === 'dark' ? "bg-white/10 text-white" : "bg-blue-50 text-blue-600")
+                                : (currentTheme === 'dark' ? "text-white/70 hover:bg-white/5" : "text-gray-600 hover:bg-blue-50/50")
                             }`}
                         >
                           <span className="flex items-center gap-3">
@@ -184,7 +206,9 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
                             <div
                               className={`w-3 h-3 rounded-full bg-gradient-to-r ${theme.primary} flex-shrink-0`}
                             />
-                            <span className="truncate">{theme.name}</span>
+                            <span className={`truncate font-medium ${
+                              currentTheme === 'dark' ? 'text-white' : 'text-black'
+                            }`}>{theme.name}</span>
                           </span>
 
                           {currentTheme === theme.key && (
@@ -193,7 +217,7 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
                               animate={{ scale: 1 }}
                               transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             >
-                              <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
+                              <Check className={`h-4 w-4 flex-shrink-0 ${currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
                             </motion.div>
                           )}
                         </motion.button>
@@ -216,9 +240,11 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
               size="icon"
               onClick={handleLogout}
               title="Logout"
-              className="hover:bg-white/10 hover:text-red-400 transition-colors h-8 w-8 md:h-10 md:w-10"
+              className={`hover:text-red-400 transition-colors h-8 w-8 md:h-10 md:w-10 ${
+                currentTheme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/5'
+              }`}
             >
-              <LogOut className="h-4 w-4 md:h-5 md:w-5 text-white" />
+              <LogOut className={`h-4 w-4 md:h-5 md:w-5 ${currentTheme === 'dark' ? 'text-white' : 'text-black'}`} />
             </Button>
           </motion.div>
         </div>

@@ -32,9 +32,11 @@ import {
   Sparkles,
   MapPin,
   MessageSquare,
+  ChevronRight,
 } from "lucide-react";
 import { CampaignCardSkeleton } from "@/components/influencer/Skeletons";
 import { useCampaigns, useInfluencerProfile, useApplyToCampaign, useMyCampaigns } from "@/hooks/useCampaigns";
+import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 
 interface Campaign {
   id: string;
@@ -69,7 +71,7 @@ interface InfluencerProfile {
 }
 
 const AllCampaigns = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const {
     theme,
@@ -91,7 +93,7 @@ const AllCampaigns = () => {
   const { data: myApplications = [] } = useMyCampaigns(influencerId || '');
   const applyMutation = useApplyToCampaign();
 
-  const loading = campaignsLoading || profileLoading;
+  const loading = authLoading || campaignsLoading || profileLoading || (!!user && !profile);
 
   // Get applied campaign IDs from myApplications
   //@ts-ignore
@@ -194,31 +196,27 @@ const AllCampaigns = () => {
   /* -------------------------------
      LOADING STATE - PREVENT FLASH
   ------------------------------- */
-  if (themeLoading) {
+  if (loading) {
     return (
       <div 
-        className="min-h-screen flex items-center justify-center"
+        className="min-h-screen flex items-center justify-center transition-colors duration-500"
         style={{ background: theme.background }}
       >
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white/50" />
-          <p className="text-white/70 text-sm">Loading campaigns...</p>
+        <div className="flex flex-col items-center gap-6">
+          <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-primary" />
+          <p className={`text-sm font-black tracking-widest uppercase opacity-50 ${themeKey === 'dark' ? 'text-white' : 'text-gray-900'}`}>Loading campaigns...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
+    <div 
+      className="min-h-screen relative overflow-hidden pb-20 md:pb-0 transition-colors duration-500"
+      style={{ background: theme.background }}
+    >
       {/* Animated Theme Background */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        style={{ background: theme.background }}
-      />
+      <ThemedStudioBackground themeKey={themeKey} />
 
       {/* Navbar */}
       <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
@@ -227,7 +225,7 @@ const AllCampaigns = () => {
       <MobileBottomNav />
 
       {/* CONTENT */}
-      <main className="relative z-10 px-4 md:px-6 py-6 md:py-10 max-w-6xl mx-auto">
+      <main className="relative z-10 px-4 md:px-8 py-6 md:py-12 max-w-7xl mx-auto">
         {/* HEADER */}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
@@ -254,10 +252,10 @@ const AllCampaigns = () => {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search campaigns..."
+              placeholder="Search campaigns by name, brand, or niche..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl ${theme.card} ${theme.text} placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/20`}
+              className={`w-full px-5 py-4 rounded-2xl ${theme.card} ${theme.text} placeholder:opacity-40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all border border-white/5 shadow-xl`}
             />
           </div>
         </div>
@@ -308,7 +306,7 @@ const AllCampaigns = () => {
                       whileHover={{ y: -4 }}
                     >
                       <Card
-                        className={`${theme.card} ${theme.radius} overflow-hidden transition-all duration-300 hover:shadow-2xl h-full flex flex-col`}
+                        className={`${theme.card} ${theme.radius} overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/10 h-full flex flex-col border border-white/5 group`}
                       >
                         <CardHeader className="pb-3">
                           <CardTitle className={`text-lg ${theme.text}`}>
@@ -317,22 +315,22 @@ const AllCampaigns = () => {
                           {campaign.brand_profiles && (
                             <div className="flex flex-col gap-1 mt-1">
                               <div className="flex items-center gap-1.5">
-                                <p className={`text-xs font-semibold ${theme.accent}`}>
+                                <p className={`text-sm font-bold ${themeKey === 'dark' ? 'text-white' : 'text-gray-900'} group-hover:text-primary transition-colors`}>
                                   {campaign.brand_profiles.company_name}
                                 </p>
                                 {campaign.brand_profiles.is_verified && (
-                                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
-                                    <CheckCircle2 className="h-2.5 w-2.5 text-blue-400" />
-                                    <span className="text-[8px] font-bold text-blue-400 uppercase tracking-tighter">Verified</span>
+                                  <div className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full ${themeKey === 'light' ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
+                                    <CheckCircle2 className={`h-2.5 w-2.5 ${themeKey === 'light' ? 'text-blue-600' : 'text-blue-500'}`} />
+                                    <span className={`text-[9px] font-bold ${themeKey === 'light' ? 'text-blue-600' : 'text-blue-500'} uppercase tracking-tighter`}>Verified</span>
                                   </div>
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-muted-foreground uppercase tracking-wider">
+                                <span className={`text-[10px] px-2 py-1 rounded-lg ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'} border text-muted-foreground uppercase tracking-widest font-bold`}>
                                   {campaign.brand_profiles.industry}
                                 </span>
                                 {(campaign.brand_profiles.city || campaign.brand_profiles.state) && (
-                                  <div className="flex items-center gap-1 text-[10px] text-white/40 font-medium italic">
+                                  <div className={`flex items-center gap-1 text-[10px] ${theme.muted} font-medium italic`}>
                                     <MapPin className="h-2.5 w-2.5" />
                                     {campaign.brand_profiles.city}, {campaign.brand_profiles.state}
                                   </div>
@@ -342,27 +340,27 @@ const AllCampaigns = () => {
                           )}
                           {campaign.description && (
                             <CardDescription
-                              className={`${theme.muted} line-clamp-2 text-sm`}
+                              className={`${theme.muted} line-clamp-2 text-sm mt-2`}
                             >
                               {campaign.description}
                             </CardDescription>
                           )}
                         </CardHeader>
 
-                        <CardContent className="space-y-4 flex-grow flex flex-col">
+                        <CardContent className="space-y-5 flex-grow flex flex-col px-6 pb-6">
                           {/* Niches */}
                           <div className="flex flex-wrap gap-2">
                             {campaign.niches.slice(0, 3).map((niche) => (
                               <span
                                 key={niche}
-                                className={`px-2 py-1 rounded-lg bg-white/10 text-xs ${theme.muted}`}
+                                className={`px-2.5 py-1 rounded-lg ${themeKey === 'dark' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100/50 text-blue-600'} border text-[10px] font-bold uppercase tracking-wider`}
                               >
                                 {niche}
                               </span>
                             ))}
                             {campaign.niches.length > 3 && (
                               <span
-                                className={`px-2 py-1 rounded-lg bg-white/10 text-xs ${theme.muted}`}
+                                className={`px-2.5 py-1 rounded-lg ${themeKey === 'dark' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-100/50 text-blue-600'} border text-[10px] font-bold uppercase tracking-wider`}
                               >
                                 +{campaign.niches.length - 3}
                               </span>
@@ -441,25 +439,40 @@ const AllCampaigns = () => {
                             )}
                           </div>
 
-                          {/* Apply Button */}
-                          {isApplied ? (
+                          {/* Apply & Details Button */}
+                          <div className="flex gap-2 w-full mt-auto pt-2">
+                            {isApplied ? (
+                              <Button
+                                disabled
+                                className={`flex-1 rounded-xl border border-white/10 font-bold transition-all ${themeKey === 'dark' ? 'bg-white/5 text-white/50' : 'bg-black/5 text-gray-400'}`}
+                                variant="outline"
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                Applied
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={() => handleOpenApplyModal(campaign)}
+                                className={`flex-1 rounded-xl font-black transition-all shadow-lg hover:shadow-primary/20 ${themeKey === 'dark' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-primary hover:bg-primary/90 text-white'}`}
+                              >
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Apply
+                              </Button>
+                            )}
                             <Button
-                              disabled
-                              className="w-full"
                               variant="outline"
+                              onClick={() => navigate(`/dashboard/campaigns/my/${campaign.id}`)}
+                              className={`px-4 rounded-xl font-bold border transition-all flex items-center ${
+                                themeKey === 'dark' 
+                                  ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white' 
+                                  : 'bg-transparent border-slate-200 text-slate-900 hover:bg-slate-100'
+                              }`}
+                              title="Campaign Details"
                             >
-                              <CheckCircle2 className="h-4 w-4 mr-2" />
-                              Applied
+                              Details
+                              <ChevronRight className="h-4 w-4 ml-1" />
                             </Button>
-                          ) : (
-                            <Button
-                              onClick={() => handleOpenApplyModal(campaign)}
-                              className="w-full"
-                            >
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Apply Now
-                            </Button>
-                          )}
+                          </div>
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -475,41 +488,41 @@ const AllCampaigns = () => {
       <Dialog open={applyModalOpen} onOpenChange={setApplyModalOpen}>
         <DialogContent className={`${theme.card} border flex flex-col md:max-w-md ${theme.text} p-6 overflow-hidden rounded-xl bg-card border-white/10`}>
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Apply for Campaign</DialogTitle>
-            <DialogDescription className="text-white/60">
+            <DialogTitle className={`text-xl font-bold ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}>Apply for Campaign</DialogTitle>
+            <DialogDescription className={theme.muted}>
               {selectedCampaign?.name}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 my-4">
-            <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-2">
+            <div className={`p-4 rounded-lg ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200 shadow-sm'} border space-y-2`}>
               <div className="flex justify-between items-center">
-                <p className="text-sm text-white/60">Base Payout</p>
-                <div className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/20">
+                <p className={`text-sm ${theme.muted}`}>Base Payout</p>
+                <div className={`px-2 py-0.5 rounded ${themeKey === 'light' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-blue-500/10 text-blue-600 border-blue-500/20'} text-[10px] font-bold uppercase tracking-wider border`}>
                   Standard Rate
                 </div>
               </div>
-              <p className="text-2xl font-bold">₹{selectedCampaign?.base_payout}</p>
-              <p className="text-[11px] text-white/40 leading-relaxed italic">
+              <p className={`text-2xl font-bold ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'}`}>₹{selectedCampaign?.base_payout}</p>
+              <p className={`text-[11px] ${theme.muted} opacity-70 leading-relaxed italic`}>
                 * This is the fixed compensation for the deliverables mentioned. 
                 Payments are processed via our secure ledger after content verification.
               </p>
             </div>
 
-            <div className={`p-4 rounded-lg transition-all duration-300 border ${negotiationRequested ? 'bg-amber-500/5 border-amber-500/30' : 'bg-white/5 border-white/10'}`}>
+            <div className={`p-4 rounded-lg transition-all duration-300 border ${negotiationRequested ? 'bg-amber-500/10 border-amber-500/30' : (themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200')}`}>
               <div className="flex items-start gap-3">
                 <input 
                   id="negotiation-checkbox"
                   type="checkbox" 
                   checked={negotiationRequested}
                   onChange={(e) => setNegotiationRequested(e.target.checked)}
-                  className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500 transition-all cursor-pointer"
+                  className={`mt-1 w-4 h-4 rounded ${themeKey === 'dark' ? 'border-white/20 bg-white/5' : 'border-slate-300 bg-white'} text-amber-500 focus:ring-amber-500 transition-all cursor-pointer`}
                 />
                 <div className="flex-1">
-                  <label htmlFor="negotiation-checkbox" className="text-sm font-semibold cursor-pointer block mb-1">
+                  <label htmlFor="negotiation-checkbox" className={`text-sm font-semibold cursor-pointer block mb-1 ${theme.text}`}>
                     I want to negotiate a higher pay
                   </label>
-                  <p className="text-[11px] text-white/50 leading-tight">
+                  <p className={`text-[11px] ${theme.muted} leading-tight`}>
                     Check this only if your profile reach, high engagement, or premium content quality justifies a rate above the base payout.
                   </p>
                 </div>

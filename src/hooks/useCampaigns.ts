@@ -90,7 +90,7 @@ export const useInfluencerProfile = (userId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('influencer_profiles')
-        .select('id, user_id, instagram_handle, full_name, profile_image_url, bio, followers_count, niches, is_blocked, city, state, upi_id, bank_name, account_number, ifsc_code, razorpay_account_id, profile_completed')
+        .select('id, user_id, instagram_handle, full_name, profile_image_url, bio, followers_count, niches, is_blocked, city, state, upi_id, bank_name, account_number, ifsc_code, razorpay_account_id, profile_completed, avg_engagement_rate, avg_reach')
         .eq('user_id', userId)
         .single();
       
@@ -134,7 +134,22 @@ export const useMyCampaigns = (influencerId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('campaign_influencers')
-        .select('*')
+        .select(`
+          *,
+          campaigns (
+            *,
+            brand_profiles!fk_campaigns_brand_id_v1 (
+              company_name,
+              is_verified,
+              industry,
+              description,
+              city,
+              state,
+              company_website,
+              company_size
+            )
+          )
+        `)
         .eq('influencer_id', influencerId)
         .order('created_at', { ascending: false });
       
@@ -248,18 +263,29 @@ export const useDashboardStats = (userId: string) => {
   
   const query = useQuery({
     //@ts-ignore
-    queryKey: ['dashboard-stats', influencer?.id],
+    queryKey: ['dashboard-stats', (influencer as any)?.id],
     queryFn: async () => {
-        //@ts-ignore
-      if (!influencer?.id) return null;
+      if (!influencer || (influencer as any).error) {
+        console.error('Error fetching influencer for stats:', (influencer as any).error);
+        return {
+          fullName: profile?.full_name || 'Creator',
+          followers: 0,
+          avgEngagementRate: 0,
+          avgReach: 0,
+          activeCampaigns: 0,
+          earnings: 0,
+          recentCampaigns: [],
+        };
+      }
+
+      const influencerId = (influencer as any).id;
 
       // Parallel queries for dashboard data
       const [relationsResult, campaignsResult] = await Promise.all([
         supabase
           .from('campaign_influencers')
           .select('campaign_id, status, final_payout, created_at')
-          //@ts-ignore
-          .eq('influencer_id', influencer?.id ?? '')
+          .eq('influencer_id', influencerId ?? '')
           .order('created_at', { ascending: false }),
         supabase
           .from('campaigns')
@@ -287,7 +313,9 @@ export const useDashboardStats = (userId: string) => {
 
       return {
         fullName: profile?.full_name || 'Creator',
-        followers: influencer.followers_count,
+        followers: (influencer as any).followers_count,
+        avgEngagementRate: (influencer as any).avg_engagement_rate || 0,
+        avgReach: (influencer as any).avg_reach || 0,
         activeCampaigns,
         earnings,
         recentCampaigns,
@@ -295,7 +323,7 @@ export const useDashboardStats = (userId: string) => {
     },
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
     gcTime: 5 * 60 * 1000,
-    enabled: !!influencer?.id,
+    enabled: !!(influencer as any)?.id,
   });
 
   // ⚡ REAL-TIME DASHBOARD UPDATES

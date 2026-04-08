@@ -8,9 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Phone, ArrowRight, Loader2, MessageSquare, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
+import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 
 const InfluencerLogin = () => {
   const navigate = useNavigate();
+  const { theme, themeKey, setTheme } = useInfluencerTheme();
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -79,14 +82,13 @@ const InfluencerLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Gradients */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_0%,#3b82f615,transparent_50%)] pointer-events-none" />
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4 transition-colors duration-500" style={{ background: theme.background }}>
+      <ThemedStudioBackground themeKey={themeKey} />
       
       <div className="w-full max-w-md relative z-10">
         <Link 
           to="/login" 
-          className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-white mb-8 transition-colors group"
+          className={`inline-flex items-center gap-2 text-sm font-bold ${theme.muted} hover:text-blue-600 mb-8 transition-colors group`}
         >
           <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to main login
         </Link>
@@ -95,13 +97,13 @@ const InfluencerLogin = () => {
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="border-white/10 bg-black/40 backdrop-blur-2xl shadow-2xl rounded-[2.5rem] overflow-hidden">
+          <Card className={`${theme.card} border-white/10 shadow-2xl rounded-[2.5rem] overflow-hidden`}>
             <CardHeader className="text-center pt-12 pb-8">
-              <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-primary border border-primary/20">
+              <div className="w-16 h-16 bg-blue-600/20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600 border border-blue-600/20">
                 <Phone className="w-8 h-8" />
               </div>
-              <CardTitle className="text-3xl font-black tracking-tight">Influencer Login</CardTitle>
-              <CardDescription className="text-base font-medium px-4">
+              <CardTitle className={`text-3xl font-black tracking-tight ${theme.text}`}>Influencer Login</CardTitle>
+              <CardDescription className={`text-base font-medium px-4 ${theme.muted}`}>
                 Enter your phone number to access your creator dashboard
               </CardDescription>
             </CardHeader>
@@ -118,15 +120,15 @@ const InfluencerLogin = () => {
                     className="space-y-6"
                   >
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase font-black text-muted-foreground tracking-widest ml-1">Phone Number</Label>
+                      <Label className={`text-xs uppercase font-black ${theme.muted} tracking-widest ml-1`}>Phone Number</Label>
                       <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${theme.muted} opacity-50`} />
                         <Input 
                           type="tel"
                           placeholder="98765 43210"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          className="h-14 pl-12 bg-white/5 border-white/10 rounded-2xl text-lg font-bold"
+                          className={`h-14 pl-12 ${themeKey === 'dark' ? 'bg-white/5' : 'bg-black/5'} border-white/10 rounded-2xl text-lg font-bold ${theme.text}`}
                           required
                         />
                       </div>
@@ -135,7 +137,7 @@ const InfluencerLogin = () => {
                     <Button 
                       type="submit" 
                       disabled={isAuthenticating}
-                      className="w-full h-14 rounded-2xl text-lg font-black shadow-xl shadow-primary/20"
+                      className="w-full h-14 rounded-2xl text-lg font-black bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20"
                     >
                       {isAuthenticating ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Send OTP <ArrowRight className="ml-2 w-5 h-5" /></>}
                     </Button>
@@ -150,15 +152,15 @@ const InfluencerLogin = () => {
                     className="space-y-6"
                   >
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase font-black text-muted-foreground tracking-widest ml-1">Verify OTP</Label>
+                      <Label className={`text-xs uppercase font-black ${theme.muted} tracking-widest ml-1`}>Verify OTP</Label>
                       <div className="relative">
-                        <MessageSquare className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <MessageSquare className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${theme.muted} opacity-50`} />
                         <Input 
                           type="text"
                           placeholder="000000"
                           value={otp}
                           onChange={(e) => setOtp(e.target.value)}
-                          className="h-14 pl-12 bg-white/5 border-white/10 rounded-2xl text-lg font-bold tracking-[0.5em] text-center"
+                          className={`h-14 pl-12 ${themeKey === 'dark' ? 'bg-white/5' : 'bg-black/5'} border-white/10 rounded-2xl text-lg font-bold tracking-[0.5em] text-center ${theme.text}`}
                           required
                           autoFocus
                         />
@@ -166,7 +168,7 @@ const InfluencerLogin = () => {
                       <button 
                         type="button"
                         onClick={() => setStep('phone')}
-                        className="text-xs font-bold text-primary hover:underline ml-1"
+                        className="text-xs font-bold text-blue-600 hover:underline ml-1"
                       >
                         Change phone number
                       </button>
@@ -175,7 +177,7 @@ const InfluencerLogin = () => {
                     <Button 
                       type="submit" 
                       disabled={isAuthenticating}
-                      className="w-full h-14 rounded-2xl text-lg font-black shadow-xl shadow-primary/20"
+                      className="w-full h-14 rounded-2xl text-lg font-black bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20"
                     >
                       {isAuthenticating ? <Loader2 className="w-6 h-6 animate-spin" /> : "Verify & Login"}
                     </Button>
@@ -184,9 +186,9 @@ const InfluencerLogin = () => {
               </AnimatePresence>
 
               <div className="mt-8 text-center border-t border-white/5 pt-8">
-                <p className="text-xs text-muted-foreground font-medium">
+                <p className={`text-xs ${theme.muted} font-medium`}>
                   Don't have an account? <br />
-                  <span className="text-white/60">You can only join via a campaign invite link.</span>
+                  <span className="opacity-60">You can only join via a campaign invite link.</span>
                 </p>
               </div>
             </CardContent>

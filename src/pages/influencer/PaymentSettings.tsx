@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, CreditCard, Landmark, CheckCircle2 } from "lucide-react";
+import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
+import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
 import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
 
 const PaymentSettings = () => {
   const navigate = useNavigate();
+  const { theme, themeKey, setTheme } = useInfluencerTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"upi" | "bank">("upi");
 
@@ -77,24 +80,25 @@ const PaymentSettings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-10">
-      <InfluencerNavbar />
+    <div className="min-h-screen relative overflow-hidden transition-colors duration-500" style={{ background: theme.background }}>
+      <ThemedStudioBackground themeKey={themeKey} />
+      <InfluencerNavbar currentTheme={themeKey} onThemeChange={setTheme} />
       
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <main className="relative z-10 container mx-auto px-4 py-8 max-w-2xl">
         <Button 
           variant="ghost" 
           onClick={() => navigate("/dashboard")}
-          className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
+          className={`mb-6 -ml-2 ${theme.muted} hover:text-foreground`}
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
         </Button>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Payment Settings</h1>
-          <p className="text-muted-foreground mt-1">Manage where you receive your payouts.</p>
+          <h1 className={`text-3xl font-bold ${theme.text}`}>Payment Settings</h1>
+          <p className={`${theme.muted} mt-1`}>Manage where you receive your payouts.</p>
           
           {razorpayId && (
-            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold uppercase tracking-wider">
+            <div className={`mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${themeKey === 'light' ? 'bg-blue-500/10 border-blue-500/20 text-blue-600' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'} text-xs font-bold uppercase tracking-wider border`}>
               <CheckCircle2 size={12} />
               Razorpay Linked: {razorpayId}
             </div>
@@ -105,7 +109,9 @@ const PaymentSettings = () => {
           <button
             onClick={() => setActiveTab("upi")}
             className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${
-              activeTab === "upi" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card/50 text-muted-foreground hover:border-border/80"
+              activeTab === "upi" 
+                ? (themeKey === 'dark' ? "border-blue-600 bg-blue-600/10 text-blue-400" : "border-blue-600 bg-blue-600/10 text-blue-600")
+                : `${themeKey === 'dark' ? 'border-white/10 bg-white/5 text-white/50' : 'border-black/5 bg-black/5 text-black/50'} hover:border-blue-500/30`
             }`}
           >
             <CreditCard size={20} />
@@ -115,7 +121,9 @@ const PaymentSettings = () => {
           <button
             onClick={() => setActiveTab("bank")}
             className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${
-              activeTab === "bank" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card/50 text-muted-foreground hover:border-border/80"
+              activeTab === "bank" 
+                ? (themeKey === 'dark' ? "border-blue-600 bg-blue-600/10 text-blue-400" : "border-blue-600 bg-blue-600/10 text-blue-600")
+                : `${themeKey === 'dark' ? 'border-white/10 bg-white/5 text-white/50' : 'border-black/5 bg-black/5 text-black/50'} hover:border-blue-500/30`
             }`}
           >
             <Landmark size={20} />
@@ -124,10 +132,10 @@ const PaymentSettings = () => {
           </button>
         </div>
 
-        <Card>
+        <Card className={`${theme.card} border-white/10`}>
           <CardHeader>
-            <CardTitle>{activeTab === "upi" ? "UPI Details" : "Bank Account Details"}</CardTitle>
-            <CardDescription>
+            <CardTitle className={theme.text}>{activeTab === "upi" ? "UPI Details" : "Bank Account Details"}</CardTitle>
+            <CardDescription className={theme.muted}>
               {activeTab === "upi" 
                 ? "Enter your UPI ID (e.g., username@bank)" 
                 : "Enter your bank account information for direct transfers."}
@@ -136,50 +144,55 @@ const PaymentSettings = () => {
           <CardContent className="space-y-4">
             {activeTab === "upi" ? (
               <div className="space-y-2">
-                <Label htmlFor="upiId">UPI ID</Label>
+                <Label htmlFor="upiId" className={theme.text}>UPI ID</Label>
                 <Input
                   id="upiId"
                   placeholder="name@okaxis"
                   value={upiId}
                   onChange={(e) => setUpiId(e.target.value)}
+                  className={`${themeKey === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-white/5 text-white border-white/10'}`}
                 />
               </div>
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="bankAccountName">Account Holder Name</Label>
+                  <Label htmlFor="bankAccountName" className={theme.text}>Account Holder Name</Label>
                   <Input
                     id="bankAccountName"
                     placeholder="John Doe"
                     value={bankAccountName}
                     onChange={(e) => setBankAccountName(e.target.value)}
+                    className={`${themeKey === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-white/5 text-white border-white/10'}`}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bankName">Bank Name</Label>
+                  <Label htmlFor="bankName" className={theme.text}>Bank Name</Label>
                   <Input
                     id="bankName"
                     placeholder="HDFC Bank"
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
+                    className={`${themeKey === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-white/5 text-white border-white/10'}`}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number</Label>
+                  <Label htmlFor="accountNumber" className={theme.text}>Account Number</Label>
                   <Input
                     id="accountNumber"
                     placeholder="1234567890"
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
+                    className={`${themeKey === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-white/5 text-white border-white/10'}`}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ifscCode">IFSC Code</Label>
+                  <Label htmlFor="ifscCode" className={theme.text}>IFSC Code</Label>
                   <Input
                     id="ifscCode"
                     placeholder="HDFC0001234"
                     value={ifscCode}
                     onChange={(e) => setIfscCode(e.target.value)}
+                    className={`${themeKey === 'light' ? 'bg-white text-slate-900 border-slate-200' : 'bg-white/5 text-white border-white/10'}`}
                   />
                 </div>
               </>
@@ -188,7 +201,7 @@ const PaymentSettings = () => {
             <Button 
                 onClick={handleSave} 
                 disabled={isLoading} 
-                className="w-full mt-6"
+                className={`w-full mt-6 ${themeKey === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold h-12 rounded-xl`}
             >
               {isLoading ? "Saving..." : "Save Payment Details"}
             </Button>

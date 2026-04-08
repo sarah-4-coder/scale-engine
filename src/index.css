@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -15,49 +15,59 @@
     --popover: 0 0% 3%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 72 100% 50%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 168 76% 50%;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 226 70% 50%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 10%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 72 100% 50%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 12%;
     --input: 0 0% 12%;
-    --ring: 72 100% 50%;
+    --ring: 217 91% 60%;
 
     --radius: 1rem;
 
     /* Custom tokens */
-    --neon: 72 100% 50%;
-    --neon-glow: 0 0 30px hsl(72 100% 50% / 0.3);
-    --teal: 168 76% 50%;
+    --neon: 217 91% 60%;
+    --neon-glow: 0 0 30px hsl(217 91% 60% / 0.3);
+    --teal: 226 70% 50%;
     --glass-bg: 0 0% 100% / 0.03;
     --glass-border: 0 0% 100% / 0.08;
   }
 
-  .dark {
-    --background: 0 0% 2%;
-    --foreground: 0 0% 100%;
+  /* ⚡ Studio Maximalism - Influencer Specific */
+  .influencer-portal {
+    --studio-bg: #050505;
+    --studio-surface: #0f0f0f;
+    --studio-primary: #3B82F6; /* Studio Blue */
+    --studio-secondary: #6366F1; /* Indigo */
+    --studio-glass-bg: rgba(255, 255, 255, 0.04);
+    --studio-glass-border: rgba(255, 255, 255, 0.10);
+    --studio-text: #FFFFFF;
+    --studio-muted: #A1A1AA;
+    --studio-radius: 20px;
+    --studio-font: 'Outfit', sans-serif;
+    
+    background-color: var(--studio-bg);
+    color: var(--studio-text);
+    font-family: var(--studio-font);
   }
 
-  /* ⚡ Mobile Safe Areas - iOS notch, Android navigation */
-  @supports (padding-bottom: env(safe-area-inset-bottom)) {
-    .pb-safe {
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    
-    .pt-safe {
-      padding-top: env(safe-area-inset-top);
-    }
+  .influencer-portal h1, 
+  .influencer-portal h2, 
+  .influencer-portal h3 {
+    font-family: var(--studio-font);
+    font-weight: 900;
+    letter-spacing: -0.02em;
   }
 }
 
