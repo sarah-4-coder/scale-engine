@@ -12,7 +12,7 @@ export interface MediaKitLead {
   campaign_type: string;
   budget_range: string;
   brief: string | null;
-  status: "pending" | "responded" | "closed";
+  status: "pending" | "responded" | "closed" | "rejected";
   created_at: string;
 }
 
@@ -50,7 +50,7 @@ export const useLeads = (influencerId: string | null) => {
     }
   }, [influencerId, fetchLeads]);
 
-  const updateStatus = async (leadId: string, status: "responded" | "closed") => {
+  const updateStatus = async (leadId: string, status: "responded" | "closed" | "rejected") => {
     const { error } = await supabase
       .from("media_kit_leads" as any)
       .update({ status })
