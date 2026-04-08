@@ -38,6 +38,8 @@ import InfluencerNavbar from "@/components/influencer/InfluencerNavbar";
 import MobileBottomNav from "@/components/influencer/MobileBottomNav";
 import { formatNumber, parseFormattedNumber } from "@/utils/Formatnumbers";
 import { useNavigate } from "react-router-dom";
+import { PORTFOLIO_THEMES, PortfolioThemeKey } from "@/theme/portfolioThemes";
+import { Palette, Share2, Download } from "lucide-react";
 
 interface PortfolioItem {
   id?: string;
@@ -119,6 +121,7 @@ const MediaKitSetup = () => {
   const [bio, setBio] = useState("");
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [selectedPortfolioTheme, setSelectedPortfolioTheme] = useState<PortfolioThemeKey>("default");
 
   // Instagram link input
   const [instagramLink, setInstagramLink] = useState("");
@@ -142,7 +145,7 @@ const MediaKitSetup = () => {
     try {
       const { data: influencerData } = (await supabase
         .from("influencer_profiles")
-        .select("id, user_id, instagram_handle, profile_image_url, media_kit_bio, services, media_kit_completed, media_kit_enabled, profile_completed, custom_data")
+        .select("id, user_id, instagram_handle, profile_image_url, media_kit_bio, services, media_kit_completed, media_kit_enabled, profile_completed, custom_data, portfolio_theme")
         .eq("user_id", user?.id)
         .single()) as any;
 
@@ -158,6 +161,7 @@ const MediaKitSetup = () => {
         setProfileImageUrl(influencerData.profile_image_url || "");
         setBio(influencerData.media_kit_bio || "");
         setServices(influencerData.services || []);
+        setSelectedPortfolioTheme((influencerData.portfolio_theme as PortfolioThemeKey) || "default");
 
         // Load existing portfolio
         const { data: portfolioData } = await supabase
@@ -172,6 +176,8 @@ const MediaKitSetup = () => {
 
         // Determine current step
         if (influencerData.media_kit_completed) {
+          setStep(6);
+        } else if (influencerData.portfolio_theme) {
           setStep(5);
         } else if (influencerData.services && influencerData.services.length > 0) {
           setStep(4);
@@ -242,7 +248,6 @@ const MediaKitSetup = () => {
 
       const { error } = await supabase
         .from("influencer_profiles")
-        //@ts-expect-error
         .update({ profile_image_url: imageUrl })
         .eq("id", profile.id);
 
@@ -264,7 +269,6 @@ const MediaKitSetup = () => {
     try {
       const { error } = await supabase
         .from("influencer_profiles")
-        //@ts-expect-error
         .update({ media_kit_bio: bio })
         .eq("id", profile.id);
 
@@ -301,7 +305,6 @@ const MediaKitSetup = () => {
 
       const { data, error } = await supabase
         .from("portfolio_content")
-        //@ts-expect-error
         .insert({
           influencer_id: profile.id,
           ...newItem,
@@ -375,8 +378,7 @@ const MediaKitSetup = () => {
     try {
       const { error } = await supabase
         .from("influencer_profiles")
-        //@ts-expect-error
-        .update({ services: services })
+        .update({ services: services as any })
         .eq("id", profile.id);
 
       if (error) throw error;
@@ -396,23 +398,26 @@ const MediaKitSetup = () => {
       toast.error("Add at least 3 Instagram posts to publish");
       return;
     }
+    setStep(5);
+  };
 
+  const handleFinalSubmit = async () => {
     setLoading(true);
     try {
       const { error } = await supabase
         .from("influencer_profiles")
-        //@ts-expect-error
         .update({
           media_kit_enabled: true,
           media_kit_completed: true,
-          services: services,
+          services: services as any,
+          portfolio_theme: selectedPortfolioTheme,
         })
         .eq("id", profile.id);
 
       if (error) throw error;
 
       toast.success("🎉 Media Kit Published!");
-      setStep(5);
+      setStep(6);
     } catch (error) {
       console.error("Error publishing media kit:", error);
       toast.error("Failed to publish media kit");
@@ -428,7 +433,7 @@ const MediaKitSetup = () => {
     toast.success("Link copied to clipboard!");
   };
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = ((step - 1) / totalSteps) * 100;
 
   return (
@@ -463,7 +468,7 @@ const MediaKitSetup = () => {
         </div>
 
         {/* Progress Bar */}
-        {step < 5 && (
+        {step < 6 && (
           <div className={`${themeKey === 'light' ? 'bg-white border-black/10' : 'bg-white/5 border-white/10'} rounded-2xl p-4 md:p-6 shadow-sm`}>
             <div className="flex justify-between items-center mb-3">
               <span className={`text-sm md:text-base font-semibold ${themeKey === 'light' ? 'text-black' : 'text-white'}`}>
@@ -929,8 +934,103 @@ const MediaKitSetup = () => {
             </motion.div>
           )}
 
-          {/* STEP 5: Success */}
+          {/* STEP 5: Theme Selection */}
           {step === 5 && (
+            <motion.div
+              key="step5"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="space-y-6"
+            >
+              <Card className={`${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'} rounded-2xl md:rounded-3xl`}>
+                <CardHeader>
+                  <CardTitle className={`text-xl md:text-2xl ${themeKey === 'dark' ? 'text-white' : 'text-slate-900'} flex items-center gap-2`}>
+                    <Palette className="h-6 w-6 text-blue-600" />
+                    Choose Your Aesthetic
+                  </CardTitle>
+                  <CardDescription className={`${themeKey === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
+                    Select a studio theme to make your media kit stand out
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(Object.keys(PORTFOLIO_THEMES) as PortfolioThemeKey[]).map((themeKeyOption) => {
+                      const themeOption = PORTFOLIO_THEMES[themeKeyOption];
+                      const isSelected = selectedPortfolioTheme === themeKeyOption;
+                      
+                      return (
+                        <button
+                          key={themeKeyOption}
+                          onClick={() => setSelectedPortfolioTheme(themeKeyOption)}
+                          className={`relative text-left p-6 rounded-2xl border-2 transition-all group overflow-hidden ${
+                            isSelected 
+                              ? 'border-blue-600 bg-blue-600/5 ring-1 ring-blue-600/50' 
+                              : themeKey === 'dark' 
+                                ? 'border-white/10 bg-white/5 hover:border-white/20' 
+                                : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                          }`}
+                        >
+                          {/* Theme Preview Color Chips */}
+                          <div className="flex gap-1 mb-4">
+                            <div className="w-4 h-4 rounded-full border border-white/10" style={{ background: themeOption.background }} />
+                            <div className="w-4 h-4 rounded-full border border-white/10" style={{ background: themeOption.accent.replace('text-', '') }} />
+                          </div>
+                          
+                          <h4 className={`text-lg font-black mb-1 ${isSelected ? 'text-blue-500' : themeKey === 'dark' ? 'text-white' : 'text-black'}`}>
+                            {themeOption.name}
+                          </h4>
+                          <p className={`text-xs ${themeKey === 'dark' ? 'text-white/40' : 'text-slate-500'}`}>
+                            {themeKeyOption === 'cyberpunk' && "High-contrast neon design for bold creators."}
+                            {themeKeyOption === 'minimal_studio' && "Clean, professional, and timeless studio look."}
+                            {themeKeyOption === 'editorial_vogue' && "Magazine-style elegance with premium typography."}
+                            {themeKeyOption === 'default' && "The classic Dotfluence dark minimalist look."}
+                          </p>
+
+                          {isSelected && (
+                            <div className="absolute top-4 right-4 bg-blue-600 rounded-full p-1 shadow-lg">
+                              <Check className="h-4 w-4 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Theme Preview Image Area (Mockup) */}
+                  <div className={`rounded-2xl border ${themeKey === 'dark' ? 'border-white/10 bg-black/40' : 'border-slate-200 bg-slate-100'} p-4 text-center`}>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                       <Sparkles size={16} className="text-blue-500" />
+                       <span className={`text-[10px] font-bold uppercase tracking-widest ${themeKey === 'dark' ? 'text-white/40' : 'text-slate-500'}`}>Real-time Preview Soon</span>
+                    </div>
+                    <p className={`text-xs italic ${themeKey === 'dark' ? 'text-white/30' : 'text-slate-400'}`}>
+                      Theme applied: <span className="font-bold text-blue-500 capitalize">{selectedPortfolioTheme.replace('_', ' ')}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => setStep(4)}
+                      className={`flex-1 py-6 rounded-xl bg-transparent border border-solid transition-all ${themeKey === 'dark' ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleFinalSubmit}
+                      disabled={loading}
+                      className={`flex-1 text-white font-black py-6 rounded-xl transition-all border border-transparent ${themeKey === 'light' ? 'bg-blue-600 hover:bg-blue-700 shadow-lg' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-[0_0_20px_rgba(37,99,235,0.4)]'}`}
+                    >
+                      {loading ? "Publishing..." : "Finalize & Publish"}
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* STEP 6: Success */}
+          {step === 6 && (
             <motion.div
               key="step5"
               initial={{ opacity: 0, scale: 0.95 }}

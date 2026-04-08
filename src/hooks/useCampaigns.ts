@@ -312,6 +312,7 @@ export const useDashboardStats = (userId: string) => {
       });
 
       return {
+        influencerId,
         fullName: profile?.full_name || 'Creator',
         followers: (influencer as any).followers_count,
         avgEngagementRate: (influencer as any).avg_engagement_rate || 0,

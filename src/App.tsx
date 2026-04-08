@@ -46,6 +46,7 @@ const PublicCampaignPreview = lazy(() => import("./pages/influencer/PublicCampai
 const MagicLinkEntry = lazy(() => import("./pages/influencer/MagicLinkEntry"));
 const CampaignApply = lazy(() => import("./pages/influencer/CampaignApply"));
 const InfluencerLogin = lazy(() => import("./pages/influencer/InfluencerLogin"));
+const Leads = lazy(() => import("./pages/influencer/Leads"));
 
 // Admin routes
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -453,6 +454,19 @@ const AppRoutes = () => {
             <ProfileCompletionGuard>
               <Suspense fallback={<PageLoader />}>
                 <CampaignDetail />
+              </Suspense>
+            </ProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/leads"
+        element={
+          <ProtectedRoute allowedRoles={["influencer"]}>
+            <ProfileCompletionGuard>
+              <Suspense fallback={<PageLoader />}>
+                <Leads />
               </Suspense>
             </ProfileCompletionGuard>
           </ProtectedRoute>

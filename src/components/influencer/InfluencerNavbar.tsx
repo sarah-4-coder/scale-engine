@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Palette, LogOut, Check, Bell, Landmark } from "lucide-react";
+import { Palette, LogOut, Check, Bell, Landmark, Inbox } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,8 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { THEMES, ThemeKey } from "@/theme/themes";
 import { useUserProfile } from "@/hooks/useCampaigns";
+import { useLeadsBadge } from "@/hooks/useLeads";
+import { useDashboardStats } from "@/hooks/useCampaigns";
 
 type Props = {
   currentTheme: ThemeKey;
@@ -32,6 +34,12 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
   //@ts-ignore
     ? userProfile.full_name.split(' ')[0]
     : 'Creator';
+
+  // @ts-ignore
+  const { data: stats } = useDashboardStats(user?.id || '');
+  // @ts-ignore
+  const influencerId = stats?.influencerId || null;
+  const leadsBadge = useLeadsBadge(influencerId);
 
   const handleLogout = async () => {
     await supabase.auth.signOut({ scope: "local" });
@@ -92,7 +100,31 @@ const InfluencerNavbar = ({ currentTheme, onThemeChange }: Props) => {
             </Button>
           </motion.div>
 
-          {/* ... existing SVG and notification bell logic ... */}
+          {/* LEADS INBOX */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.05 }}
+            className="hidden md:block"
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/dashboard/leads")}
+              title="Brand Leads"
+              className={`relative h-8 w-8 md:h-10 md:w-10 ${
+                currentTheme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-black/5'
+              }`}
+            >
+              <Inbox className={`h-4 w-4 md:h-5 md:w-5 ${currentTheme === 'dark' ? 'text-white' : 'text-black'}`} />
+              {leadsBadge > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 bg-blue-600 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(37,99,235,0.8)]">
+                  {leadsBadge > 9 ? '9+' : leadsBadge}
+                </span>
+              )}
+            </Button>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

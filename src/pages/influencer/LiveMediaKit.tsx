@@ -21,8 +21,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
 import { ThemeKey } from "@/theme/themes";
+import { PORTFOLIO_THEMES, PortfolioThemeKey } from "@/theme/portfolioThemes";
 import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
-import { TiltCard } from "@/components/influencer/TiltCard";
+import { HireMeModal } from "@/components/influencer/HireMeModal";
 
 interface CreatorProfile {
   id: string;
@@ -36,6 +37,7 @@ interface CreatorProfile {
   city: string | null;
   state: string | null;
   full_name: string;
+  portfolio_theme?: string;
   avg_engagement_rate?: number;
   services?: Array<{
     name: string;
@@ -56,6 +58,16 @@ interface PortfolioItem {
   instagram_post_url: string | null;
 }
 
+const getThumbnailUrl = (url: string | null) => {
+  if (!url) return null;
+  if (url.includes("instagram.com")) {
+    // Remove query params and trailing slash for cleaner transformation
+    const cleanUrl = url.split("?")[0].replace(/\/$/, "");
+    return `${cleanUrl}/media/?size=l`;
+  }
+  return url;
+};
+
 const formatNumber = (num: number | null | undefined): string => {
   if (!num) return "0";
   if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -74,22 +86,12 @@ const LiveMediaKit = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"portfolio" | "audience" | "services">("portfolio");
   const [scrolled, setScrolled] = useState(false);
-  // FORCE PREMIUM SINGLE LOOK (Live Media Kit ignores global app theme)
-  const themeKey = 'dark' as ThemeKey;
-  const theme = {
-    background: '#050505',
-    text: 'text-white',
-    muted: 'text-white/60',
-    border: 'border-white/10',
-    card: 'bg-white/5 border-white/10',
-    cardHover: 'hover:bg-white/10',
-    input: 'bg-white/5 border-white/10 text-white placeholder:text-white/40',
-    inputFocus: 'focus:border-blue-500 focus:bg-white/10',
-    radius: 'rounded-2xl',
-    accent: 'text-blue-500',
-    activeTab: 'bg-white/10 text-white',
-    inactiveTab: 'text-white/60 hover:text-white hover:bg-white/5'
-  };
+  const [hireMeOpen, setHireMeOpen] = useState(false);
+  // PORTFOLIO THEME RESOLUTION
+  const selectedThemeKey = (profile?.portfolio_theme as PortfolioThemeKey) || "default";
+  const themeValues = PORTFOLIO_THEMES[selectedThemeKey] || PORTFOLIO_THEMES.default;
+  const themeKey = themeValues.uiThemeKey as ThemeKey;
+  const theme = themeValues;
 
   useEffect(() => {
     loadCreatorProfile();
@@ -105,7 +107,7 @@ const LiveMediaKit = () => {
     try {
       const { data: influencerData, error: influencerError } = await supabase
         .from("influencer_profiles")
-        .select("id, user_id, instagram_handle, followers_count, niches, bio, profile_image_url, media_kit_bio, city, state, full_name, avg_engagement_rate, services")
+        .select("id, user_id, instagram_handle, followers_count, niches, bio, profile_image_url, media_kit_bio, city, state, full_name, avg_engagement_rate, services, portfolio_theme")
         .eq("instagram_handle", handle)
         .eq("media_kit_enabled", true)
         .single<CreatorProfile>();
@@ -180,7 +182,7 @@ const LiveMediaKit = () => {
 
   return (
     <div 
-      className={`min-h-screen transition-all duration-700 selection:bg-blue-500/30 overflow-x-hidden`}
+      className={`min-h-screen transition-all duration-700 selection:bg-blue-500/30 overflow-x-hidden ${theme.fontFamily}`}
       style={{ background: theme.background }}
     >
       <ThemedStudioBackground themeKey={themeKey} />
@@ -208,12 +210,20 @@ const LiveMediaKit = () => {
             rel="noopener noreferrer"
             whileHover={{ scale: 1.05, rotateZ: 2 }}
             whileTap={{ scale: 0.95 }}
-            className={`${themeKey === 'dark' ? 'bg-white text-black' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'} px-4 md:px-6 py-2.5 rounded-full text-xs md:text-sm font-black flex items-center gap-2 transition-all`}
+            className={`px-4 md:px-6 py-2.5 rounded-full text-xs md:text-sm font-black flex items-center gap-2 transition-all ${theme.buttonClass}`}
           >
             <Instagram size={14} className="md:w-4 md:h-4" />
             <span className="hidden sm:inline">Contact Creator</span>
             <span className="sm:hidden">Contact</span>
           </motion.a>
+          <motion.button
+            onClick={() => setHireMeOpen(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`px-4 md:px-6 py-2.5 rounded-full text-xs md:text-sm font-black flex items-center gap-2 transition-all ${theme.buttonClass}`}
+          >
+            ✉️ <span className="hidden sm:inline">Work With Me</span><span className="sm:hidden">Hire</span>
+          </motion.button>
         </div>
       </nav>
 
@@ -229,10 +239,7 @@ const LiveMediaKit = () => {
               className="relative flex justify-center"
             >
               <motion.div
-                animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
-                transition={{ duration: 4.3, repeat: Infinity, ease: "easeInOut" }}
-                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-                className={`relative z-10 aspect-[4/5] w-full max-w-xs rounded-[2.5rem] overflow-hidden border ${themeKey === 'dark' ? 'border-white/10' : 'border-black/5'} shadow-[0_0_50px_rgba(37,99,235,0.15)] group-hover:shadow-[0_0_80px_rgba(37,99,235,0.3)] transition-shadow duration-500`}
+                className={`relative z-10 aspect-[4/5] w-full max-w-xs ${theme.radius} overflow-hidden border ${theme.border} ${theme.heroGlow || 'shadow-[0_0_50px_rgba(37,99,235,0.15)]'} transition-shadow duration-500`}
               >
                 {profile.profile_image_url ? (
                   <img
@@ -366,9 +373,6 @@ const LiveMediaKit = () => {
               style={{ perspective: 1000 }}
             >
               <motion.div
-                animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
-                transition={{ duration: 4.7, repeat: Infinity, ease: "easeInOut" }}
-                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
                 className="relative z-10 aspect-[4/5] max-w-sm mx-auto rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_40px_80px_rgba(0,0,0,0.5)] group-hover:shadow-[0_40px_100px_rgba(37,99,235,0.4)] transition-all duration-700"
               >
                 {profile.profile_image_url ? (
@@ -432,24 +436,18 @@ const LiveMediaKit = () => {
               },
               { label: "Content Types", value: portfolio.length, icon: Camera },
             ].map((stat, i) => (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, y: 50, rotateX: -30 }}
-                animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                transition={{ delay: i * 0.1, duration: 0.8, type: "spring", bounce: 0.4 }}
-                animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
-                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-                className={`p-6 md:p-8 rounded-[2rem] ${theme.card} border border-white/5 shadow-2xl hover:shadow-[0_20px_50px_rgba(37,99,235,0.2)] transition-colors duration-500`}
+                className={`p-6 md:p-8 rounded-[2rem] ${theme.card} border border-white/5 shadow-2xl hover:shadow-[0_20px_50px_rgba(37,99,235,0.2)] transition-all duration-300 hover:-translate-y-1`}
               >
                 <stat.icon className={`${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-600'} mb-3 md:mb-4 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]`} size={24} />
-                <p className={`text-3xl md:text-4xl font-black tracking-tighter ${theme.text}`} style={{ transform: 'translateZ(20px)' }}>
+                <p className={`text-3xl md:text-4xl font-black tracking-tighter ${theme.text}`}>
                   {stat.value}
                 </p>
-                <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest mt-1 ${theme.muted}`} style={{ transform: 'translateZ(10px)' }}>
+                <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest mt-1 ${theme.muted}`}>
                   {stat.label}
                 </p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -458,12 +456,12 @@ const LiveMediaKit = () => {
       {/* Main Content Tabs */}
       <section className="relative z-10 px-4 md:px-6 pb-16 md:pb-24">
         <div className="max-w-7xl mx-auto">
-          <div className={`flex gap-4 md:gap-8 ${themeKey === 'dark' ? 'border-white/10' : 'border-slate-200'} mb-8 md:mb-12 overflow-x-auto`}>
+          <div className={`flex gap-4 md:gap-8 ${themeKey === 'dark' ? 'border-white/10' : 'border-slate-200'} mb-8 md:mb-12 overflow-x-auto border-b`}>
             {["portfolio", "audience", "services"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
-                className={`pb-3 md:pb-4 text-xs md:text-sm font-black uppercase tracking-[0.2em] relative transition-colors whitespace-nowrap ${
+                className={`pb-3 md:pb-4 text-xs md:text-sm font-black uppercase tracking-[0.2em] relative transition-all whitespace-nowrap ${
                   activeTab === tab 
                     ? (themeKey === 'dark' ? "text-white" : "text-blue-600 font-black") 
                     : (themeKey === 'dark' ? "text-white/40" : "text-slate-400 font-bold")
@@ -471,202 +469,146 @@ const LiveMediaKit = () => {
               >
                 {tab}
                 {activeTab === tab && (
-                  <motion.div
-                    layoutId="tab"
-                    className={`absolute bottom-0 left-0 right-0 h-1 ${themeKey === 'dark' ? 'bg-blue-600' : 'bg-blue-600'}`}
+                  <div
+                    className={`absolute bottom-0 left-0 right-0 h-1 ${themeKey === 'dark' ? 'bg-blue-600' : 'bg-blue-600'} transition-all duration-300`}
                   />
                 )}
               </button>
             ))}
           </div>
 
-          <AnimatePresence mode="wait">
-            {activeTab === "portfolio" && (
-              <motion.div
-                key="portfolio"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
-              >
-                {portfolio.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 50, rotateX: 20 }}
-                    animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.6, type: "spring", bounce: 0.4 }}
-                    animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
-                transition={{ duration: 4.7, repeat: Infinity, ease: "easeInOut" }}
-                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-                    className={`group relative aspect-[3/4] rounded-[2rem] overflow-hidden ${theme.card} border border-white/5 transition-all duration-500 hover:shadow-[0_30px_60px_rgba(37,99,235,0.2)]`}
-                  >
-                    <div className={`w-full h-full bg-gradient-to-br ${themeKey === 'dark' ? 'from-blue-600/10' : 'from-blue-600/10'} to-transparent flex items-center justify-center`}>
+          {activeTab === "portfolio" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {portfolio.map((item, index) => (
+                <div
+                  key={item.id}
+                  className={`group relative aspect-[3/4] rounded-[2rem] overflow-hidden ${theme.card} border border-white/5 transition-all duration-500 hover:shadow-[0_30px_60px_rgba(37,99,235,0.2)] hover:-translate-y-1`}
+                >
+                  <div className="absolute inset-0 w-full h-full bg-slate-900/50">
+                    <img 
+                      src={getThumbnailUrl(item.thumbnail_url || item.content_url) || ""} 
+                      alt={item.caption || "Portfolio item"} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <div className={`absolute inset-0 flex items-center justify-center -z-10 bg-gradient-to-br ${themeKey === 'dark' ? 'from-blue-600/10' : 'from-blue-600/10'} to-transparent`}>
                       {item.content_type === "video" ? (
                         <Play className={`h-12 w-12 md:h-16 md:w-16 ${themeKey === 'dark' ? 'text-blue-600' : 'text-blue-600'} opacity-50`} />
                       ) : (
                         <Camera className={`h-12 w-12 md:h-16 md:w-16 ${themeKey === 'dark' ? 'text-blue-600' : 'text-blue-600'} opacity-50`} />
                       )}
                     </div>
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity p-6 md:p-8 flex flex-col justify-end">
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-2">
-                          <Eye
-                            size={16}
-                            className={`${themeKey === 'dark' ? 'text-blue-600' : 'text-blue-600'} md:w-[18px] md:h-[18px]`}
-                          />
-                          <span className={`font-black text-sm md:text-base ${theme.text}`}>
-                            {formatNumber(item.reach_count)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Heart
-                            size={16}
-                            className="text-rose-500 md:w-[18px] md:h-[18px]"
-                          />
-                          <span className={`font-black text-sm md:text-base ${theme.text}`}>
-                            {formatNumber(item.engagement_count)}
-                          </span>
-                        </div>
+                  </div>
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity p-6 md:p-8 flex flex-col justify-end">
+                    <div className="flex justify-between items-center mb-4 text-white">
+                      <div className="flex items-center gap-2">
+                        <Eye size={16} className="text-blue-400" />
+                        <span className="font-black text-sm md:text-base">
+                          {formatNumber(item.reach_count)}
+                        </span>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <Heart size={16} className="text-rose-500" />
+                        <span className="font-black text-sm md:text-base">
+                          {formatNumber(item.engagement_count)}
+                        </span>
+                      </div>
+                    </div>
+                    <a
+                      href={item.instagram_post_url || `https://instagram.com/${profile.instagram_handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 md:py-3 bg-white text-black rounded-xl text-center font-bold text-sm flex items-center justify-center gap-2 hover:bg-white/90 transition-colors"
+                    >
+                      {item.content_type === "video" ? (
+                        <Play size={14} fill="currentColor" />
+                      ) : (
+                        <Camera size={14} />
+                      )}
+                      View Content
+                    </a>
+                  </div>
+                  {item.content_type === "video" && (
+                    <div className="absolute top-3 md:top-4 right-3 md:right-4 p-2 bg-black/40 backdrop-blur-md rounded-full">
+                      <Play size={14} className="text-white" fill="white" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "audience" && (
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+              <div className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)] hover:-translate-y-1`}>
+                <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
+                  <Globe size={18} className="text-blue-500" /> Audience Insights
+                </h3>
+                <div className="space-y-4">
+                  <div className="text-center py-6">
+                    <BarChart3 className="mx-auto mb-4 text-blue-500/50" size={48} />
+                    <p className="text-white/60 text-sm">Detailed audience demographics available on request</p>
+                  </div>
+                </div>
+              </div>
+              <div className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)] hover:-translate-y-1`}>
+                <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
+                  <Users size={18} className="text-rose-500" /> Engagement Quality
+                </h3>
+                <div className="text-center py-10">
+                  <div className={`text-5xl md:text-7xl font-black ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} mb-2 tracking-tighter`}>
+                    {avgEngagement.toFixed(1)}%
+                  </div>
+                  <div className={`text-[10px] md:text-xs font-black uppercase tracking-[0.2em] ${theme.muted}`}>
+                    Average Engagement Rate
+                  </div>
+                  <p className={`text-sm ${theme.muted} mt-6 font-medium`}>High-quality, authentic audience interaction</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "services" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              {profile.services && profile.services.length > 0 ? (
+                profile.services.map((service, i) => (
+                  <div
+                    key={i}
+                    className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border-white/5 border hover:border-blue-600/50 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)] hover:-translate-y-1`}
+                  >
+                    <h4 className={`text-xl md:text-2xl font-black mb-2 ${theme.text}`}>
+                      {service.name}
+                    </h4>
+                    <p className={`${theme.muted} text-xs md:text-sm mb-6 leading-relaxed font-medium`}>
+                      {service.description}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className={`${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} font-bold text-sm md:text-base`}>
+                        {service.price}
+                      </span>
                       <a
-                        href={
-                          item.instagram_post_url ||
-                          `https://instagram.com/${profile.instagram_handle}`
-                        }
+                        href={`https://instagram.com/${profile.instagram_handle}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full py-2.5 md:py-3 bg-white text-black rounded-xl text-center font-bold text-sm flex items-center justify-center gap-2 hover:bg-white/90 transition-colors"
                       >
-                        {item.content_type === "video" ? (
-                          <Play size={14} fill="currentColor" />
-                        ) : (
-                          <Camera size={14} />
-                        )}
-                        View Content
+                        <button className={`text-xs font-bold uppercase tracking-widest ${themeKey === 'dark' ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-600'} flex items-center gap-1`}>
+                          Inquire <ExternalLink size={12} />
+                        </button>
                       </a>
                     </div>
-                    {item.content_type === "video" && (
-                      <div className="absolute top-3 md:top-4 right-3 md:right-4 p-2 bg-black/40 backdrop-blur-md rounded-full">
-                        <Play
-                          size={14}
-                          className="text-white md:w-4 md:h-4"
-                          fill="white"
-                        />
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-
-            {activeTab === "audience" && (
-              <motion.div
-                key="audience"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="grid md:grid-cols-2 gap-6 md:gap-8"
-              >
-                <motion.div 
-                  animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
-                transition={{ duration: 4.4, repeat: Infinity, ease: "easeInOut" }}
-                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-                  className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)]`}
-                >
-                  <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2" style={{ transform: 'translateZ(10px)' }}>
-                    <Globe
-                      size={18}
-                      className={themeKey === 'dark' ? 'text-blue-600' : 'text-blue-600'}
-                    />{" "}
-                    Audience Insights
-                  </h3>
-                  <div className="space-y-4" style={{ transform: 'translateZ(20px)' }}>
-                    <div className="text-center py-6">
-                      <BarChart3
-                        className={`mx-auto mb-4 ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'}`}
-                        size={48}
-                      />
-                      <p className="text-white/60 text-sm">
-                        Detailed audience demographics available on request
-                      </p>
-                    </div>
                   </div>
-                </motion.div>
-                <motion.div 
-                  animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
-                transition={{ duration: 5.1, repeat: Infinity, ease: "easeInOut" }}
-                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-                  className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)]`}
-                >
-                  <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2" style={{ transform: 'translateZ(10px)' }}>
-                    <Users size={18} className="text-rose-500 md:w-5 md:h-5" />{" "}
-                    Engagement Quality
-                  </h3>
-                  <div className="text-center py-10" style={{ transform: 'translateZ(20px)' }}>
-                    <div className={`text-5xl md:text-7xl font-black ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} mb-2 tracking-tighter`}>
-                      {avgEngagement.toFixed(1)}%
-                    </div>
-                    <div className={`text-[10px] md:text-xs font-black uppercase tracking-[0.2em] ${theme.muted}`}>
-                      Average Engagement Rate
-                    </div>
-                    <p className={`text-sm ${theme.muted} mt-6 font-medium`}>
-                      High-quality, authentic audience interaction
-                    </p>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-
-            {activeTab === "services" && (
-              <motion.div
-                key="services"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="grid md:grid-cols-3 gap-4 md:gap-6"
-              >
-                {profile.services && profile.services.length > 0 ? (
-                  profile.services.map((service, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 30, rotateX: -20 }}
-                      animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                      transition={{ delay: i * 0.1, duration: 0.6, type: "spring", bounce: 0.4 }}
-                      animate={{ y: [-5, 5, -5], rotateX: [-4, 4, -4], rotateY: [-4, 4, -4] }}
-                transition={{ duration: 5.8, repeat: Infinity, ease: "easeInOut" }}
-                style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-                      className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border-white/5 border hover:border-blue-600/50 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)]`}
-                    >
-                      <h4 className={`text-xl md:text-2xl font-black mb-2 ${theme.text}`} style={{ transform: 'translateZ(10px)' }}>
-                        {service.name}
-                      </h4>
-                      <p className={`${theme.muted} text-xs md:text-sm mb-6 leading-relaxed font-medium`} style={{ transform: 'translateZ(10px)' }}>
-                        {service.description}
-                      </p>
-                      <div className="flex justify-between items-center" style={{ transform: 'translateZ(20px)' }}>
-                        <span className={`${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} font-bold text-sm md:text-base`}>
-                          {service.price}
-                        </span>
-                        <a
-                          href={`https://instagram.com/${profile.instagram_handle}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <button className={`text-xs font-bold uppercase tracking-widest ${themeKey === 'dark' ? 'text-white/60 hover:text-white' : 'text-slate-500 hover:text-blue-600'} flex items-center gap-1`}>
-                            Inquire <ExternalLink size={12} />
-                          </button>
-                        </a>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className={`col-span-full p-8 rounded-2xl ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} text-center`}>
-                    <p className={`${theme.muted} text-sm`}>
-                      Contact creator directly for collaboration opportunities
-                    </p>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                ))
+              ) : (
+                <div className={`col-span-full p-8 rounded-2xl ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} text-center`}>
+                  <p className={`${theme.muted} text-sm`}>
+                    Contact creator directly for collaboration opportunities
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -731,6 +673,13 @@ const LiveMediaKit = () => {
           </div>
         </div>
       </footer>
+
+      <HireMeModal
+        open={hireMeOpen}
+        onClose={() => setHireMeOpen(false)}
+        influencerId={profile.id}
+        influencerName={profile.full_name}
+      />
     </div>
   );
 };

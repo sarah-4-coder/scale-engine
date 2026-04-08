@@ -1,8 +1,11 @@
 import { memo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Search, FileText, User } from "lucide-react";
+import { Home, Search, FileText, User, Inbox } from "lucide-react";
 import { motion } from "framer-motion";
 import { useInfluencerTheme } from "@/theme/useInfluencerTheme";
+import { useLeadsBadge } from "@/hooks/useLeads";
+import { useAuth } from "@/hooks/useAuth";
+import { useDashboardStats } from "@/hooks/useCampaigns";
 
 /**
  * Mobile Bottom Navigation - Always visible on mobile devices
@@ -12,6 +15,12 @@ const MobileBottomNav = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const { themeKey } = useInfluencerTheme();
+  const { user } = useAuth();
+  // @ts-ignore
+  const { data: stats } = useDashboardStats(user?.id || '');
+  // @ts-ignore
+  const influencerId = stats?.influencerId || null;
+  const leadsBadge = useLeadsBadge(influencerId);
 
   const navItems = [
     {
@@ -33,6 +42,12 @@ const MobileBottomNav = memo(() => {
       icon: User,
       label: "Media Kit",
       path: "/dashboard/media-kit/setup",
+    },
+    {
+      icon: Inbox,
+      label: "Leads",
+      path: "/dashboard/leads",
+      badge: leadsBadge,
     },
   ];
 
@@ -68,6 +83,11 @@ const MobileBottomNav = memo(() => {
                     : (themeKey === 'dark' ? "text-slate-500" : "text-slate-400")
                 }`}
               />
+              {'badge' in item && item.badge > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 bg-blue-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {item.badge > 9 ? '9+' : item.badge}
+                </span>
+              )}
               {active && (
                 <motion.div
                   layoutId="activeIndicator"

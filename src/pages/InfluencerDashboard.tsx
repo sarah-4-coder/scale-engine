@@ -46,6 +46,7 @@ import BlockedAccountScreen from "@/components/BlockedAccountScreen";
 import ProfileSetupDrawer from "@/components/influencer/ProfileSetupDrawer";
 import BankDetailsModal from "@/components/influencer/BankDetailsModal";
 import ThemedStudioBackground from "@/components/influencer/ThemedStudioBackground";
+import { ShareMyCard } from "@/components/influencer/ShareMyCard";
 import { toast } from "sonner";
 
 /* --------------------------------
@@ -436,6 +437,14 @@ const InfluencerDashboard = () => {
 
             <div className="space-y-6">
               <ProfileLinkCard userId={user?.id || ""} />
+              
+              {profile?.instagram_handle && (
+                <ShareMyCard 
+                  handle={profile.instagram_handle} 
+                  fullName={fullName} 
+                  themeKey={themeKey as any} 
+                />
+              )}
 
               <Card className={`${theme.card}`}>
                 <CardHeader className="px-4 pt-4 md:px-6 md:pt-6">
