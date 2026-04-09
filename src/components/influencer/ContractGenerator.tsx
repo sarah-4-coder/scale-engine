@@ -311,12 +311,12 @@ export const ContractGenerator = ({
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className={`relative p-6 md:p-12 rounded-xl bg-white shadow-inner border ${themeKey === 'dark' ? 'border-white/10' : 'border-slate-200'} min-h-[400px] overflow-hidden`}
+              className={`relative p-4 md:p-12 rounded-xl bg-white shadow-inner border ${themeKey === 'dark' ? 'border-white/10' : 'border-slate-200'} min-h-[300px] md:min-h-[400px] overflow-hidden`}
             >
               {/* Draft Watermark */}
               {!signed && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] rotate-[-25deg] select-none">
-                  <span className="text-[120px] font-black text-black tracking-tighter">OFFER DRAFT</span>
+                  <span className="text-[60px] md:text-[120px] font-black text-black tracking-tighter">OFFER DRAFT</span>
                 </div>
               )}
 
@@ -349,28 +349,28 @@ export const ContractGenerator = ({
             </motion.div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4">
+            <div className="flex gap-3 md:gap-4">
               <Button
                 onClick={downloadContract}
                 variant="outline"
-                className={`flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}
+                className={`flex-1 h-11 md:h-14 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs ${themeKey === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm'}`}
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                 Download
               </Button>
 
               {!signed ? (
                 <Button
                   onClick={signContract}
-                  className={`flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs ${themeKey === 'dark' ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'}`}
+                  className={`flex-1 h-11 md:h-14 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs ${themeKey === 'dark' ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'}`}
                 >
-                  <Check className="h-4 w-4 mr-2" />
+                  <Check className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                   Sign Contract
                 </Button>
               ) : (
-                <div className="flex-1 flex items-center justify-center gap-2 px-4 h-14 rounded-2xl bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                  <Check className="h-4 w-4" />
-                  <span className="text-xs font-black uppercase tracking-widest">Contract Signed</span>
+                <div className="flex-1 flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 h-11 md:h-14 rounded-xl md:rounded-2xl bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                  <Check className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-center">Contract Signed</span>
                 </div>
               )}
             </div>
@@ -379,16 +379,16 @@ export const ContractGenerator = ({
           <Button
             onClick={generateContract}
             disabled={loading || !apiKeyConfigured}
-            className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs ${themeKey === 'dark' ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'}`}
+            className={`w-full h-11 md:h-14 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-xs ${themeKey === 'dark' ? 'bg-white text-blue-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'}`}
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <FileText className="h-4 w-4 mr-2" />
+                <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                 {apiKeyConfigured
                   ? "Generate Contract"
                   : "Setup Required"}

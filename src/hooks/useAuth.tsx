@@ -25,19 +25,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Error fetching user role:', error);
+  const fetchUserRole = async (userId: string, retries = 3): Promise<AppRole | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      if (data?.role) {
+        return data.role as AppRole;
+      }
+      
+      // If role is null, maybe the trigger hasn't finished yet. Let's retry.
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return fetchUserRole(userId, retries - 1);
+      }
+      
+      return null;
+    } catch (err) {
+      console.error('Error fetching user role:', err);
+      // Retry on network errors too during init
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return fetchUserRole(userId, retries - 1);
+      }
       return null;
     }
-    //@ts-ignore
-    return data?.role as AppRole | null;
   };
 
   useEffect(() => {

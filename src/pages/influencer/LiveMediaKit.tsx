@@ -438,10 +438,10 @@ const LiveMediaKit = () => {
             ].map((stat, i) => (
               <div
                 key={i}
-                className={`p-6 md:p-8 rounded-[2rem] ${theme.card} border border-white/5 shadow-2xl hover:shadow-[0_20px_50px_rgba(37,99,235,0.2)] transition-all duration-300 hover:-translate-y-1`}
+                className={`p-4 md:p-8 rounded-2xl md:rounded-[2rem] ${theme.card} border border-white/5 shadow-2xl hover:shadow-[0_20px_50px_rgba(37,99,235,0.2)] transition-all duration-300 hover:-translate-y-1`}
               >
-                <stat.icon className={`${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-600'} mb-3 md:mb-4 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]`} size={24} />
-                <p className={`text-3xl md:text-4xl font-black tracking-tighter ${theme.text}`}>
+                <stat.icon className={`${themeKey === 'dark' ? 'text-blue-400' : 'text-blue-600'} mb-2 md:mb-4 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]`} size={20} />
+                <p className={`text-2xl md:text-4xl font-black tracking-tighter ${theme.text}`}>
                   {stat.value}
                 </p>
                 <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest mt-1 ${theme.muted}`}>
@@ -541,8 +541,8 @@ const LiveMediaKit = () => {
           )}
 
           {activeTab === "audience" && (
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
-              <div className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)] hover:-translate-y-1`}>
+            <div className="grid md:grid-cols-2 gap-4 md:gap-8">
+              <div className={`p-5 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)] hover:-translate-y-1`}>
                 <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
                   <Globe size={18} className="text-blue-500" /> Audience Insights
                 </h3>
@@ -553,12 +553,12 @@ const LiveMediaKit = () => {
                   </div>
                 </div>
               </div>
-              <div className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)] hover:-translate-y-1`}>
+              <div className={`p-5 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border border-white/5 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(225,29,72,0.15)] hover:-translate-y-1`}>
                 <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2">
                   <Users size={18} className="text-rose-500" /> Engagement Quality
                 </h3>
-                <div className="text-center py-10">
-                  <div className={`text-5xl md:text-7xl font-black ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} mb-2 tracking-tighter`}>
+                <div className="text-center py-6 md:py-10">
+                  <div className={`text-4xl md:text-7xl font-black ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'} mb-2 tracking-tighter`}>
                     {avgEngagement.toFixed(1)}%
                   </div>
                   <div className={`text-[10px] md:text-xs font-black uppercase tracking-[0.2em] ${theme.muted}`}>
@@ -576,12 +576,12 @@ const LiveMediaKit = () => {
                 profile.services.map((service, i) => (
                   <div
                     key={i}
-                    className={`p-6 md:p-8 rounded-2xl md:rounded-3xl ${theme.card} border-white/5 border hover:border-blue-600/50 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)] hover:-translate-y-1`}
+                    className={`p-5 md:p-8 rounded-xl md:rounded-3xl ${theme.card} border-white/5 border hover:border-blue-600/50 transition-all duration-300 hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)] hover:-translate-y-1`}
                   >
-                    <h4 className={`text-xl md:text-2xl font-black mb-2 ${theme.text}`}>
+                    <h4 className={`text-xl md:text-2xl font-black mb-1 md:mb-2 ${theme.text}`}>
                       {service.name}
                     </h4>
-                    <p className={`${theme.muted} text-xs md:text-sm mb-6 leading-relaxed font-medium`}>
+                    <p className={`${theme.muted} text-[11px] md:text-sm mb-4 md:mb-6 leading-relaxed font-medium`}>
                       {service.description}
                     </p>
                     <div className="flex justify-between items-center">
@@ -613,9 +613,9 @@ const LiveMediaKit = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="relative z-10 px-4 md:px-6 py-16 md:py-32 text-center">
+      <section className="relative z-10 px-4 md:px-6 py-12 md:py-32 text-center">
         <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-          <h2 className={`text-4xl md:text-5xl lg:text-7xl font-black leading-tight break-words px-2 ${theme.text}`}>
+          <h2 className={`text-3xl md:text-5xl lg:text-7xl font-black leading-tight break-words px-2 ${theme.text}`}>
             Let's create something{" "}
             <span className={`italic font-serif ${themeKey === 'dark' ? 'text-blue-500' : 'text-blue-600'}`}>
               extraordinary

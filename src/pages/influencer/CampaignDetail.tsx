@@ -812,23 +812,23 @@ const CampaignDetail = () => {
               return (
                 <Card className={`${agreementStyles.card} ${theme.radius} overflow-hidden shadow-xl relative transition-all duration-500`}>
                   <div 
-                    className={`p-4 md:p-6 flex items-center justify-between cursor-pointer ${agreementStyles.hover} transition-colors`}
+                    className={`p-3 md:p-6 flex items-center justify-between cursor-pointer ${agreementStyles.hover} transition-colors`}
                     onClick={() => setShowContract(!showContract)}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2.5 rounded-xl border ${agreementStyles.iconContainer}`}>
-                        <FileIcon className={`h-5 w-5 ${agreementStyles.iconColor}`} />
+                    <div className="flex items-center gap-3 md:gap-4">
+                      <div className={`p-2 md:p-2.5 rounded-xl border ${agreementStyles.iconContainer}`}>
+                        <FileIcon className={`h-4 w-4 md:h-5 md:w-5 ${agreementStyles.iconColor}`} />
                       </div>
                       <div>
                         <h3 className={`text-sm md:text-base font-extrabold tracking-tight ${themeKey === 'light' ? 'text-blue-950' : 'text-blue-50'}`}>Partnership Agreement</h3>
-                        <p className={`text-[10px] md:text-xs font-medium ${themeKey === 'light' ? 'text-blue-700/70' : 'text-blue-400/60'}`}>
+                        <p className={`text-[9px] md:text-xs font-medium ${themeKey === 'light' ? 'text-blue-700/70' : 'text-blue-400/60'}`}>
                           {contract?.status === 'signed' 
                             ? `Digitally Signed on ${new Date(contract.signed_at).toLocaleDateString()}` 
-                            : "Requires review and secure digital signature"}
+                            : "Requires secure digital signature"}
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className={`rounded-full h-8 w-8 p-0 ${agreementStyles.iconColor}`}>
+                    <Button variant="ghost" size="sm" className={`rounded-full h-8 w-8 p-0 ${agreementStyles.iconColor} shrink-0`}>
                       {showContract ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </Button>
                   </div>
@@ -841,7 +841,7 @@ const CampaignDetail = () => {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <div className={`px-4 md:px-6 pb-6 border-t pt-6 ${themeKey === 'light' ? 'border-blue-200/40' : 'border-white/10'}`}>
+                        <div className={`px-2 md:px-6 pb-6 border-t pt-4 md:pt-6 ${themeKey === 'light' ? 'border-blue-200/40' : 'border-white/10'}`}>
                           <ContractGenerator
                             campaignId={campaignId!}
                             influencerId={influencerId}

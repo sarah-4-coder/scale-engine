@@ -2,65 +2,45 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 
 const ProfileCompletionGuard = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const { user, role, loading: authLoading } = useAuth();
-  const [checking, setChecking] = useState(true);
-  const [profileStatus, setProfileStatus] = useState<{
-    completed: boolean;
-    isMagicLink: boolean;
-  } | null>(null);
 
-  useEffect(() => {
-    const checkProfile = async () => {
-      // Wait for auth to be ready
-      if (authLoading) return;
-
-      if (!user || role !== 'influencer') {
-        setChecking(false);
-        return;
-      }
-
+  const { data: profileStatus, isLoading: checking } = useQuery({
+    queryKey: ['profileStatus', user?.id],
+    enabled: !authLoading && !!user && role === 'influencer',
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to prevent lag on every page switch
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('influencer_profiles')
         .select('profile_completed, custom_data')
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id)
         .maybeSingle() as any;
 
-      if (error) {
-        console.error("Guard error:", error);
-        setChecking(false);
-        return;
-      }
-
-      // If no profile exists, they definitely aren't complete
-      if (!data) {
-        setProfileStatus({ completed: false, isMagicLink: false });
-        setChecking(false);
-        return;
+      if (error || !data) {
+        return { completed: false, isMagicLink: false };
       }
 
       const isMagicLink = data?.custom_data?.created_via === 'magic_link' || !!sessionStorage.getItem("invited_via");
       const isCompleted = data?.profile_completed === true;
 
-      setProfileStatus({
-        completed: isCompleted,
-        isMagicLink: isMagicLink
-      });
+      return { completed: isCompleted, isMagicLink };
+    }
+  });
 
-      setChecking(false);
-    };
-
-    checkProfile();
-  }, [location.pathname, user?.id, role, authLoading]);
-
-  if (checking || authLoading) {
+  if (authLoading || (checking && role === 'influencer')) {
     return (
       <div className="min-h-screen bg-slate-900/5 flex items-center justify-center backdrop-blur-sm">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600" />
       </div>
     );
+  }
+
+  // If not an influencer, let it through (other guards handle those) or if something failed
+  if (role !== 'influencer') {
+    return <>{children}</>;
   }
 
   // 1. If completed, always allow

@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   ArrowRight,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,9 +97,6 @@ const InfluencerDashboard = () => {
     loading: themeLoading,
   } = useInfluencerTheme();
 
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [checkingBlockStatus, setCheckingBlockStatus] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
@@ -106,58 +104,57 @@ const InfluencerDashboard = () => {
 
   const { data: stats, isLoading, refetch: refetchStats } = useDashboardStats(user?.id || "");
 
-  const fullName = stats?.fullName || "Creator";
-  const followers = stats?.followers;
+  // Use React Query to globally cache the profile on the dash so we don't spam API requests
+  const { data: profile, isLoading: checkingBlockStatus, refetch: refetchProfile } = useQuery({
+    queryKey: ['influencerDashboardProfile', user?.id],
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 min cache
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("influencer_profiles")
+        .select("*")
+        .eq("user_id", user?.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as any;
+    }
+  });
+
+  const isBlocked = profile?.is_blocked || false;
+
+  const fullName = stats?.fullName || profile?.full_name || "Creator";
+  const followers = stats?.followers || profile?.followers_count;
   const activeCampaigns = stats?.activeCampaigns || 0;
   const earnings = stats?.earnings || 0;
   const recentCampaigns = stats?.recentCampaigns || [];
 
+  // Check modals when profile loads
   useEffect(() => {
-    fetchProfile();
-  }, [user?.id]);
-
-  const fetchProfile = async () => {
-    if (!user?.id) return;
-    try {
-      const { data, error } = await supabase
-        .from("influencer_profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      const profileData = data as any;
-      setProfile(profileData);
-      setIsBlocked(profileData?.is_blocked || false);
-      
-      // Check for completed campaigns without payout details (UPI or Bank)
-      if (profileData) {
-          const hasPayoutDetails = !!profileData.upi_id || (!!profileData.bank_account_number && !!profileData.bank_ifsc_code);
-          
-          if (!hasPayoutDetails) {
-              const { count } = await supabase
-                .from('campaign_influencers')
-                .select('*', { count: 'exact', head: true })
-                .eq('influencer_id', profileData.id)
-                .eq('status', 'completed');
-              
-              if (count && count > 0) {
-                  setShowBankModal(true);
-              }
-          }
-      }
-
-      // One-time prompt for email if missing
-      if (profileData && !profileData.email && !sessionStorage.getItem('dismissed_email_prompt')) {
-          setShowEmailPrompt(true);
-      }
-
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setCheckingBlockStatus(false);
+    if (!profile) return;
+    
+    // One-time prompt for email if missing
+    if (!profile.email && !sessionStorage.getItem('dismissed_email_prompt')) {
+      setShowEmailPrompt(true);
     }
-  };
+
+    // Check for completed campaigns without payout details
+    const checkPayouts = async () => {
+      const hasPayoutDetails = !!profile.upi_id || (!!profile.bank_account_number && !!profile.bank_ifsc_code);
+      if (!hasPayoutDetails) {
+        const { count } = await supabase
+          .from('campaign_influencers')
+          .select('*', { count: 'exact', head: true })
+          .eq('influencer_id', profile.id)
+          .eq('status', 'completed');
+        
+        if (count && count > 0) {
+          setShowBankModal(true);
+        }
+      }
+    };
+    checkPayouts();
+  }, [profile]);
 
   const calculateCompletion = () => {
     if (!profile) return 0;
@@ -191,7 +188,7 @@ const InfluencerDashboard = () => {
 
         toast.success("Email linked successfully!");
         setShowEmailPrompt(false);
-        fetchProfile();
+        refetchProfile();
     } catch (e: any) {
         toast.error(e.message);
     }
@@ -508,7 +505,7 @@ const InfluencerDashboard = () => {
           onOpenChange={setShowProfileDrawer} 
           profile={profile}
           onProfileUpdate={() => {
-              fetchProfile();
+              refetchProfile();
               refetchStats();
           }}
       />
@@ -518,7 +515,7 @@ const InfluencerDashboard = () => {
             open={showBankModal} 
             onOpenChange={setShowBankModal}
             profileId={profile.id}
-            onSuccess={fetchProfile}
+            onSuccess={refetchProfile}
         />
       )}
     </div>
