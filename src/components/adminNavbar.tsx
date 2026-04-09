@@ -3,34 +3,15 @@ import { NotificationBell } from "./notifications/NotificationBell";
 import { LogOut, User, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const AdminNavbar = () => {
-  const { user, signOut } = useAuth();
+  // Get the role directly from useAuth - no need to refetch manually
+  const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  //extract the role from user_roles table from supabase
-  const [role, setRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user?.id) return;
-      
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .single() as { data: { role: string } | null; error: Error | null };
-      
-      if (error) console.error("Error fetching role:", error);
-      else setRole(data ? data.role : null);
-    };
-    
-    fetchUserRole();
-  }, [user?.id]);
 
   
 
