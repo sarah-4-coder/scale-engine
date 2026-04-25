@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +10,6 @@ import { sendNotification } from "@/lib/notifications";
 import AdminNavbar from "@/components/adminNavbar";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  CheckCircle,
-  FileText,
   CheckCircle2, 
   XCircle, 
   ExternalLink, 
@@ -31,12 +29,12 @@ import {
   List,
   CheckSquare,
   Square,
-  Eye,
 } from "lucide-react";
 import { KanbanFilterBar } from "@/components/kanban/KanbanFilterBar";
 import { BulkActionBar } from "@/components/kanban/BulkActionBar";
 import { KanbanListView } from "@/components/kanban/KanbanListView";
 import { useKanbanFilters } from "@/hooks/useKanbanFilters";
+import { Search, Filter, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
@@ -49,6 +47,13 @@ import {
 import { usePayment } from "@/hooks/usePayment";
 import { ManualDistributionDialog } from "@/components/admin/ManualDistributionDialog";
 import { Input } from "@/components/ui/input";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface Campaign {
   id: string;
@@ -65,7 +70,6 @@ interface Campaign {
 interface Row {
   id: string;
   status: string;
-  requested_payout?: number | null;
   final_payout: number | null;
   platform_fee_amount: number | null;
   tds_amount: number | null;
@@ -73,7 +77,6 @@ interface Row {
   funding_status: 'unfunded' | 'funded' | 'settled';
   posted_link: string[] | null;
   negotiation_requested: boolean;
-  email?: string;
   influencer_profiles: {
     user_id: string;
     full_name: string;
@@ -120,7 +123,6 @@ const AdminCampaignDetails = () => {
   const [selectedApplicant, setSelectedApplicant] = useState<Row | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [isManualPayoutOpen, setIsManualPayoutOpen] = useState(false);
-  const [counterOfferValue, setCounterOfferValue] = useState("");
 
   // View mode persisted per campaign
   const viewModeKey = `admin_kanban_view_${campaignId}`;
@@ -131,53 +133,6 @@ const AdminCampaignDetails = () => {
     setViewMode(mode);
     localStorage.setItem(viewModeKey, mode);
   };
-
-  const boardRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
-  const mouseXRef = useRef<number>(-1);
-  const SCROLL_ZONE = 120; // px from each edge
-
-  const stopAutoScroll = useCallback(() => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    window.removeEventListener("mousemove", onMouseMove as any, { capture: true });
-    window.removeEventListener("pointermove", onMouseMove as any, { capture: true });
-  }, []);
-
-  const startAutoScroll = useCallback(() => {
-    const board = boardRef.current;
-    if (!board) return;
-    const step = () => {
-      const rect = board.getBoundingClientRect();
-      const x = mouseXRef.current;
-      if (x !== -1) {
-        const distFromLeft = x - rect.left;
-        const distFromRight = rect.right - x;
-        if (distFromLeft < SCROLL_ZONE) {
-          const speed = ((SCROLL_ZONE - distFromLeft) / SCROLL_ZONE) * 18;
-          board.scrollLeft -= speed;
-        } else if (distFromRight < SCROLL_ZONE) {
-          const speed = ((SCROLL_ZONE - distFromRight) / SCROLL_ZONE) * 18;
-          board.scrollLeft += speed;
-        }
-      }
-      rafRef.current = requestAnimationFrame(step);
-    };
-    rafRef.current = requestAnimationFrame(step);
-  }, []);
-
-  const onMouseMove = useCallback((e: MouseEvent | PointerEvent) => {
-    mouseXRef.current = e.clientX;
-  }, []);
-
-  const handleDragStart = useCallback(() => {
-    mouseXRef.current = -1;
-    window.addEventListener("mousemove", onMouseMove as any, { capture: true });
-    window.addEventListener("pointermove", onMouseMove as any, { capture: true });
-    startAutoScroll();
-  }, [onMouseMove, startAutoScroll]);
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -206,55 +161,21 @@ const AdminCampaignDetails = () => {
     isProcessingPayment, 
     handleMerchantFunding, 
     handleApproveContent,
+    handlePayoutDistribution,
     handleBatchMerchantFunding,
+    handleBatchPayoutDistribution,
     handleManualPayout
   } = usePayment(() => {
     fetchData();
   });
 
 
-  const handleNegotiation = async (applicant: Row, action: "accept" | "counter") => {
-    try {
-      let updatePayload: any = {};
-      if (action === "accept") {
-        updatePayload = {
-          status: "accepted",
-          final_payout: applicant.requested_payout || campaign?.base_payout,
-          approved_at: new Date().toISOString(),
-        };
-      } else {
-        if (!counterOfferValue) { toast.error("Please enter a counter offer amount"); return; }
-        updatePayload = { status: "admin_negotiated", requested_payout: parseInt(counterOfferValue), final_payout: null };
-      }
-      const { error } = await supabase.from("campaign_influencers").update(updatePayload).eq("id", applicant.id);
-      if (error) throw error;
-      toast.success(action === "accept" ? "Offer Accepted!" : "Counter Offer Sent");
-      setRows(prev => prev.map(a => a.id === applicant.id ? { ...a, ...updatePayload } : a));
-      setShowDialog(false);
-      setCounterOfferValue("");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to submit negotiation");
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "accepted": return "bg-green-500/10 text-green-500 border-green-500/30";
-      case "applied": return "bg-blue-500/10 text-blue-500 border-blue-500/30";
-      case "shortlisted": return "bg-yellow-500/10 text-yellow-500 border-yellow-500/30";
-      case "completed": return "bg-purple-500/10 text-purple-500 border-purple-500/30";
-      case "content_posted": return "bg-orange-500/10 text-orange-500 border-orange-500/30";
-      case "paid": return "bg-indigo-500/10 text-indigo-500 border-indigo-500/30";
-      default: return "bg-gray-500/10 text-gray-500 border-gray-500/30";
-    }
-  };
-
   const fetchData = async () => {
     if (!campaignId) return;
 
     const { data: campaignData } = await supabase
       .from("campaigns")
-      .select("id, name, description, managed_by_dotfluence, execution_model, brand_user_id, base_payout, platform_fee_percent, slug")
+      .select("id, name, description, managed_by_dotfluence, execution_model, brand_user_id, platform_fee_percent, slug")
       .eq("id", campaignId)
       .single();
 
@@ -267,14 +188,12 @@ const AdminCampaignDetails = () => {
       .select(`
         id,
         status,
-        requested_payout,
         final_payout,
         platform_fee_amount,
         tds_amount,
         net_payout,
         funding_status,
         posted_link,
-        negotiation_requested,
         influencer_profiles (
           user_id,
           full_name,
@@ -285,12 +204,12 @@ const AdminCampaignDetails = () => {
           city,
           state,
           upi_id,
-          bank_account_name,
-          bank_account_number,
-          bank_ifsc_code,
           bank_name,
           account_number,
-          ifsc_code
+          ifsc_code,
+          bank_account_number,
+          bank_ifsc_code,
+          bank_account_name
         )
       `)
       .eq("campaign_id", campaignId)
@@ -403,13 +322,12 @@ const AdminCampaignDetails = () => {
     total: filteredRows.length,
     active: filteredRows.filter(r => r.status === 'accepted' || r.status === 'content_posted').length,
     completed: filteredRows.filter(r => r.status === 'completed').length,
-    funds: filteredRows.reduce((acc, curr) => acc + (curr.final_payout ?? curr.requested_payout ?? campaign?.base_payout ?? 0), 0)
-  }), [filteredRows, campaign?.base_payout]);
+    funds: filteredRows.reduce((acc, curr) => acc + (curr.final_payout || 0), 0)
+  }), [filteredRows]);
 
 
 
   const onDragEnd = async (result: any) => {
-    stopAutoScroll();
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
@@ -441,6 +359,8 @@ const AdminCampaignDetails = () => {
       }
 
       if (newStatus === 'completed') {
+        // Task 2: Approval system (NO PAYMENT)
+        // Set status to completed and funding_status to unfunded (Pending)
         await supabase
           .from("campaign_influencers")
           .update({ 
@@ -486,6 +406,8 @@ const AdminCampaignDetails = () => {
     toast.success("Magic Link copied to clipboard!");
   };
 
+  // usePayment hook handled above
+
   const exportCSV = () => {
     if (!campaign) return;
     const headers = ["Influencer Name", "Instagram Profile", "Status", "Payout"];
@@ -521,11 +443,7 @@ const AdminCampaignDetails = () => {
       <AdminNavbar />
 
       <main className="container mx-auto px-4 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Header */}
           <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
              <button onClick={() => navigate("/admin/campaigns")} className="flex items-center hover:text-primary transition-colors">
@@ -627,11 +545,8 @@ const AdminCampaignDetails = () => {
 
             {/* KANBAN VIEW */}
             {viewMode === "kanban" && (
-              <DragDropContext onDragEnd={onDragEnd} onDragStart={handleDragStart}>
-                <div 
-                  ref={boardRef}
-                  className="flex overflow-x-auto pb-6 gap-6 -mx-4 px-4 scrollbar-hide kanban-scroll-area"
-                >
+              <DragDropContext onDragEnd={onDragEnd}>
+                <div className="flex overflow-x-auto pb-6 gap-6 -mx-4 px-4 scrollbar-hide">
                   {COLUMNS.filter(column => filters.visibleStages.includes(column.id)).map((column) => {
                     const allColRows = rows.filter(r => getColumnForStatus(r.status) === column.id);
                     const colRows = filteredRows.filter(r => getColumnForStatus(r.status) === column.id);
@@ -682,9 +597,10 @@ const AdminCampaignDetails = () => {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                "flex flex-col gap-4 p-2 rounded-2xl border border-transparent min-h-[200px]",
-                                snapshot.isDraggingOver ? "bg-primary/5 border-primary/20" : "bg-card/20"
+                                "flex flex-col gap-4 p-2 rounded-2xl transition-all duration-200 border border-transparent overflow-y-auto",
+                                snapshot.isDraggingOver ? "bg-primary/5 border-primary/20 scale-[1.01]" : "bg-card/20"
                               )}
+                              style={{ minHeight: 200, maxHeight: "calc(100vh - 360px)" }}
                             >
                               {displayedRows.length === 0 && (
                                 <div className="flex flex-col items-center justify-center py-10 text-muted-foreground/50 gap-2">
@@ -694,39 +610,41 @@ const AdminCampaignDetails = () => {
                                   </p>
                                 </div>
                               )}
-                              {displayedRows.map((row, index) => {
-                                   const isSelected = selectedIds.includes(row.id);
-                                   return (
-                                     <div key={row.id} className={cn("relative", isSelected ? "ring-1 ring-primary/40 rounded-2xl" : "")}>
-                                       {/* Checkbox overlay */}
-                                       <button
-                                         onClick={e => { e.stopPropagation(); toggleSelect(row.id); }}
-                                         className="absolute top-2 left-2 z-10"
-                                       >
-                                         {isSelected
-                                           ? <CheckSquare className="h-4 w-4 text-primary drop-shadow-sm" />
-                                           : <Square className="h-4 w-4 text-muted-foreground/30 hover:text-muted-foreground drop-shadow-sm" />
-                                         }
-                                       </button>
-                                       <InfluencerCard
-                                         key={row.id}
-                                         row={row}
-                                         index={index}
-                                         columnId={column.id}
-                                         executionModel={campaign?.execution_model} basePayout={campaign?.base_payout}
-                                         onApproveContent={() => handleApproveContent(row as any, campaign as any)}
-                                         onReject={() => updateStatus(row.id, 'content_rejected')}
-                                         onFund={() => handleMerchantFunding(row as any, campaign as any)}
-                                         onDistribute={() => setIsManualPayoutOpen(true)}
-                                         onOpenDetails={() => {
-                                           setSelectedApplicant(row);
-                                           setShowDialog(true);
-                                         }}
-                                         isProcessing={isProcessingPayment === row.id}
-                                       />
-                                     </div>
-                                   );
-                                 })}
+                              <AnimatePresence>
+                                {displayedRows.map((row, index) => {
+                                  const isSelected = selectedIds.includes(row.id);
+                                  return (
+                                    <div key={row.id} className={cn("relative", isSelected ? "ring-1 ring-primary/40 rounded-2xl" : "")}>
+                                      {/* Checkbox overlay */}
+                                      <button
+                                        onClick={e => { e.stopPropagation(); toggleSelect(row.id); }}
+                                        className="absolute top-2 left-2 z-10"
+                                      >
+                                        {isSelected
+                                          ? <CheckSquare className="h-4 w-4 text-primary drop-shadow-sm" />
+                                          : <Square className="h-4 w-4 text-muted-foreground/30 hover:text-muted-foreground drop-shadow-sm" />
+                                        }
+                                      </button>
+                                      <InfluencerCard
+                                        key={row.id}
+                                        row={row}
+                                        index={index}
+                                        columnId={column.id}
+                                        executionModel={campaign?.execution_model} basePayout={campaign?.base_payout}
+                                        onApproveContent={() => handleApproveContent(row as any, campaign as any)}
+                                        onReject={() => updateStatus(row.id, 'content_rejected')}
+                                        onFund={() => handleMerchantFunding(row as any, campaign as any)}
+                                        onDistribute={() => setIsManualPayoutOpen(true)}
+                                        onOpenDetails={() => {
+                                          setSelectedApplicant(row);
+                                          setShowDialog(true);
+                                        }}
+                                        isProcessing={isProcessingPayment === row.id}
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </AnimatePresence>
                               {provided.placeholder}
                               {/* Load More */}
                               {colRows.length > pageSize && (
@@ -772,7 +690,7 @@ const AdminCampaignDetails = () => {
               />
             )}
           </div>
-        </motion.div>
+        </div>
       </main>
 
       {/* Bulk Action Bar */}
@@ -787,6 +705,8 @@ const AdminCampaignDetails = () => {
         getApplicantPhone={id => rows.find(r => r.id === id)?.influencer_profiles.phone_number || null}
         getApplicantName={id => rows.find(r => r.id === id)?.influencer_profiles.full_name || ""}
       />
+
+
 
       {/* Contract View Dialog */}
       <Dialog open={!!viewingContract} onOpenChange={(open) => !open && setViewingContract(null)}>
@@ -813,45 +733,45 @@ const AdminCampaignDetails = () => {
                   {viewingContract?.signed_at ? "Fully Executed" : "Pending Signature"}
                 </p>
               </div>
-           </div>
 
-           {campaign?.execution_model === 'agency' && rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded').length > 0 && (
-             <div className="mt-8 p-6 bg-primary/5 rounded-2xl border-2 border-primary/20 border-dashed">
-               <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                 <div>
-                   <h3 className="text-xl font-black text-primary flex items-center gap-2">
-                     <Shield className="h-5 w-5" /> Consolidated Agency Settlement
-                   </h3>
-                   <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-                     The brand has paid the agency. Now settle influencer payouts + platform fees in a single batch payment.
-                   </p>
-                 </div>
-                 
-                 <div className="flex flex-col items-end gap-2">
-                   <div className="text-right">
-                     <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Consolidated Amount</p>
-                     <p className="text-3xl font-black text-primary">
-                       ₹{(
-                         rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded')
-                         .reduce((acc, curr) => acc + (curr.final_payout || 0) + (curr.platform_fee_amount || 0), 0)
-                       ).toLocaleString()}
-                     </p>
-                     <p className="text-[10px] text-muted-foreground">
-                       {rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded').length} Influencers + Platform Fees
-                     </p>
-                   </div>
-                   <Button 
-                     size="lg" 
-                     onClick={() => handleBatchMerchantFunding(campaignId!, rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded'))}
-                     className="bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
-                     disabled={!!isProcessingPayment}
-                   >
-                     {isProcessingPayment?.toString().startsWith('batch') ? "Processing..." : "Settle All Deliverables"}
-                   </Button>
-                 </div>
-               </div>
-             </div>
-           )}
+              {campaign?.execution_model === 'agency' && rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded').length > 0 && (
+                <div className="mt-8 p-6 bg-primary/5 rounded-2xl border-2 border-primary/20 border-dashed">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div>
+                      <h3 className="text-xl font-black text-primary flex items-center gap-2">
+                        <Shield className="h-5 w-5" /> Consolidated Agency Settlement
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1 max-w-lg">
+                        The brand has paid the agency. Now settle influencer payouts + platform fees in a single batch payment.
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Consolidated Amount</p>
+                        <p className="text-3xl font-black text-primary">
+                          ₹{(
+                            rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded')
+                            .reduce((acc, curr) => acc + (curr.final_payout || 0) + (curr.platform_fee_amount || 0), 0)
+                          ).toLocaleString()}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded').length} Influencers + Platform Fees
+                        </p>
+                      </div>
+                      <Button 
+                        size="lg" 
+                        onClick={() => handleBatchMerchantFunding(campaignId!, rows.filter(r => r.status === 'completed' && r.funding_status === 'unfunded'))}
+                        className="bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
+                        disabled={!!isProcessingPayment}
+                      >
+                        {isProcessingPayment?.toString().startsWith('batch') ? "Processing Batch..." : "Settle All Deliverables"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+           </div>
         </DialogContent>
       </Dialog>
 
@@ -860,7 +780,7 @@ const AdminCampaignDetails = () => {
         onClose={() => setIsManualPayoutOpen(false)}
         influencers={rows}
         campaign={campaign}
-        onMarkPaid={(inf: any) => handleManualPayout(inf, campaign)}
+        onMarkPaid={(inf) => handleManualPayout(inf, campaign)}
         isProcessing={isProcessingPayment}
       />
 
@@ -869,7 +789,7 @@ const AdminCampaignDetails = () => {
           <DialogHeader>
             <DialogTitle>Influencer Details</DialogTitle>
             <DialogDescription className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mt-1">
-              {selectedApplicant?.status.replace("_", " ")} • ID: {selectedApplicant?.id.slice(0, 8)}
+              {selectedApplicant?.status.replace("_", " ")} • ID: {selectedApplicant?.id.slice(0,8)}
             </DialogDescription>
           </DialogHeader>
           {selectedApplicant && (
@@ -902,34 +822,9 @@ const AdminCampaignDetails = () => {
                       <div className="flex flex-col p-3 rounded-xl bg-secondary/30 border border-border/40">
                         <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Location</p>
                         <p className="font-bold flex items-center gap-1.5 truncate text-xs">
-                          {selectedApplicant.influencer_profiles.city}, {selectedApplicant.influencer_profiles.state}
+                          <Clock className="h-4 w-4 text-primary" />
+                          {selectedApplicant.influencer_profiles.city || "N/A"}, {selectedApplicant.influencer_profiles.state || "N/A"}
                         </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col p-3 rounded-xl bg-secondary/30 border border-border/40">
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Contact Phone</p>
-                        <p className="font-bold flex items-center gap-1.5 text-xs">
-                          <Phone className="h-3 w-3 text-primary" />
-                          {selectedApplicant.influencer_profiles.phone_number || "N/A"}
-                        </p>
-                      </div>
-                      <div className="flex flex-col p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-[10px] uppercase font-bold text-emerald-600 mb-1">WhatsApp Invite</p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 text-[10px] text-emerald-600 hover:bg-emerald-500/10 p-0 font-black flex items-center gap-1"
-                          onClick={() => {
-                            const phone = selectedApplicant.influencer_profiles.phone_number;
-                            const campaignName = campaign?.name;
-                            const url = `${window.location.origin}/i/${campaign?.slug}`;
-                            const text = `Hi! A campaign "${campaignName}" is active on DotFluence. Check it out here: ${url}`;
-                            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
-                          }}
-                        >
-                          <MessageSquare className="h-3.5 w-3.5" /> INVITE VIA WA
-                        </Button>
                       </div>
                     </div>
                     <div>
@@ -945,7 +840,7 @@ const AdminCampaignDetails = () => {
                     {selectedApplicant.posted_link && selectedApplicant.posted_link.length > 0 && (
                       <div className="p-4 rounded-xl border border-rose-500/10 bg-rose-500/5">
                         <p className="text-[10px] uppercase font-bold text-rose-500 mb-2 flex items-center gap-1.5">
-                          <Eye className="h-3.5 w-3.5" /> Published Deliverables
+                          <TrendingUp className="h-3.5 w-3.5" /> Published Deliverables
                         </p>
                         <div className="space-y-2">
                           {selectedApplicant.posted_link.map((link, i) => (
@@ -974,7 +869,8 @@ const AdminCampaignDetails = () => {
                        <div className="space-y-4">
                           <div>
                             <p className="text-[10px] text-muted-foreground font-medium">Current Status</p>
-                            <Badge className={cn("mt-1 uppercase text-[10px] font-black tracking-wider", getStatusColor(selectedApplicant.status))}>
+                            <Badge className={cn("mt-1 uppercase text-[10px] font-black tracking-wider", 
+                              selectedApplicant.status === 'paid' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-muted text-muted-foreground')}>
                                {selectedApplicant.status.replace("_", " ")}
                             </Badge>
                           </div>
@@ -990,6 +886,7 @@ const AdminCampaignDetails = () => {
                                 {(() => {
                                    const currentColumn = getColumnForStatus(selectedApplicant.status);
                                    const isNegotiated = selectedApplicant.final_payout !== null && selectedApplicant.final_payout !== undefined && selectedApplicant.final_payout !== campaign?.base_payout;
+                                   
                                    if (currentColumn === 'negotiation') return "Negotiating Payout";
                                    if (isNegotiated) return "Negotiated Payout";
                                    if (currentColumn === 'applied') return "Requested Payout";
@@ -998,94 +895,13 @@ const AdminCampaignDetails = () => {
                                 })()}
                              </p>
                              <p className="text-xl font-black">
-                                ₹{(selectedApplicant.final_payout || selectedApplicant.requested_payout || campaign?.base_payout || 0).toLocaleString()}
+                                ₹{(selectedApplicant.final_payout || basePayout || 0).toLocaleString()}
                              </p>
                           </div>
-                          {selectedApplicant.contracts?.some(c => c.status === 'signed') && (
-                            <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500 text-white text-[10px] font-black uppercase shadow-lg shadow-emerald-500/20">
-                               <FileText className="h-3.5 w-3.5" /> Contract Signed
-                            </div>
-                          )}
                        </div>
                     </div>
-                    {selectedApplicant.status === 'content_posted' && (
-                       <div className="flex flex-col gap-2">
-                          <Button
-                             className="bg-green-600 hover:bg-green-700 text-white font-bold h-10 shadow-lg shadow-green-500/10"
-                            onClick={async () => {
-                              if (campaign) {
-                                const { error } = await supabase
-                                  .from('campaign_influencers')
-                                  .update({ status: 'completed', funding_status: 'unfunded' })
-                                  .eq('id', selectedApplicant.id);
-                                if (error) toast.error("Failed to approve content");
-                                else {
-                                  toast.success("Content Approved! Proceed to settlement.");
-                                  fetchData();
-                                  setShowDialog(false);
-                                }
-                              }
-                            }}
-                          >Approve Deliverables</Button>
-                          <Button
-                             variant="outline"
-                             className="text-rose-500 border-rose-200 font-bold h-10"
-                            onClick={() => {
-                              updateStatus(selectedApplicant.id, 'content_rejected');
-                              setShowDialog(false);
-                            }}
-                          >Reject Content</Button>
-                       </div>
-                    )}
                  </div>
                </div>
-
-              {/* NEGOTIATION PANEL */}
-              {selectedApplicant && ["applied", "shortlisted", "influencer_negotiated"].includes(selectedApplicant.status) && selectedApplicant.requested_payout && selectedApplicant.requested_payout !== campaign?.base_payout && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-5 mt-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-yellow-500">Negotiate Payout</h4>
-                      <p className="text-sm text-yellow-500/80">
-                        {selectedApplicant.requested_payout ?
-                          `Influencer requested a custom payout of ₹${selectedApplicant.requested_payout}.` :
-                          `Campaign base payout is ₹${campaign?.base_payout}.`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                    <Button
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold"
-                        onClick={() => handleNegotiation(selectedApplicant, 'accept')}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Accept & Allow Content
-                    </Button>
-                  </div>
-                  <div className="pt-4 border-t border-yellow-500/20">
-                    <p className="text-xs text-yellow-500/80 mb-2 font-bold uppercase">Propose a counter-offer:</p>
-                    <div className="flex gap-2">
-                      <Input
-                         placeholder="e.g. 1500"
-                         type="number"
-                        className="bg-background border-yellow-500/30"
-                        value={counterOfferValue}
-                        onChange={(e) => setCounterOfferValue(e.target.value)}
-                      />
-                      <Button
-                         variant="outline"
-                         className="border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/20 font-bold"
-                        onClick={() => handleNegotiation(selectedApplicant, 'counter')}
-                      >Send Counter Offer</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="bg-blue-500/5 border border-blue-500/30 rounded-lg p-4 mt-6">
-                <p className="text-xs text-muted-foreground italic flex items-center gap-2">
-                  <Shield className="h-3.5 w-3.5" /> Note: You are viewing this dashboard as an Admin. Changes here directly affect campaign settlements.
-                </p>
-              </div>
             </div>
           )}
         </DialogContent>
@@ -1108,10 +924,10 @@ const StatCard = ({ label, value, icon: Icon, color }: any) => (
 );
 
 // Task 5: Campaign level summary
-const CampaignSummary = ({ rows, campaign }: { rows: any[], campaign: any }) => {
+const CampaignSummary = ({ rows, campaign }: { rows: any[], campaign: Campaign }) => {
   const stats = useMemo(() => {
     const influencers = rows.length;
-    const payout = rows.reduce((acc, curr) => acc + (curr.final_payout ?? curr.requested_payout ?? campaign?.base_payout ?? 0), 0);
+    const payout = rows.reduce((acc, curr) => acc + (curr.final_payout || 0), 0);
     
     // Use actual fees if available, otherwise estimate based on platform_fee_percent
     const fees = rows.reduce((acc, curr) => {
@@ -1123,7 +939,7 @@ const CampaignSummary = ({ rows, campaign }: { rows: any[], campaign: any }) => 
         ? (campaign.platform_fee_percent / 100)
         : (campaign.execution_model === 'brand_managed' ? 0.17 : 0.07);
       
-      return acc + (curr.final_payout ?? curr.requested_payout ?? campaign?.base_payout ?? 0) * feePercent;
+      return acc + (curr.final_payout || 0) * feePercent;
     }, 0);
     
     return { influencers, payout, fees, total: payout + fees };
@@ -1162,7 +978,7 @@ const InfluencerCard = ({
   onReject, 
   onFund, 
   onDistribute, 
-  onOpenDetails, 
+  onOpenDetails,
   columnId, 
   executionModel,
   basePayout,
@@ -1188,15 +1004,19 @@ const InfluencerCard = ({
         ref={provided.innerRef}
         {...provided.draggableProps}
         {...provided.dragHandleProps}
+        style={provided.draggableProps.style}
         className={cn(
-          "group",
+          "group transition-all duration-200",
           snapshot.isDragging ? "z-50" : ""
         )}
       >
-        <div
+        <motion.div
+           initial={{ opacity: 0, scale: 0.95 }}
+           animate={{ opacity: 1, scale: 1 }}
+           exit={{ opacity: 0, scale: 0.95 }}
            className={cn(
-             "bg-card/80 backdrop-blur-sm border border-border/40 p-4 rounded-xl shadow-sm hover:shadow-md hover:border-primary/30",
-             snapshot.isDragging ? "shadow-2xl ring-2 ring-primary border-primary" : ""
+             "bg-card/80 backdrop-blur-sm border border-border/40 p-4 rounded-xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all group-active:scale-[0.98]",
+             snapshot.isDragging ? "shadow-2xl ring-2 ring-primary/20 border-primary" : ""
            )}
         >
           <div className="flex items-start justify-between mb-3">
@@ -1236,7 +1056,7 @@ const InfluencerCard = ({
                     if (['shortlisted', 'accepted', 'completed', 'paid'].includes(row.status)) return "Agreed: ";
                     return "Payout: ";
                   })()}
-                  ₹{(row.final_payout ?? row.requested_payout ?? basePayout ?? 0).toLocaleString()}
+                  ₹{(row.final_payout || basePayout || 0).toLocaleString()}
                 </span>
              </div>
 
@@ -1265,13 +1085,13 @@ const InfluencerCard = ({
                <div className="flex gap-2">
                    <Button 
                     size="sm" 
-                    onClick={(e) => { e.stopPropagation(); onApproveContent(); }} 
+                    onClick={onApproveContent} 
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/10 h-8 text-[11px] font-bold rounded-lg"
                     disabled={row.status === 'completed'}
                   >
                      Approve Deliverables
                   </Button>
-                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onReject(); }} className="flex-1 text-rose-500 hover:bg-rose-500/10 h-8 text-[11px] font-bold rounded-lg border border-rose-500/10">
+                  <Button size="sm" variant="outline" onClick={onReject} className="flex-1 text-rose-500 hover:bg-rose-500/10 h-8 text-[11px] font-bold rounded-lg border border-rose-500/10">
                      Reject
                   </Button>
                </div>
@@ -1282,7 +1102,7 @@ const InfluencerCard = ({
                  {row.funding_status === 'unfunded' ? (
                    <Button 
                     size="sm" 
-                    onClick={(e) => { e.stopPropagation(); onFund(); }} 
+                    onClick={onFund} 
                     className="flex-1 bg-amber-600 hover:bg-amber-700 text-white shadow-lg h-8 text-[11px] font-bold rounded-lg"
                     disabled={isProcessing}
                   >
@@ -1291,7 +1111,7 @@ const InfluencerCard = ({
                  ) : row.funding_status === 'funded' ? (
                    <Button 
                     size="sm" 
-                    onClick={(e) => { e.stopPropagation(); onDistribute(); }} 
+                    onClick={onDistribute} 
                     className="flex-1 bg-purple-600 hover:bg-purple-700 text-white shadow-lg h-8 text-[11px] font-bold rounded-lg"
                     disabled={isProcessing}
                   >
@@ -1312,7 +1132,7 @@ const InfluencerCard = ({
                     size="sm"
                     variant="ghost"
                     className="flex-1 h-8 text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors"
-                    onClick={(e) => { e.stopPropagation(); onOpenDetails(); }}
+                    onClick={onOpenDetails}
                  >
                     <LayoutGrid className="h-3 w-3 mr-1.5" /> Details
                  </Button>
@@ -1322,7 +1142,7 @@ const InfluencerCard = ({
                  </div>
               </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     )}
   </Draggable>

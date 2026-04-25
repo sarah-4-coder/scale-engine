@@ -73,6 +73,9 @@ const BrandCreateCampaign = lazy(
 const BrandCampaignDetails = lazy(
   () => import("./pages/brand/Brandcampaigndetails"),
 );
+const BrandCampaignCRM = lazy(
+  () => import("./pages/brand/BrandCampaignCRM"),
+);
 const BrandInfluencers = lazy(() => import("./pages/brand/Brandinfluencers"));
 const BrandProfile = lazy(() => import("./pages/brand/BrandProfile"));
 
@@ -270,6 +273,21 @@ const AppRoutes = () => {
               <BrandLayout>
                 <Suspense fallback={<PageLoader />}>
                   <BrandCampaignDetails />
+                </Suspense>
+              </BrandLayout>
+            </BrandProfileCompletionGuard>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/company/campaigns/:id/crm"
+        element={
+          <ProtectedRoute allowedRoles={["brand", "agency"]}>
+            <BrandProfileCompletionGuard>
+              <BrandLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <BrandCampaignCRM />
                 </Suspense>
               </BrandLayout>
             </BrandProfileCompletionGuard>

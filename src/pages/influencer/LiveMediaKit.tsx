@@ -38,7 +38,6 @@ interface CreatorProfile {
   state: string | null;
   full_name: string;
   portfolio_theme?: string;
-  avg_engagement_rate?: number;
   services?: Array<{
     name: string;
     description: string;
@@ -107,7 +106,7 @@ const LiveMediaKit = () => {
     try {
       const { data: influencerData, error: influencerError } = await supabase
         .from("influencer_profiles")
-        .select("id, user_id, instagram_handle, followers_count, niches, bio, profile_image_url, media_kit_bio, city, state, full_name, avg_engagement_rate, services, portfolio_theme")
+        .select("id, user_id, instagram_handle, followers_count, niches, bio, profile_image_url, media_kit_bio, city, state, full_name, services, portfolio_theme")
         .eq("instagram_handle", handle)
         .eq("media_kit_enabled", true)
         .single<CreatorProfile>();
@@ -171,7 +170,6 @@ const LiveMediaKit = () => {
 
   // ✅ FINAL: Weighted Average Engagement Rate (%)
   const avgEngagement =
-    profile.avg_engagement_rate ||
     (totalViews > 0 ? (totalEngagement / totalViews) * 100 : 4.8); // safe fallback
 
   // ✅ FINAL: Average Reach per Content
